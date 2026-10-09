@@ -85,7 +85,7 @@ _Avoid_: Greedy decoder, repair decoder
 ### Selection and variation
 
 **Mating pool**:
-The parents drawn by selection, with replacement, so one individual can appear several times. Pairing takes it in order, neighbours together.
+The parents drawn by selection, with replacement, so one individual can appear several times. Pairing takes it in order, neighbours together. When an odd number of offspring is wanted, selection draws one extra parent and the last pair's second child is dropped.
 _Avoid_: Parent list, breeding pool
 
 **Selection weight**:
