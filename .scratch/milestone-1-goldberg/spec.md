@@ -102,7 +102,7 @@ A working end-to-end GA teaching app for one example, Goldberg's integer x² max
 ## To decide during implementation (record the choice here when made)
 
 - ~~The specific seedable generator algorithm.~~ **Decided (ticket 03): mulberry32**, one 32-bit state, so snapshots can store it. A random gene is 1 when its draw is below 0.5.
-- ~~Defaults for ε in Shift, selection pressure s in Linear ranking, the Power exponent~~ **Decided (ticket 05): ε = 1, s = 1.5, exponent = 2.** Still open: the stagnation window.
+- ~~Defaults for ε in Shift, selection pressure s in Linear ranking, the Power exponent~~ **Decided (ticket 05): ε = 1, s = 1.5, exponent = 2.** **Stagnation window default 10, generation limit default 50 (ticket 09):** the engine takes these as explicit configuration, so the defaults live in the Goldberg default configuration (ticket 14) and the presets (ticket 21).
 - Exact key bindings.
 - The symbol set for elite, parent, offspring, mutated gene, and bypass.
 

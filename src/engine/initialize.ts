@@ -2,10 +2,28 @@ import { parseBits, type Bit, type Chromosome } from './chromosome';
 import type { Problem, Scores } from './problem';
 import type { Rng } from './rng';
 
+/** Where an individual came from, so lineage can be shown without re-deriving it from events. */
+export type Origin =
+  | { readonly kind: 'initial' }
+  | {
+      readonly kind: 'offspring';
+      /** The generation this offspring was born into (1 for the first generation made from the initial population). */
+      readonly generation: number;
+      /** Its number within that generation: O1, O2, … */
+      readonly offspring: number;
+      readonly parentAId: number;
+      readonly parentBId: number;
+      /** False when crossover was bypassed (switched off or failed its draw) and the chromosome is a copy of a parent's. */
+      readonly recombined: boolean;
+      /** 1-based genes that mutation flipped. */
+      readonly flipped: readonly number[];
+    };
+
 export interface Individual extends Scores {
   /** Stable identity within a run, so events can refer to an individual and its provenance. */
   readonly id: number;
   readonly chromosome: Chromosome;
+  readonly origin: Origin;
 }
 
 /** The setup stage: the initial population is scored once before generation 1. */
@@ -28,7 +46,7 @@ export function initialize(
 ): { population: Individual[]; events: SetupEvent[] } {
   const chromosomes = init.kind === 'random' ? randomChromosomes(problem, init.size, rng) : explicitChromosomes(problem, init.chromosomes);
   const population = chromosomes.map(
-    (chromosome, k): Individual => ({ id: k + 1, chromosome, ...problem.evaluate(chromosome) }),
+    (chromosome, k): Individual => ({ id: k + 1, chromosome, origin: { kind: 'initial' }, ...problem.evaluate(chromosome) }),
   );
   const events = population.map((individual): SetupEvent => ({ stage: 'setup', kind: 'evaluated', individual }));
   return { population, events };

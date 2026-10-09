@@ -16,6 +16,11 @@ describe('explicit initialization', () => {
     expect(population.reduce((sum, i) => sum + i.fitness, 0)).toBe(1170);
   });
 
+  test('initial individuals record that they are initial, so lineage views know where a chain of ancestry starts', () => {
+    const { population } = initialize(goldberg, { kind: 'explicit', chromosomes: textbook }, createRng(1));
+    expect(population.every((i) => i.origin.kind === 'initial')).toBe(true);
+  });
+
   test('individuals get stable ids 1..N in population order', () => {
     const { population } = initialize(goldberg, { kind: 'explicit', chromosomes: textbook }, createRng(1));
     expect(population.map((i) => i.id)).toEqual([1, 2, 3, 4]);
