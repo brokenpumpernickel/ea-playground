@@ -16,3 +16,11 @@ export {
   type WeightChainEvent,
   type WeightChainResult,
 } from './weights';
+export {
+  crossover,
+  type Child,
+  type CrossoverConfig,
+  type CrossoverEvent,
+  type CrossoverOperator,
+  type Source,
+} from './crossover';

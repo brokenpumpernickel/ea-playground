@@ -1,23 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import { goldberg } from './goldberg';
 import { initialize, type Individual } from './initialize';
-import { createRng, type Rng } from './rng';
+import { createRng } from './rng';
 import { rouletteSelect, type SelectionEvent } from './selection';
+import { scripted } from './test-support';
 
 const textbook = (): Individual[] =>
   initialize(goldberg, { kind: 'explicit', chromosomes: ['01101', '11000', '01000', '10011'] }, createRng(1)).population;
-
-/** A generator that returns the given draws in order, so a test controls exactly where each spin lands. */
-const scripted = (...draws: number[]): Rng => {
-  let k = 0;
-  return {
-    next() {
-      const value = draws[k++];
-      if (value === undefined) throw new Error('scripted generator ran out of draws');
-      return value;
-    },
-  };
-};
 
 const identityWeights = (population: Individual[]) => population.map((i) => i.fitness);
 
