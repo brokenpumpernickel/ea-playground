@@ -198,3 +198,76 @@ describe('changing parameters while looking at the past', () => {
     expect(session.pendingChange!.params).toEqual(other);
   });
 });
+
+describe('changes that need a reset', () => {
+  const setup = (size: number) => ({ ...defaultSetup, init: { kind: 'random' as const, size } });
+
+  test('are held until confirmed, with a notice that says what restarts and what is lost', () => {
+    const { session } = make();
+    generations(session, 5);
+    const before = [0, 1, 2, 3, 4, 5].map((c) => state(session, c));
+    session.requestReset({ setup: setup(8), seed: 42, params: defaultParams, changed: ['Population size'] });
+    expect(session.run.lastCycle).toBe(5);
+    expect([0, 1, 2, 3, 4, 5].map((c) => state(session, c))).toEqual(before);
+    expect(session.resetNotice).toBe('Changing the population size restarts the run from generation 0 and discards the 5 recorded generations (1–5).');
+  });
+
+  test('the notice names every changed setting, and handles a run with nothing recorded yet', () => {
+    const { session } = make();
+    session.requestReset({ setup: setup(8), seed: 7, params: defaultParams, changed: ['Population size', 'Seed'] });
+    expect(session.resetNotice).toBe('Changing the population size and the seed restarts the run from generation 0. Nothing recorded will be lost.');
+  });
+
+  test('confirming restarts with the new setup, seed and parameters; the run is then the one those settings would have made', () => {
+    const { session } = make();
+    generations(session, 3);
+    const params = { ...defaultParams, elites: 1 };
+    session.requestReset({ setup: setup(8), seed: 7, params, changed: ['Population size', 'Seed'] });
+    const epoch = session.epoch;
+    session.confirmReset();
+    expect(session.resetNotice).toBeUndefined();
+    expect(session.run.lastCycle).toBe(0);
+    expect(session.seed).toBe(7);
+    expect(session.run.snapshot(0).state.population).toHaveLength(8);
+    expect(session.epoch).toBeGreaterThan(epoch);
+    generations(session, 2);
+    const again = createRun(gaAlgorithm, { setup: setup(8), params, seed: 7 });
+    again.forwardCycle();
+    again.forwardCycle();
+    for (let c = 0; c <= 2; c++) expect(state(session, c)).toEqual(again.snapshot(c).state.population.map((i) => `${i.id}:${i.chromosome.join('')}`));
+  });
+
+  test('cancelling changes nothing', () => {
+    const { session } = make();
+    generations(session, 3);
+    const before = [0, 1, 2, 3].map((c) => state(session, c));
+    session.requestReset({ setup: setup(8), seed: 7, params: defaultParams, changed: ['Population size'] });
+    session.cancelReset();
+    expect(session.resetNotice).toBeUndefined();
+    expect(session.seed).toBe(42);
+    expect([0, 1, 2, 3].map((c) => state(session, c))).toEqual(before);
+  });
+});
+
+describe('pending parameters', () => {
+  test('are listed by name until the next generation boundary applies them', () => {
+    const { session } = make();
+    generations(session, 2);
+    expect(session.pending).toEqual([]);
+    session.changeParameters({ ...defaultParams, crossover: { ...defaultParams.crossover, probability: 0.3 }, elites: 1 });
+    expect(session.pending).toEqual(['Crossover probability', 'Elites']);
+    session.stepGeneration();
+    expect(session.pending).toEqual([]);
+    expect(session.run.snapshot(3).params.elites).toBe(1);
+  });
+
+  test('a new seed or reset keeps the parameters, and the epoch tells the drawer to reread them', () => {
+    const { session } = make();
+    generations(session, 2);
+    const epoch = session.epoch;
+    session.changeParameters({ ...defaultParams, elites: 2 });
+    session.newSeed();
+    expect(session.epoch).toBeGreaterThan(epoch);
+    expect(session.run.parameters.elites).toBe(2);
+  });
+});

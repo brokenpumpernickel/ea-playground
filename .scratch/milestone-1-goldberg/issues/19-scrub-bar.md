@@ -1,6 +1,6 @@
 # 19 Scrub bar and truncation notice
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 14, 12
 Spec: ../spec.md
@@ -19,9 +19,9 @@ Spec: ../spec.md
 
 ## Comments
 
-## Answer (partly done: the Playwright parameter flow moves to ticket 20)
+## Answer
 
-Built the scrub bar and the discard notice; the full "scrub back, change a parameter, confirm" browser test needs the parameter drawer (ticket 20), because nothing on screen can change a parameter yet. Status stays `claimed` until that test exists; ticket 20 owns it.
+Built the scrub bar and the discard notice. The browser test that scrubs back, changes a parameter through the drawer, sees the notice, cancels and confirms lives in `e2e/drawer.spec.ts` (ticket 20), because nothing on screen could change a parameter before the drawer existed.
 
 Done:
 - **Scrub bar** (`HistoryStrip`, `scrub-model.ts`): a slider along the bottom with one equal cell per recorded generation, split into stages; micro-steps are spread inside each stage. Click or drag anywhere to move the cursor to the nearest recorded stage/micro-step position; every position maps to its own place and back (tested for every position of a 4-generation run). The whole UI follows the cursor: stage view, population table, plots (the "now" line moves; later generations are dimmed).
@@ -32,4 +32,4 @@ Done:
 
 Tests: 8 scrub-model, 14 session-history and 4 view unit tests; 6 Playwright tests in `e2e/history.spec.ts` compare what the screen shows at clicked, dragged and key-selected positions with the engine's own state there. Deliberate breakages (forward key at the live end making a generation; the position mapping off by one) are caught. A temporary build exposing the session confirmed the dialog renders correctly.
 
-Left for ticket 20: a Playwright test that scrubs back, changes a parameter through the drawer, sees the notice with the right range, cancels (no-op), then confirms and checks that later generations differ and repeat with the same seed.
+The full flow test (scrub back with PageUp, change pm in the drawer, notice names "Generations 4–6" and "generation 3", cancel leaves the run and the drawer value untouched, confirm truncates, the continued run equals the engine's run with the same seed and change, and differs from the original) passes in `e2e/drawer.spec.ts`.

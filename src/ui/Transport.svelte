@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Session } from './session.svelte';
 
-  let { session, theme, toggleTheme }: { session: Session; theme: 'light' | 'dark'; toggleTheme: () => void } = $props();
+  let { session, theme, toggleTheme, drawerOpen, toggleDrawer }: { session: Session; theme: 'light' | 'dark'; toggleTheme: () => void; drawerOpen: boolean; toggleDrawer: () => void } = $props();
 
   const stopNames: Record<string, string> = {
     'generation-limit': 'generation limit',
@@ -56,6 +56,6 @@
 
   <span style="flex:1"></span>
   <button class="btn quiet" onclick={toggleTheme}><span aria-hidden="true">{theme === 'light' ? '◐' : '◑'}</span> {theme === 'light' ? 'Dark' : 'Light'}</button>
-  <button class="btn quiet" disabled title="Parameters arrive with the parameter drawer"><span aria-hidden="true">⚙</span> Parameters</button>
+  <button id="open-params" class="btn quiet" aria-expanded={drawerOpen} aria-controls="drawer" onclick={toggleDrawer}><span aria-hidden="true">⚙</span> Parameters</button>
   <button class="btn quiet" disabled title="Projector mode arrives later" aria-label="Projector mode"><span aria-hidden="true">A⁺</span></button>
 </div>

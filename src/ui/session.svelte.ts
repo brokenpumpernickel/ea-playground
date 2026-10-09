@@ -1,6 +1,7 @@
 import { gaAlgorithm, metricsOf, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
 import { createPlayback, createRun, type AnimationFlags, type Playback, type PlaybackStatus, type Position, type Run, type Scheduler, type Tier, type View } from '../run';
 import { defaultParams, defaultSeed, defaultSetup } from './config';
+import { changes, draftOf } from './drawer-model';
 import { plotModel, type PlotModel } from './plot-models';
 import { atCycleEnd, populationTable, type PopulationTable } from './population';
 
@@ -29,6 +30,18 @@ export interface PendingChange {
   readonly from: number;
 }
 
+/** A setup change that needs the run to start again: held until the user has seen what it costs. */
+export interface PendingReset {
+  readonly setup: GaSetup;
+  readonly seed: number;
+  readonly params: GaParams;
+  /** Names of the settings that need the reset, as `changes` words them. */
+  readonly changed: readonly string[];
+}
+
+const settingPhrase = (label: string) => `the ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
+const joinWords = (words: readonly string[]) => (words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`);
+
 const generationRange = (cycles: readonly number[]) => (cycles.length === 1 ? `Generation ${cycles[0]} will` : `Generations ${cycles[0]}–${cycles[cycles.length - 1]} will`);
 
 export function createSession(options: SessionOptions) {
@@ -38,6 +51,10 @@ export function createSession(options: SessionOptions) {
 
   /** Parameters waiting for the user to confirm discarding the generations after the cursor. */
   let change = $state<PendingChange | undefined>(undefined);
+
+  let reset = $state<PendingReset | undefined>(undefined);
+  /** Bumped whenever the setup, seed or parameters are replaced wholesale, so the drawer rereads them. */
+  let epoch = $state(0);
 
   let version = $state(0);
   const bump = () => {
@@ -136,6 +153,26 @@ export function createSession(options: SessionOptions) {
       return change && `${generationRange(change.discarded)} be discarded. The run continues from generation ${change.from} with the new settings.`;
     },
 
+    get pendingReset(): PendingReset | undefined {
+      return reset;
+    },
+    get resetNotice(): string | undefined {
+      if (!reset) return undefined;
+      const what = `Changing ${joinWords(reset.changed.map(settingPhrase))} restarts the run from generation 0.`;
+      const n = run.lastCycle;
+      return n === 0 ? `${what} Nothing recorded will be lost.` : `${what.slice(0, -1)} and discards the ${n} recorded ${n === 1 ? 'generation' : 'generations'} (${n === 1 ? '1' : `1–${n}`}).`;
+    },
+    get epoch(): number {
+      return epoch;
+    },
+    /** Names of operator parameters that have been changed and wait for the next generation boundary. */
+    get pending(): string[] {
+      void version;
+      const waiting = run.pendingParameters;
+      if (!waiting) return [];
+      return changes(draftOf(waiting, run.setup, run.seed), { params: run.snapshot(run.lastCycle).params, setup: run.setup, seed: run.seed }).operator;
+    },
+
     stepMicro: () => act(() => void run.forwardMicro()),
     backMicro: () => act(() => void run.backMicro()),
     stepStage: () => act(() => void run.forwardStage()),
@@ -179,6 +216,25 @@ export function createSession(options: SessionOptions) {
       bump();
       return { status: 'needs-confirmation' };
     },
+    /** Holds a change that needs a reset until `confirmReset`. */
+    requestReset(request: PendingReset) {
+      reset = request;
+      bump();
+    },
+    confirmReset() {
+      if (!reset) return;
+      const { setup, seed, params } = reset;
+      reset = undefined;
+      act(() => {
+        change = undefined;
+        run.reset({ setup, params, seed });
+        epoch++;
+      });
+    },
+    cancelReset() {
+      reset = undefined;
+      bump();
+    },
     confirmChange() {
       if (!change) return;
       const { params } = change;
@@ -187,6 +243,7 @@ export function createSession(options: SessionOptions) {
     },
     cancelChange() {
       change = undefined;
+      epoch++; // the drawer still shows the edit that was not applied
       bump();
     },
 
@@ -206,12 +263,14 @@ export function createSession(options: SessionOptions) {
       act(() => {
         change = undefined;
         run.reset();
+        epoch++;
       }),
     /** Starts again with a fresh seed. */
     newSeed: () =>
       act(() => {
         change = undefined;
         run.reset({ seed: drawSeed() });
+        epoch++;
       }),
   };
 }

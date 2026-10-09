@@ -43,7 +43,10 @@
 </script>
 
 <section class="panel" style="left:24px;top:172px;width:1096px;height:574px" aria-labelledby="stage-heading">
-  <div class="ph"><h2 id="stage-heading">{heading}</h2></div>
+  <div class="ph">
+    <h2 id="stage-heading">{heading}</h2>
+    {#if session.pending.length > 0}<span class="pendingchip" data-testid="pending-chip" title="Changed settings apply when the next generation starts">● pending: {session.pending.join(', ')}</span>{/if}
+  </div>
   <div id="stagebody" style="top:56px">
     {#if stage === 'selection' && tournament}
       <TournamentView model={tournamentModel(view)} />

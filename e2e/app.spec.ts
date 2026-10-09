@@ -130,8 +130,7 @@ test('Run until stop jumps to the end of the generation where a stop criterion f
   await expect(title(page)).toHaveText(/^Population · generation \d+$/);
 });
 
-test('buttons that belong to later tickets are visibly disabled rather than pretending to work', async ({ page }) => {
-  await expect(button(page, /Parameters/)).toBeDisabled();
+test('projector mode, which belongs to a later ticket, is visibly disabled rather than pretending to work', async ({ page }) => {
   await expect(button(page, /Projector/)).toBeDisabled();
 });
 

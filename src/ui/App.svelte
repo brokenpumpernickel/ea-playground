@@ -1,9 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import DiscardNotice from './DiscardNotice.svelte';
+  import Drawer from './Drawer.svelte';
   import HistoryStrip from './HistoryStrip.svelte';
   import MetricsPanel from './MetricsPanel.svelte';
   import PopulationPanel from './PopulationPanel.svelte';
+  import ResetNotice from './ResetNotice.svelte';
   import { createSession } from './session.svelte';
   import StagePanel from './StagePanel.svelte';
   import TopBar from './TopBar.svelte';
@@ -18,6 +20,12 @@
   // The screen is designed once, at 1920×1080, and scaled to fit the window.
   let scale = $state(1);
   const fit = () => (scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+
+  let drawerOpen = $state(false);
+  const closeDrawer = () => {
+    drawerOpen = false;
+    document.getElementById('open-params')?.focus();
+  };
 
   let theme = $state<'light' | 'dark'>('light');
   const applyTheme = (next: 'light' | 'dark') => {
@@ -54,11 +62,13 @@
 <div class="viewport">
   <main class="canvas" style="transform: translate(-50%, -50%) scale({scale}); transform-origin: center">
     <TopBar {session} />
-    <Transport {session} {theme} toggleTheme={() => applyTheme(theme === 'light' ? 'dark' : 'light')} />
+    <Transport {session} {theme} toggleTheme={() => applyTheme(theme === 'light' ? 'dark' : 'light')} {drawerOpen} toggleDrawer={() => (drawerOpen ? closeDrawer() : (drawerOpen = true))} />
     <StagePanel {session} />
     <PopulationPanel {session} />
     <MetricsPanel {session} />
     <HistoryStrip {session} />
+    {#if drawerOpen}<Drawer {session} onclose={closeDrawer} />{/if}
     {#if session.pendingChange}<DiscardNotice {session} />{/if}
+    {#if session.pendingReset}<ResetNotice {session} />{/if}
   </main>
 </div>
