@@ -12,5 +12,7 @@ export interface Scores {
 
 export interface Problem {
   readonly chromosomeLength: number;
+  /** The best fitness any chromosome can have, when it is known; plots draw it as a reference line and stop criteria can aim at it. */
+  readonly knownOptimumFitness?: number;
   evaluate(chromosome: Chromosome): Scores;
 }

@@ -344,3 +344,17 @@ input[type=range].speed { width:260px; accent-color:var(--acc); }
 .rrow .note { flex-basis:auto; font-size:14px; }
 .rrow:has(.note) { flex-wrap:wrap; }
 .cutnote { margin:0 0 4px; font-size:16px; color:var(--ink2); }
+
+/* plots */
+.plot svg { display:block; padding:0 6px; }
+.plot svg text { fill:var(--ink2); font-size:18px; font-family:inherit; }
+.plot svg text.ink { fill:var(--ink); }
+.plot svg .gr { stroke:var(--grid); stroke-width:1; }
+.plot .legend { font-size:17px; white-space:nowrap; }
+.plot .legend b { color:var(--ink); }
+.allele { display:flex; align-items:flex-end; gap:10px; height:112px; padding:6px 14px 0; box-sizing:border-box; }
+.allele .gene { flex:1; text-align:center; }
+.allele .bar { margin:0 8px; border:2px solid var(--ink2); background:var(--seq4); border-radius:4px 4px 0 0; }
+.allele .gene b { display:block; font-size:19px; }
+.allele .gene span { font-size:17px; color:var(--ink2); }
+.plot .summary { margin:6px 16px 0; font-size:18px; line-height:1.25; color:var(--ink2); }

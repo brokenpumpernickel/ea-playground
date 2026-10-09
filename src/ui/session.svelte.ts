@@ -1,6 +1,7 @@
 import { gaAlgorithm, metricsOf, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
 import { createPlayback, createRun, type AnimationFlags, type Playback, type PlaybackStatus, type Run, type Scheduler, type Tier, type View } from '../run';
 import { defaultParams, defaultSeed, defaultSetup } from './config';
+import { plotModel, type PlotModel } from './plot-models';
 import { atCycleEnd, populationTable, type PopulationTable } from './population';
 
 export type GaRun = Run<GaSetup, GaParams, RunState, GaEvent>;
@@ -40,6 +41,10 @@ export function createSession(options: SessionOptions) {
 
   const currentView = (): View<RunState, GaEvent> => run.view();
   const isEnd = () => atCycleEnd(run.layout(run.cursor.cycle), run.cursor);
+  const shownMetrics = () => {
+    const view = currentView();
+    return metricsOf(view.position.cycle === 0 || isEnd() ? view.after : view.before!);
+  };
 
   return {
     run,
@@ -64,8 +69,12 @@ export function createSession(options: SessionOptions) {
     /** Metrics of the population the table shows. */
     get metrics(): GenerationMetrics {
       void version;
-      const view = currentView();
-      return metricsOf(view.position.cycle === 0 || isEnd() ? view.after : view.before!);
+      return shownMetrics();
+    },
+    /** Every recorded generation's metrics and the plot axes, with the cursor's generation marked. */
+    get plots(): PlotModel {
+      void version;
+      return plotModel(run, shownMetrics().generation, run.setup.problem.knownOptimumFitness);
     },
     get seed(): number {
       void version;
