@@ -183,6 +183,7 @@ export function createSession(options: SessionOptions) {
     stepMicro: () => act(() => void run.forwardMicro()),
     backMicro: () => act(() => void run.backMicro()),
     stepStage: () => act(() => void run.forwardStage()),
+    backStage: () => act(() => void run.backStage()),
     stepGeneration: () => act(() => void run.forwardCycle()),
 
     /** Moves the cursor to any recorded position; never makes a new generation. */

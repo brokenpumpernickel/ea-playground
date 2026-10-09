@@ -7,6 +7,7 @@
   import PopulationPanel from './PopulationPanel.svelte';
   import ResetNotice from './ResetNotice.svelte';
   import { createSession } from './session.svelte';
+  import { shortcutFor } from './shortcuts';
   import StagePanel from './StagePanel.svelte';
   import TopBar from './TopBar.svelte';
   import Transport from './Transport.svelte';
@@ -27,6 +28,16 @@
     document.getElementById('open-params')?.focus();
   };
 
+  let projector = $state(false);
+  const setProjector = (on: boolean) => {
+    projector = on;
+    try {
+      localStorage.setItem('ea-projector', on ? 'on' : 'off');
+    } catch {
+      /* storage can be unavailable; the choice just will not be remembered */
+    }
+  };
+
   let theme = $state<'light' | 'dark'>('light');
   const applyTheme = (next: 'light' | 'dark') => {
     theme = next;
@@ -38,7 +49,27 @@
     }
   };
 
+  const onKey = (event: KeyboardEvent) => {
+    if (session.pendingChange || session.pendingReset || event.defaultPrevented) return;
+    const el = event.target instanceof HTMLElement ? event.target : document.body;
+    const action = shortcutFor(event, {
+      tag: el.tagName,
+      role: el.getAttribute('role'),
+      editable: el.isContentEditable,
+      inDialog: el.closest('[role="alertdialog"], [role="dialog"]') !== null,
+    });
+    if (!action) return;
+    event.preventDefault();
+    if (action === 'microForward') session.stepMicro();
+    else if (action === 'microBack') session.backMicro();
+    else if (action === 'stageForward') session.stepStage();
+    else if (action === 'stageBack') session.backStage();
+    else if (action === 'generation') session.stepGeneration();
+    else session.toggle();
+  };
+
   onMount(() => {
+    window.addEventListener('keydown', onKey);
     fit();
     window.addEventListener('resize', fit);
     let stored: string | null = null;
@@ -48,11 +79,17 @@
       /* see above */
     }
     applyTheme(stored === 'dark' ? 'dark' : 'light');
+    try {
+      projector = localStorage.getItem('ea-projector') === 'on';
+    } catch {
+      /* see above */
+    }
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
     const onMotion = () => session.setReducedMotion(motion.matches);
     motion.addEventListener('change', onMotion);
     return () => {
       window.removeEventListener('resize', fit);
+      window.removeEventListener('keydown', onKey);
       motion.removeEventListener('change', onMotion);
       session.pause();
     };
@@ -60,9 +97,9 @@
 </script>
 
 <div class="viewport">
-  <main class="canvas" style="transform: translate(-50%, -50%) scale({scale}); transform-origin: center">
+  <main class="canvas" class:projector style="transform: translate(-50%, -50%) scale({scale}); transform-origin: center">
     <TopBar {session} />
-    <Transport {session} {theme} toggleTheme={() => applyTheme(theme === 'light' ? 'dark' : 'light')} {drawerOpen} toggleDrawer={() => (drawerOpen ? closeDrawer() : (drawerOpen = true))} />
+    <Transport {session} {theme} toggleTheme={() => applyTheme(theme === 'light' ? 'dark' : 'light')} {drawerOpen} toggleDrawer={() => (drawerOpen ? closeDrawer() : (drawerOpen = true))} {projector} toggleProjector={() => setProjector(!projector)} />
     <StagePanel {session} />
     <PopulationPanel {session} />
     <MetricsPanel {session} />

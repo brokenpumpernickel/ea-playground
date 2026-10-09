@@ -22,7 +22,7 @@
       </thead>
       <tbody>
         {#each model.rows as row (row.offspring)}
-          <tr use:revealWhenCurrent={row.current} class:hl={row.current} data-offspring={row.offspring} data-state={row.revealed ? 'revealed' : 'pending'}>
+          <tr use:revealWhenCurrent={row.current} class:hl={row.current} aria-current={row.current ? 'true' : undefined} data-offspring={row.offspring} data-state={row.revealed ? 'revealed' : 'pending'}>
             <td><span class="who">O{row.offspring}</span></td>
             <td><Bits chromosome={row.bits} small flipped={row.flipped} /></td>
             {#if row.revealed}

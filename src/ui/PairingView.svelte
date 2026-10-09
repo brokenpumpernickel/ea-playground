@@ -11,7 +11,7 @@
   <MatingPool pool={model.pool} />
   <div class="pgrid">
     {#each model.pairs as pair (pair.pair)}
-      <section use:revealWhenCurrent={pair.current} class="card pcard" class:current={pair.current} class:pending={!pair.revealed} data-state={pair.revealed ? 'revealed' : 'pending'} aria-label={`Pair ${pair.pair}`}>
+      <section use:revealWhenCurrent={pair.current} class="card pcard" class:current={pair.current} aria-current={pair.current ? 'true' : undefined} class:pending={!pair.revealed} data-state={pair.revealed ? 'revealed' : 'pending'} aria-label={`Pair ${pair.pair}`}>
         <div class="thead">
           <b>Pair {pair.pair}</b>
           {#if !pair.revealed}<span class="muted">not paired yet</span>{/if}

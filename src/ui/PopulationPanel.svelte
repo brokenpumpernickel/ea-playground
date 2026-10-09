@@ -45,4 +45,4 @@
   </div>
 </section>
 
-<div id="legend" style="left:1136px;top:722px;width:760px"><span><b>★</b> elite</span><span><b>◆ ×n</b> times picked as a parent</span></div>
+<div id="legend" style="left:1136px;top:722px;width:760px"><span><b>★</b> elite</span><span><b>◆</b> parent</span><span><b>◇</b> offspring</span><span><b>✱</b> mutated gene</span><span><b>⤼</b> bypass</span><span><b>✕</b> discarded</span></div>

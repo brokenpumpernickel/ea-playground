@@ -130,10 +130,6 @@ test('Run until stop jumps to the end of the generation where a stop criterion f
   await expect(title(page)).toHaveText(/^Population · generation \d+$/);
 });
 
-test('projector mode, which belongs to a later ticket, is visibly disabled rather than pretending to work', async ({ page }) => {
-  await expect(button(page, /Projector/)).toBeDisabled();
-});
-
 test('the dark theme can be switched on and back', async ({ page }) => {
   await button(page, /Dark/).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

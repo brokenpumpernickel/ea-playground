@@ -8,7 +8,7 @@
   let { model, animate }: { model: RouletteModel; animate: boolean } = $props();
 
   const C = 170;
-  const R = 150;
+  const R = 140;
   const point = (turns: number, radius: number): [number, number] => [C + radius * Math.sin(2 * Math.PI * turns), C - radius * Math.cos(2 * Math.PI * turns)];
 
   const slices = $derived(
@@ -18,7 +18,7 @@
       const large = row.probability > 0.5 ? 1 : 0;
       const mid = (row.lo + row.hi) / 2;
       // wide slices are labelled inside; narrow ones outside; very thin ones are left to the table
-      const label = row.probability >= 0.045 ? point(mid, R * 0.62) : row.probability >= 0.015 ? point(mid, R + 20) : null;
+      const label = row.probability >= 0.045 ? point(mid, R * 0.62) : row.probability >= 0.015 ? point(mid, R + 16) : null;
       const full = row.probability >= 0.9999;
       return {
         id: row.id,
@@ -113,7 +113,7 @@
         </thead>
         <tbody>
           {#each model.rows as row (row.id)}
-            <tr data-row={row.id} class:hl={row.highlighted}>
+            <tr data-row={row.id} class:hl={row.highlighted} aria-current={row.highlighted ? 'true' : undefined}>
               <td>{row.id}</td>
               <td class="num">{num(row.fitness)}</td>
               {#each row.steps as step, k (k)}<td class="num">{num(step)}</td>{/each}

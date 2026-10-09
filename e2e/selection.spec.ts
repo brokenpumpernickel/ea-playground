@@ -76,7 +76,7 @@ test('the latest pin ends up exactly where the draw says, after its sweep', asyn
   await micro(page).click();
   await micro(page).click();
   const r = spins[0]!.r;
-  const expected = { x: 170 + 156 * Math.sin(2 * Math.PI * r), y: 170 - 156 * Math.cos(2 * Math.PI * r) };
+  const expected = { x: 170 + 146 * Math.sin(2 * Math.PI * r), y: 170 - 146 * Math.cos(2 * Math.PI * r) };
   await expect(page.locator('svg[data-animated="true"]')).toBeVisible(); // slow tier animates
   await page.waitForTimeout(1300); // longer than the sweep
   const circle = page.locator('[data-pin="1"][data-current="true"] circle');

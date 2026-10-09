@@ -14,7 +14,7 @@
   </p>
   <div class="tgrid">
     {#each model.cards as card (card.tournament)}
-      <section use:revealWhenCurrent={card.current} class="card tcard" class:current={card.current} class:pending={!card.revealed} data-tournament={card.tournament} data-state={card.revealed ? 'revealed' : 'pending'} aria-label={`Tournament ${card.tournament}`}>
+      <section use:revealWhenCurrent={card.current} class="card tcard" class:current={card.current} aria-current={card.current ? 'true' : undefined} class:pending={!card.revealed} data-tournament={card.tournament} data-state={card.revealed ? 'revealed' : 'pending'} aria-label={`Tournament ${card.tournament}`}>
         <div class="thead">
           <b>Tournament {card.tournament}</b>
           {#if card.revealed}

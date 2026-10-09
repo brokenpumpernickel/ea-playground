@@ -36,7 +36,7 @@
       </thead>
       <tbody>
         {#each model.rows as row (row.offspring)}
-          <tr use:revealWhenCurrent={row.current} class:hl={row.current} data-offspring={row.offspring} data-state={row.revealed ? 'revealed' : 'pending'}>
+          <tr use:revealWhenCurrent={row.current} class:hl={row.current} aria-current={row.current ? 'true' : undefined} data-offspring={row.offspring} data-state={row.revealed ? 'revealed' : 'pending'}>
             <td><span class="who">O{row.offspring}</span> <Bits chromosome={row.before} small /></td>
             {#if model.mode === 'per-gene' && model.enabled}
               {#each genes as g (g)}

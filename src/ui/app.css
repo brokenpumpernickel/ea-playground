@@ -21,11 +21,11 @@ html, body { margin:0; height:100%; overflow:hidden; background:var(--page); fon
 #gen .l { font-size:20px; color:var(--ink2); }
 
 /* ---------- transport ---------- */
-#transport { position:absolute; left:0; top:84px; width:1920px; height:72px; display:flex; align-items:center; gap:9px; padding:0 24px;
+#transport { position:absolute; left:0; top:84px; width:1920px; height:72px; display:flex; align-items:center; gap:6px; padding:0 24px;
   background:var(--surface); border-bottom:1px solid var(--hair); }
-.btn { height:48px; padding:0 11px; border:2px solid var(--ink2); border-radius:8px; background:var(--surface); color:var(--ink);
+.btn { height:48px; padding:0 9px; border:2px solid var(--ink2); border-radius:8px; background:var(--surface); color:var(--ink);
   font:600 20px system-ui,"Segoe UI",sans-serif; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
-.btn kbd { font:600 16px ui-monospace,Consolas,monospace; color:var(--ink2); border:1px solid var(--axis); border-radius:4px; padding:0 6px; background:var(--wash); }
+.btn kbd { font:600 14px ui-monospace,Consolas,monospace; color:var(--ink2); border:1px solid var(--axis); border-radius:4px; padding:0 4px; background:var(--wash); }
 .btn.primary { background:var(--s1); border-color:var(--s1); color:var(--on-s1); }
 .btn.primary kbd { color:#fff; background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.5); }
 .btn.quiet { border-color:var(--axis); }
@@ -246,9 +246,9 @@ button:focus-visible, input:focus-visible { outline:3px solid var(--acc); outlin
 .stat { flex:1; background:var(--wash); border-radius:16px; padding:10px 16px; }
 .stat b { display:block; font-size:34px; letter-spacing:-.02em; line-height:1.1; }
 .stat span { color:var(--ink2); font-size:19px; }
-#statusline { margin-left:14px; font-size:20px; color:var(--ink2); display:flex; align-items:center; gap:8px; max-width:420px; }
+#statusline { margin-left:10px; font-size:20px; color:var(--ink2); display:block; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
 #statusline.err { color:var(--flip-ink); }
-input[type=range].speed { width:260px; accent-color:var(--acc); }
+input[type=range].speed { width:200px; accent-color:var(--acc); }
 
 /* ---- selection and pairing views ---- */
 .expl { margin:0 0 8px; font-size:20px; color:var(--ink2); }
@@ -432,3 +432,53 @@ input[type=range].speed { width:260px; accent-color:var(--acc); }
 #drawer [data-section=presets] .help { margin:2px 0 4px; font-size:16px; line-height:1.3; color:var(--ink2); }
 
 #brand .s.withpreset { font-size:17px; white-space:nowrap; }
+
+/* keyboard focus must always be visible */
+:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+.btn:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+
+/* projector mode: larger text and heavier lines, same layout */
+.canvas.projector { font-size:22px; }
+.projector .btn { border-width:3px; }
+.projector .btn kbd { font-size:15px; }
+.projector #brand .s, .projector #gen .l { font-size:21px; }
+.projector td, .projector table { font-size:23px; }
+.projector th { font-size:20px; }
+.projector .bit { border-width:3px; }
+.projector .bit.sm { font-size:24px; }
+.projector .expl, .projector .note, .projector .key, .projector .cutnote { font-size:21px; }
+.projector #narr { font-size:23px; }
+.projector #legend { font-size:21px; }
+.projector .badge { font-size:20px; border-width:2.5px; }
+.projector .plot svg text { font-size:20px; }
+.projector .plot svg path[data-series], .projector .plot svg line[data-now-line] { stroke-width:3.5; }
+.projector .plot svg .gr { stroke-width:2; }
+.projector .plot .legend { font-size:19px; }
+.projector .plot .summary { font-size:20px; }
+.projector .allele .gene b { font-size:21px; }
+.projector .allele .gene span { font-size:19px; }
+.projector .history text { font-size:19px; }
+.projector .history .track { height:14px; }
+.projector .history .thumb { width:10px; }
+.projector #drawer { font-size:22px; }
+.projector #drawer .ctl .help, .projector #drawer .help { font-size:18px; }
+.projector .rrow, .projector .rrow .badge { font-size:21px; }
+.projector .rrow .rank, .projector .rrow .note { font-size:17px; }
+.projector tr.hl td { border-bottom-width:2px; }
+
+/* the current micro-step is marked by a symbol and a heavier outline as well as a tint */
+tr.hl td:first-child::before { content:"\25B8\00a0"; font-weight:700; }
+.tcard.current .thead::before, .pcard.current .thead::before, .ccard.current .thead::before { content:"\25B8\00a0"; font-weight:700; }
+.chip.cur { text-decoration:underline; text-underline-offset:4px; }
+
+/* the playback speed: four stops, a thick track and a large thumb */
+input[type=range].speed { height:28px; cursor:pointer; }
+input[type=range].speed::-webkit-slider-runnable-track { height:10px; border-radius:5px; background:var(--grid); border:1px solid var(--axis); }
+input[type=range].speed::-webkit-slider-thumb { -webkit-appearance:none; width:24px; height:24px; margin-top:-8px; border-radius:50%; background:var(--acc); border:3px solid var(--surface); box-shadow:0 0 0 2px var(--acc); }
+input[type=range].speed::-moz-range-track { height:10px; border-radius:5px; background:var(--grid); border:1px solid var(--axis); }
+input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:var(--acc); border:3px solid var(--surface); box-shadow:0 0 0 2px var(--acc); }
+
+/* a user who asks for less motion gets none, whatever else is styled */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition:none !important; animation:none !important; scroll-behavior:auto !important; }
+}

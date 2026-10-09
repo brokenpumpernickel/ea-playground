@@ -28,7 +28,7 @@
   <p class="expl">{model.explanation}</p>
   <div class="cgrid">
     {#each model.pairs as pair (pair.pair)}
-      <section use:revealWhenCurrent={pair.current} class="card ccard" class:current={pair.current} class:pending={!pair.revealed} data-pair={pair.pair} data-state={pair.revealed ? 'revealed' : 'pending'} aria-label={`Pair ${pair.pair}`}>
+      <section use:revealWhenCurrent={pair.current} class="card ccard" class:current={pair.current} aria-current={pair.current ? 'true' : undefined} class:pending={!pair.revealed} data-pair={pair.pair} data-state={pair.revealed ? 'revealed' : 'pending'} aria-label={`Pair ${pair.pair}`}>
         <div class="thead">
           <b>Pair {pair.pair}</b>
           {#if !pair.revealed}
