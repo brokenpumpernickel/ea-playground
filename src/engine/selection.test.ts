@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { goldberg } from './goldberg';
 import { initialize, type Individual } from './initialize';
-import { createRng } from './rng';
+import { createRng } from '../run/rng';
 import { rouletteSelect, type SelectionEvent } from './selection';
 import { scripted } from './test-support';
 

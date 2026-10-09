@@ -1,7 +1,7 @@
 import type { Bit, Chromosome } from './chromosome';
 import type { Individual } from './initialize';
 import type { Pair } from './pairing';
-import type { Rng } from './rng';
+import type { Rng } from '../run/rng';
 
 export type CrossoverOperator = 'one-point' | 'two-point' | 'uniform';
 

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { formatBits } from './chromosome';
 import { goldberg } from './goldberg';
 import { generationalReplacement, runGeneration, startRun, stopReasons, type GenerationConfig, type ReplacementStrategy, type RunState } from './generation';
-import { createRng } from './rng';
+import { createRng } from '../run/rng';
 import { scripted } from './test-support';
 
 const textbook = ['01101', '11000', '01000', '10011'];

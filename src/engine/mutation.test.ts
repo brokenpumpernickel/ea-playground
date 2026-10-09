@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { formatBits, parseBits, type Chromosome } from './chromosome';
 import { mutate, type MutationConfig } from './mutation';
-import { createRng } from './rng';
+import { createRng } from '../run/rng';
 import { scripted } from './test-support';
 
 const offspringOf = (...chromosomes: string[]) =>

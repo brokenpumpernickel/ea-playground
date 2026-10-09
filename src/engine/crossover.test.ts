@@ -4,7 +4,7 @@ import { crossover, type CrossoverConfig } from './crossover';
 import { goldberg } from './goldberg';
 import { initialize, type Individual } from './initialize';
 import { pair } from './pairing';
-import { createRng } from './rng';
+import { createRng } from '../run/rng';
 import { scripted } from './test-support';
 
 const textbook = (): Individual[] =>

@@ -1,4 +1,4 @@
-import type { Rng } from './rng';
+import type { Rng } from '../run/rng';
 
 /** A generator that returns the given draws in order, so a test controls exactly where each random decision lands. */
 export function scripted(...draws: number[]): Rng & { readonly used: number } {

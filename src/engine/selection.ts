@@ -1,5 +1,5 @@
 import type { Individual } from './initialize';
-import type { Rng } from './rng';
+import type { Rng } from '../run/rng';
 
 /** One row of the roulette wheel: the individual's weight, and the slice of [0, 1) a spin must land in to pick it. */
 export interface SelectionEntry {

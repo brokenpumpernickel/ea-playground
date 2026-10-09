@@ -1,5 +1,5 @@
 import type { Bit, Chromosome } from './chromosome';
-import type { Rng } from './rng';
+import type { Rng } from '../run/rng';
 
 export type MutationMode = 'per-gene' | 'per-individual';
 

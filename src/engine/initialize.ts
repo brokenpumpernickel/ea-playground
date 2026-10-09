@@ -1,6 +1,6 @@
 import { parseBits, type Bit, type Chromosome } from './chromosome';
 import type { Problem, Scores } from './problem';
-import type { Rng } from './rng';
+import type { Rng } from '../run/rng';
 
 /** Where an individual came from, so lineage can be shown without re-deriving it from events. */
 export type Origin =

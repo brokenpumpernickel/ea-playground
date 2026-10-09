@@ -4,7 +4,7 @@ import { initialize, type Individual, type Initialization, type SetupEvent } fro
 import { mutate, type MutationConfig, type MutationEvent } from './mutation';
 import { matingPoolSize, pair, type PairingEvent } from './pairing';
 import type { Problem } from './problem';
-import type { Rng } from './rng';
+import type { Rng } from '../run/rng';
 import { rouletteSelect, type SelectionEvent } from './selection';
 import { transformWeights, type StepSpec, type WeightChainEvent } from './weights';
 

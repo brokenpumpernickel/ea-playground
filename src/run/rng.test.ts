@@ -35,3 +35,30 @@ describe('seeded generator', () => {
     expect(mean).toBeLessThan(0.51);
   });
 });
+
+describe('generator state', () => {
+  test('a generator created from a saved state continues exactly where the original left off', () => {
+    const original = createRng(2025);
+    for (let k = 0; k < 7; k++) original.next();
+    const saved = original.state();
+
+    const resumed = createRng(saved);
+    for (let k = 0; k < 20; k++) expect(resumed.next()).toBe(original.next());
+  });
+
+  test('the state of a fresh generator is its seed, and it changes with every draw', () => {
+    const rng = createRng(99);
+    expect(rng.state()).toBe(99);
+    rng.next();
+    expect(rng.state()).not.toBe(99);
+  });
+
+  test('state is a 32-bit integer, so it survives being stored as a plain number', () => {
+    const rng = createRng(123456789);
+    for (let k = 0; k < 50; k++) {
+      rng.next();
+      expect(Number.isInteger(rng.state())).toBe(true);
+      expect(rng.state()).toBe(rng.state() | 0);
+    }
+  });
+});

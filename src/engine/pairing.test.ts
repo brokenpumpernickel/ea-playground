@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { goldberg } from './goldberg';
 import { initialize } from './initialize';
 import { matingPoolSize, pair } from './pairing';
-import { createRng } from './rng';
+import { createRng } from '../run/rng';
 import { rouletteSelect } from './selection';
 
 describe('mating pool size', () => {

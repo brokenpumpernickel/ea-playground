@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { formatBits } from './chromosome';
 import { goldberg } from './goldberg';
 import { initialize } from './initialize';
-import { createRng } from './rng';
+import { createRng } from '../run/rng';
 
 const textbook = ['01101', '11000', '01000', '10011'];
 
