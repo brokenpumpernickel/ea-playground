@@ -24,3 +24,11 @@ export {
   type CrossoverOperator,
   type Source,
 } from './crossover';
+export {
+  mutate,
+  type Mutated,
+  type MutationConfig,
+  type MutationEvent,
+  type MutationInput,
+  type MutationMode,
+} from './mutation';

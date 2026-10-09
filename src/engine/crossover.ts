@@ -93,7 +93,8 @@ export function crossover(
       ...(u === undefined ? {} : { draw: { u, threshold: config.probability } }),
       ...('cuts' in plan ? { cuts: plan.cuts } : {}),
       ...('mask' in plan ? { mask: plan.mask } : {}),
-      children,
+      // The event keeps its own copies, so nothing done to the returned offspring later can rewrite the record.
+      children: children.map((c) => ({ ...c, chromosome: [...c.chromosome], sources: [...c.sources] })),
     });
   }
   return { offspring, events };

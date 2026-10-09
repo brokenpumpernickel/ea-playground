@@ -176,6 +176,14 @@ describe('children never share mutable state with their parents or each other', 
     expect(formatBits(population.find((i) => i.id === 3)!.chromosome)).toBe('01000');
   });
 
+  test('changing a returned offspring afterwards leaves the event’s record of the child alone', () => {
+    const population = textbook();
+    const { offspring, events } = crossover(population, pair([2, 1], 2).pairs, { ...onePoint, probability: 1 }, scripted(0.1, 0.8));
+    (offspring[0]!.chromosome as number[])[0] = 0; // child 1 is 11001
+    expect(formatBits(events[0]!.children[0]!.chromosome)).toBe('11001');
+    expect(events[0]!.children[0]!.chromosome).not.toBe(offspring[0]!.chromosome);
+  });
+
   test('recombined children are fresh arrays too', () => {
     const population = textbook();
     const { offspring } = crossover(population, pair([2, 1], 2).pairs, { ...onePoint, probability: 1 }, scripted(0.1, 0.5));
