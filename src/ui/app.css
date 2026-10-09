@@ -298,3 +298,29 @@ input[type=range].speed { width:260px; accent-color:var(--acc); }
 .parents { display:flex; flex-direction:column; gap:2px; margin-top:4px; }
 .parent { display:flex; flex-direction:row; align-items:center; gap:12px; font-size:19px; }
 .notes { flex:none; margin:0; padding:0 0 0 22px; font-size:18px; max-height:84px; overflow:auto; }
+
+/* ---- crossover and mutation views ---- */
+.crossover, .mutation { display:flex; flex-direction:column; gap:8px; height:100%; }
+.crossover .expl, .mutation .expl { margin:0; }
+.cgrid { flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:10px; }
+.ccard { padding:8px 14px; flex:none; }
+.ccard.current { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-tint); }
+.ccard.pending { border-style:dashed; background:transparent; box-shadow:none; }
+.cbody { display:flex; flex-wrap:wrap; gap:8px 40px; margin-top:6px; overflow-x:auto; }
+.cside { display:flex; flex-direction:column; gap:4px; }
+.chead { font-size:17px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--th); }
+.crow { display:flex; align-items:center; gap:14px; }
+.crow .who { width:200px; font-size:18px; color:var(--ink2); flex:none; }
+.crow.dropped { opacity:.55; }
+.key { margin:0; font-size:18px; color:var(--ink2); }
+.mwrap { flex:1; min-height:0; overflow:auto; }
+.mtable { font-size:20px; white-space:nowrap; }
+.mtable td { height:46px; }
+.mtable .who { font-weight:700; margin-right:8px; }
+.mtable .draw { font-variant-numeric:tabular-nums; }
+.mtable td.flipcell { outline:3px solid var(--flip); outline-offset:-3px; border-radius:8px; font-weight:700; color:var(--flip-ink); }
+.mtable td.result .bits { margin-right:10px; }
+.mtable tr.hl td { background:var(--acc-tint); }
+.mtable th.num, .mtable td.draw { padding-left:6px; padding-right:6px; }
+.mtable td.result { white-space:normal; }
+.mtable td.result .badge { font-size:17px; padding:2px 10px; }

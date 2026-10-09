@@ -93,11 +93,11 @@ test('inside a generation the table shows the parents, with weights and parent c
 });
 
 test('stages without a dedicated view list what happened in plain sentences, and the latest one is the narration', async ({ page }) => {
-  for (let k = 0; k < 3; k++) await button(page, /^Stage/).click(); // selection, pairing, then crossover, each to its end
-  await expect(page.getByRole('heading', { level: 2, name: /Crossover/ })).toBeVisible();
-  await expect(page.getByTestId('stage-events')).toContainText('Pair 1: u =');
-  await expect(page.getByTestId('narration')).toContainText('Pair 3: u =');
-  await expect(page.getByTestId('narration')).toContainText('Micro-step 3 of 3');
+  for (let k = 0; k < 5; k++) await button(page, /^Stage/).click(); // selection, pairing, crossover, mutation, then evaluation, each to its end
+  await expect(page.getByRole('heading', { level: 2, name: /Evaluation/ })).toBeVisible();
+  await expect(page.getByTestId('stage-events')).toContainText('Offspring 1:');
+  await expect(page.getByTestId('narration')).toContainText('Offspring 6:');
+  await expect(page.getByTestId('narration')).toContainText('Micro-step 6 of 6');
 });
 
 test('Run plays on, Pause freezes it, and Reset returns to the same start', async ({ page }) => {

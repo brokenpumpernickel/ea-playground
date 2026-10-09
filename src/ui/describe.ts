@@ -1,13 +1,7 @@
 import { formatBits, type GaEvent } from '../engine';
-import { num } from './format';
+import { geneList, num } from './format';
 
 /** Plain-language sentences for what the engine recorded, so every number a view shows can be traced to an event. */
-
-const geneList = (genes: readonly number[]) => {
-  if (genes.length === 1) return `gene ${genes[0]}`;
-  const head = genes.slice(0, -1).join(', ');
-  return `genes ${head} and ${genes[genes.length - 1]}`;
-};
 
 export function stageTitle(stage: string): string {
   const titles: Record<string, string> = {

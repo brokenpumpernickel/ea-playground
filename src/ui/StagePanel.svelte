@@ -1,10 +1,13 @@
 <script lang="ts">
   import { describeEvent, stageTitle } from './describe';
+  import CrossoverView from './CrossoverView.svelte';
+  import MutationView from './MutationView.svelte';
   import PairingView from './PairingView.svelte';
   import RouletteView from './RouletteView.svelte';
   import { pairingModel, selectionModel, tournamentModel } from './selection-models';
   import type { Session } from './session.svelte';
   import TournamentView from './TournamentView.svelte';
+  import { crossoverModel, mutationModel } from './variation-models';
 
   let { session }: { session: Session } = $props();
 
@@ -17,6 +20,8 @@
   const position = $derived(order.indexOf(stage));
   const heading = $derived(position < 0 ? stageTitle(stage) : `Stage ${position + 1} · ${stageTitle(stage)}`);
 
+  // the parameters this generation was made with, so the views can explain pc, pm, the operator and the mode
+  const params = $derived(session.run.snapshot(view.position.cycle).params);
   const tournament = $derived(view.events.some((e) => e.stage === 'selection' && e.kind === 'tournament-setup'));
   const explanation = $derived(
     stage === 'selection' && !tournament
@@ -45,6 +50,10 @@
     {:else if stage === 'pairing'}
       <p class="expl">{explanation}</p>
       <PairingView model={pairingModel(view)} />
+    {:else if stage === 'crossover'}
+      <CrossoverView model={crossoverModel(view, params.crossover)} />
+    {:else if stage === 'mutation'}
+      <MutationView model={mutationModel(view, params.mutation)} />
     {:else if lines.length === 0}
       <p class="empty">Nothing has happened in this stage yet.</p>
     {:else}
