@@ -324,3 +324,23 @@ input[type=range].speed { width:260px; accent-color:var(--acc); }
 .mtable th.num, .mtable td.draw { padding-left:6px; padding-right:6px; }
 .mtable td.result { white-space:normal; }
 .mtable td.result .badge { font-size:17px; padding:2px 10px; }
+
+/* evaluation and replacement */
+.evaluation, .replacement { display:flex; flex-direction:column; height:calc(100% - 36px); min-height:0; }
+.etable td.strong { font-weight:700; }
+.rgrid { flex:1; min-height:0; display:grid; grid-template-columns:280px 1fr 320px; gap:14px; overflow:auto; align-content:start; }
+.rcol { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.rrow { display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; padding:4px 6px; border-bottom:1px solid var(--grid); font-size:19px; }
+.rrow .who { font-weight:700; min-width:1.8em; }
+.rrow .fit { font-variant-numeric:tabular-nums; font-weight:700; min-width:2.2em; text-align:right; }
+.rrow.dim { opacity:.62; }
+.rrow .note { flex-basis:100%; font-size:16px; color:var(--ink2); padding-left:2.4em; }
+.rrow .badge { font-size:16px; padding:1px 9px; }
+.rrow { flex-wrap:nowrap; gap:4px 8px; padding:2px 4px; }
+.rrow .bit.sm { width:25px; height:29px; font-size:18px; }
+.rrow .bits { gap:2px; }
+.rrow .badge { white-space:nowrap; font-size:15px; padding:1px 8px; }
+.rrow .rank { font-size:15px; color:var(--ink2); white-space:nowrap; }
+.rrow .note { flex-basis:auto; font-size:14px; }
+.rrow:has(.note) { flex-wrap:wrap; }
+.cutnote { margin:0 0 4px; font-size:16px; color:var(--ink2); }

@@ -96,8 +96,10 @@ export function describeEvent(event: GaEvent): string {
 
     case 'replacement': {
       const ids = event.population.map((id) => (event.elites.includes(id) ? `${id} (elite)` : String(id)));
-      const discarded = (event.ranking ?? []).filter((r) => !r.kept).map((r) => `offspring ${r.offspring} (rank ${r.rank})`);
-      const tail = discarded.length > 0 ? `. Discarded: ${discarded.join(', ')}` : '';
+      const lost = (event.ranking ?? []).filter((r) => !r.kept);
+      // a long list would not fit the one-line narration; the stage view names each one
+      const discarded = lost.length > 2 ? `${lost.length} offspring (ranks ${lost[0]!.rank}–${lost[lost.length - 1]!.rank})` : lost.map((r) => `offspring ${r.offspring} (rank ${r.rank})`).join(', ');
+      const tail = lost.length > 0 ? `. Discarded: ${discarded}` : '';
       return `Next population: individuals ${ids.join(', ')}${tail}`;
     }
   }

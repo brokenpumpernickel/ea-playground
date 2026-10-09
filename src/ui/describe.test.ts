@@ -143,6 +143,13 @@ describe('evaluation and replacement', () => {
     const [line] = lines(generation({ elites: 1, truncation: { enabled: true, lambda: 4 } }), (e) => e.stage === 'replacement');
     expect(line).toBe('Next population: individuals 2 (elite), 7, 5, 8. Discarded: offspring 2 (rank 4)');
   });
+
+  test('a long list of discarded offspring is summarised so the narration stays one line', () => {
+    const ranking = [1, 2, 3, 4, 5, 6].map((k) => ({ individualId: 10 + k, offspring: k, rank: k, kept: k <= 3 }));
+    const line = describeEvent({ stage: 'replacement', kind: 'summary', elites: [], population: [11, 12, 13], ranking });
+    expect(line).toBe('Next population: individuals 11, 12, 13. Discarded: 3 offspring (ranks 4–6)');
+  });
+
 });
 
 describe('stage titles', () => {

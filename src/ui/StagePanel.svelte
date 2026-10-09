@@ -1,8 +1,11 @@
 <script lang="ts">
   import { describeEvent, stageTitle } from './describe';
   import CrossoverView from './CrossoverView.svelte';
+  import EvaluationView from './EvaluationView.svelte';
   import MutationView from './MutationView.svelte';
+  import { evaluationModel, replacementModel } from './outcome-models';
   import PairingView from './PairingView.svelte';
+  import ReplacementView from './ReplacementView.svelte';
   import RouletteView from './RouletteView.svelte';
   import { pairingModel, selectionModel, tournamentModel } from './selection-models';
   import type { Session } from './session.svelte';
@@ -34,7 +37,7 @@
   const narration = $derived.by(() => {
     const { micro } = view.position;
     if (view.micros === 0) return { label: 'No micro-steps', text: 'This stage has nothing to step through; its result is above.' };
-    if (micro === 0) return { label: `${view.micros} micro-steps`, text: 'Stage entered. Step to see the first result.' };
+    if (micro === 0) return { label: `${view.micros} micro-step${view.micros === 1 ? '' : 's'}`, text: 'Stage entered. Step to see the first result.' };
     return { label: `Micro-step ${micro} of ${view.micros}`, text: lines[lines.length - 1] ?? '' };
   });
 </script>
@@ -54,6 +57,10 @@
       <CrossoverView model={crossoverModel(view, params.crossover)} />
     {:else if stage === 'mutation'}
       <MutationView model={mutationModel(view, params.mutation)} />
+    {:else if stage === 'evaluation'}
+      <EvaluationView model={evaluationModel(view)} />
+    {:else if stage === 'replacement'}
+      <ReplacementView model={replacementModel(view, params)} />
     {:else if lines.length === 0}
       <p class="empty">Nothing has happened in this stage yet.</p>
     {:else}

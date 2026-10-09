@@ -92,10 +92,9 @@ test('inside a generation the table shows the parents, with weights and parent c
   expect(counts.filter((c) => c.includes('×1'))).toHaveLength(1);
 });
 
-test('stages without a dedicated view list what happened in plain sentences, and the latest one is the narration', async ({ page }) => {
+test('the narration line says in a sentence what the latest micro-step did', async ({ page }) => {
   for (let k = 0; k < 5; k++) await button(page, /^Stage/).click(); // selection, pairing, crossover, mutation, then evaluation, each to its end
   await expect(page.getByRole('heading', { level: 2, name: /Evaluation/ })).toBeVisible();
-  await expect(page.getByTestId('stage-events')).toContainText('Offspring 1:');
   await expect(page.getByTestId('narration')).toContainText('Offspring 6:');
   await expect(page.getByTestId('narration')).toContainText('Micro-step 6 of 6');
 });
