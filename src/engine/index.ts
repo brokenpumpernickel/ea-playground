@@ -48,3 +48,4 @@ export {
   type StopReason,
 } from './generation';
 export { gaAlgorithm, populationFromEvents, supportedLimits, type GaEvent, type GaParams, type GaSetup } from './algorithm';
+export { metricsOf, type GenerationMetrics } from './metrics';
