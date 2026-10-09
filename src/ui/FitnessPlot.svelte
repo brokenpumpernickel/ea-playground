@@ -69,5 +69,5 @@
   {/each}
 
   <line x1={X(model.now)} x2={X(model.now)} y1={T} y2={B} stroke="var(--ink)" stroke-width="2" data-now-line />
-  <text class="ink" x={X(model.now)} y={T - 8} text-anchor="middle" style="font-weight:700;font-size:16px">now</text>
+  <text class="ink" x={X(model.now) + (model.now === 0 ? 8 : 0)} y={T - 8} text-anchor={model.now === 0 ? 'start' : 'middle'} style="font-weight:700;font-size:16px">now</text>
 </svg>

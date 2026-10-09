@@ -51,6 +51,11 @@
 
   const onKey = (event: KeyboardEvent) => {
     if (session.pendingChange || session.pendingReset || event.defaultPrevented) return;
+    if (event.key === 'Escape' && drawerOpen) {
+      event.preventDefault();
+      closeDrawer();
+      return;
+    }
     const el = event.target instanceof HTMLElement ? event.target : document.body;
     const action = shortcutFor(event, {
       tag: el.tagName,

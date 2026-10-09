@@ -431,7 +431,8 @@ input[type=range].speed { width:200px; accent-color:var(--acc); }
 #drawer .lesson { margin:4px 0; font-size:19px; font-weight:600; }
 #drawer [data-section=presets] .help { margin:2px 0 4px; font-size:16px; line-height:1.3; color:var(--ink2); }
 
-#brand .s.withpreset { font-size:17px; white-space:nowrap; }
+#brand .trow { display:flex; align-items:center; gap:10px; }
+#brand .presetchip { font-size:15px; font-weight:700; color:var(--acc-ink); background:var(--acc-tint); border-radius:999px; padding:1px 10px; white-space:nowrap; }
 
 /* keyboard focus must always be visible */
 :focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
@@ -482,3 +483,5 @@ input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radi
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition:none !important; animation:none !important; scroll-behavior:auto !important; }
 }
+#brand .trow .t { white-space:nowrap; flex:none; }
+#brand .presetchip { min-width:0; overflow:hidden; text-overflow:ellipsis; }
