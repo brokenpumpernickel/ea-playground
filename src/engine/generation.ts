@@ -5,7 +5,8 @@ import { mutate, type MutationConfig, type MutationEvent } from './mutation';
 import { matingPoolSize, pair, type PairingEvent } from './pairing';
 import type { Problem } from './problem';
 import type { Rng } from '../run/rng';
-import { rouletteSelect, type SelectionEvent } from './selection';
+import { rouletteSelect, type SelectionEvent, type SelectionResult } from './selection';
+import { tournamentSelect } from './tournament';
 import { transformWeights, type StepSpec, type WeightChainEvent } from './weights';
 
 /**
@@ -24,11 +25,17 @@ export interface RunState {
   readonly lastImprovementGeneration: number;
 }
 
-export interface SelectionConfig {
-  readonly method: 'roulette';
-  /** Raw fitness is turned into selection weights by this chain (see weights.ts). */
-  readonly chain: readonly StepSpec[];
-}
+export type SelectionConfig =
+  | {
+      readonly method: 'roulette';
+      /** Raw fitness is turned into selection weights by this chain (see weights.ts). */
+      readonly chain: readonly StepSpec[];
+    }
+  | {
+      /** Each parent is the best of `size` individuals drawn with replacement. Compares fitness directly, so there is no chain. */
+      readonly method: 'tournament';
+      readonly size: number;
+    };
 
 export interface StopConfig {
   /** Stop reporting from this many generations on. */
@@ -209,12 +216,19 @@ export function runGeneration(
   const events: GenerationEvent[] = [];
   const generation = state.generation + 1;
 
-  // 1. selection: the weight chain, then the roulette spins for the mating pool
-  const weights = transformWeights(state.population.map((i) => i.fitness), config.selection.chain);
-  if (!weights.ok) throw new Error(weights.problem);
-  events.push(weights.event);
-  const selected = rouletteSelect(state.population, weights.weights, matingPoolSize(offspringCount), rng);
-  events.push(...selected.events);
+  // 1. selection: roulette (the weight chain, then spins) or tournaments, filling the mating pool
+  const poolSize = matingPoolSize(offspringCount);
+  let selected: SelectionResult;
+  if (config.selection.method === 'tournament') {
+    selected = tournamentSelect(state.population, config.selection.size, poolSize, rng);
+    events.push(...selected.events);
+  } else {
+    const weights = transformWeights(state.population.map((i) => i.fitness), config.selection.chain);
+    if (!weights.ok) throw new Error(weights.problem);
+    events.push(weights.event);
+    selected = rouletteSelect(state.population, weights.weights, poolSize, rng);
+    events.push(...selected.events);
+  }
 
   // 2. pairing (no draws), 3. crossover, 4. mutation
   const paired = pair(selected.pool, offspringCount);

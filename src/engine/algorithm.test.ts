@@ -230,3 +230,60 @@ describe('offspring truncation through the run layer', () => {
     expect(() => run.forwardCycle()).toThrow('λ must be a whole number of at least N − e = 6');
   });
 });
+
+describe('tournament selection through the run layer', () => {
+  const tournament = (size = 2, overrides: Partial<GaParams> = {}): Partial<GaParams> => ({ selection: { method: 'tournament', size }, ...overrides });
+
+  test('the selection stage has one micro-step per tournament, and the rest of the layout is unchanged', () => {
+    const run = make({ setup: { init: { kind: 'random', size: 4 } }, params: tournament(3, { elites: 1 }) });
+    run.forwardCycle();
+    expect(run.layout(1).map((s) => [s.stage, s.micros])).toEqual([
+      ['selection', 4],
+      ['pairing', 2],
+      ['crossover', 2],
+      ['mutation', 3],
+      ['evaluation', 3],
+      ['replacement', 1],
+    ]);
+  });
+
+  test('entering the stage shows only the preamble; each micro-step then adds one tournament', () => {
+    const run = make({ params: tournament(2) });
+    run.forwardMicro(); // (1, selection, 0)
+    const kinds = () => run.view().events.map((e) => (e.stage === 'selection' ? e.kind : e.stage));
+    expect(kinds()).toEqual(['tournament-setup']);
+    run.forwardMicro();
+    expect(kinds()).toEqual(['tournament-setup', 'tournament']);
+    run.forwardMicro();
+    expect(kinds()).toEqual(['tournament-setup', 'tournament', 'tournament']);
+  });
+
+  test('replaying the events alone reproduces every population', () => {
+    const run = make({ seed: 8, eventCacheSize: 0, params: tournament(3, { elites: 1 }) });
+    run.runUntil((s) => s.cycle === 8);
+    for (let c = 1; c <= 8; c++) {
+      expect(populationFromEvents(run.snapshot(c - 1).state.population, run.events(c))).toEqual(run.snapshot(c).state.population);
+    }
+  });
+
+  test('every way of advancing makes the identical run, and regenerated events equal the live ones', () => {
+    const advance = (how: (r: ReturnType<typeof make>) => void, eventCacheSize: number) => {
+      const run = make({ seed: 21, eventCacheSize, params: tournament(2) });
+      while (run.lastCycle < 6) how(run);
+      return Array.from({ length: 7 }, (_, c) => ({ snapshot: run.snapshot(c), events: run.events(c) }));
+    };
+    const byMicro = advance((r) => r.forwardMicro(), 0);
+    expect(advance((r) => r.forwardStage(), 0)).toEqual(byMicro);
+    expect(advance((r) => r.forwardCycle(), 100)).toEqual(byMicro);
+  });
+
+  test('switching from roulette to tournament at a boundary changes the next generation only', () => {
+    const run = make({ seed: 3 });
+    run.forwardCycle();
+    run.setParameters({ ...params, selection: { method: 'tournament', size: 2 } });
+    run.forwardCycle();
+    const selectionKinds = (c: number) => [...new Set(run.events(c).flatMap((e) => (e.stage === 'selection' ? [e.kind] : [])))];
+    expect(selectionKinds(1)).toEqual(['weight-chain', 'probabilities', 'spin']);
+    expect(selectionKinds(2)).toEqual(['tournament-setup', 'tournament']);
+  });
+});

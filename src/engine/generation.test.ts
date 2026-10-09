@@ -550,3 +550,96 @@ describe('offspring truncation: invariants and draws', () => {
     expect(play()).toEqual(play());
   });
 });
+
+describe('tournament selection in the generation loop', () => {
+  const tournament = (size: number, elites = 0): GenerationConfig => ({ ...baseConfig, selection: { method: 'tournament', size }, elites });
+
+  // four tournaments of two (draws → positions 0,2 · 1,3 · 2,0 · 3,1; winners individuals 1, 2, 1, 2 → pool 1, 2, 1, 2),
+  // then crossover (pair 1 recombines after gene 4, pair 2 is a bypass) and the mock's mutation draws (offspring 3, gene 2 flips)
+  const tournamentDraws = [0.1, 0.6, 0.3, 0.9, 0.55, 0.05, 0.8, 0.3, ...mockDraws.slice(4)];
+
+  test('a hand-computed generation: the pool comes from tournaments, and everything after selection works as before', () => {
+    const rng = scripted(...tournamentDraws);
+    const { state, events } = runGeneration(start(), tournament(2), rng);
+
+    // pairs (1, 2) and (1, 2): 01101 × 11000 cut after gene 4 → 01100, 11001 · bypass copies 01101, 11000 · gene 2 of O3 flips → 00101
+    expect(state.population.map((i) => formatBits(i.chromosome))).toEqual(['01100', '11001', '00101', '11000']);
+    expect(state.population.map((i) => i.fitness)).toEqual([144, 625, 25, 576]);
+    expect(rng.used).toBe(8 + 3 + 20);
+    expect(events.filter((e) => e.stage === 'pairing').map((e) => e.stage === 'pairing' && [e.parentAId, e.parentBId])).toEqual([
+      [1, 2],
+      [1, 2],
+    ]);
+  });
+
+  test('there is no weight chain: the selection stage opens with the tournament preamble, then one event per tournament', () => {
+    const { events } = runGeneration(start(), tournament(2), scripted(...tournamentDraws));
+    const selection = events.filter((e) => e.stage === 'selection');
+    expect(selection.map((e) => e.kind)).toEqual(['tournament-setup', 'tournament', 'tournament', 'tournament', 'tournament']);
+    expect(events.some((e) => e.stage === 'selection' && e.kind === 'weight-chain')).toBe(false);
+  });
+
+  test('with one elite and four individuals, three offspring need four tournaments (the odd-count rule)', () => {
+    const { events } = runGeneration(start(), tournament(3, 1), createRng(2));
+    expect(events.filter((e) => e.stage === 'selection' && e.kind === 'tournament')).toHaveLength(4);
+    expect(events.filter((e) => e.stage === 'evaluation')).toHaveLength(3);
+  });
+
+  test('the elite is still eligible: over many seeds it wins some tournament', () => {
+    const wins = [0, 1, 2, 3, 4, 5, 6, 7].some((seed) =>
+      runGeneration(start(), tournament(2, 1), createRng(seed)).events.some((e) => e.stage === 'selection' && e.kind === 'tournament' && e.winnerId === 2),
+    );
+    expect(wins).toBe(true);
+  });
+
+  test('negative fitness works with no chain and no automatic switch', () => {
+    const negative = { chromosomeLength: 5, evaluate: (c: readonly number[]) => ({ decoded: c.length, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 3 }) };
+    const rng = createRng(4);
+    const { state } = startRun(negative, { kind: 'random', size: 6 }, rng);
+    expect(Math.min(...state.population.map((i) => i.fitness))).toBeLessThan(0);
+    const result = runGeneration(state, { ...tournament(2), problem: negative }, rng);
+    expect(result.state.population).toHaveLength(6);
+    expect(result.events.some((e) => e.stage === 'selection' && e.kind === 'weight-chain')).toBe(false);
+  });
+
+  test('a tournament size that cannot work is refused with its own message', () => {
+    expect(() => runGeneration(start(), tournament(0), scripted())).toThrow('Tournament size must be a whole number of at least 1');
+  });
+
+  test('a generation makes exactly the draws it needs: size per tournament, then crossover, then mutation', () => {
+    const rng = createRng(5);
+    let used = 0;
+    const counting = { next: () => { used++; return rng.next(); } };
+    const { state } = startRun(goldberg, { kind: 'explicit', chromosomes: textbook }, counting);
+    used = 0;
+    const { events } = runGeneration(state, tournament(3, 1), counting);
+    const recombined = events.filter((e) => e.stage === 'crossover' && e.decision === 'recombined').length;
+    expect(used).toBe(4 * 3 + 2 + recombined + 3 * 5);
+  });
+
+  test.each([1, 2, 3, 4, 5, 6].flatMap((n) => Array.from({ length: n + 1 }, (_, e) => [n, e] as const)))('N = %i, e = %i: size, ids and counters hold over six generations', (n, e) => {
+    const rng = createRng(900 + n * 10 + e);
+    let { state } = startRun(goldberg, { kind: 'random', size: n }, rng);
+    for (let generation = 1; generation <= 6; generation++) {
+      state = runGeneration(state, tournament(3, e), rng).state;
+      expect(state.population).toHaveLength(n);
+      expect(new Set(state.population.map((i) => i.id)).size).toBe(n);
+      expect(state.evaluations).toBe(n + generation * (n - e));
+    }
+  });
+
+  test('works together with offspring truncation, and the same seed gives the identical run', () => {
+    const play = () => {
+      const rng = createRng(33);
+      let { state } = startRun(goldberg, { kind: 'random', size: 6 }, rng);
+      const all = [];
+      for (let g = 0; g < 8; g++) {
+        const result = runGeneration(state, { ...tournament(2, 1), truncation: { enabled: true, lambda: 9 } }, rng);
+        all.push(result);
+        state = result.state;
+      }
+      return all;
+    };
+    expect(play()).toEqual(play());
+  });
+});

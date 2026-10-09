@@ -50,3 +50,4 @@ export {
 } from './generation';
 export { gaAlgorithm, populationFromEvents, supportedLimits, type GaEvent, type GaParams, type GaSetup } from './algorithm';
 export { metricsOf, type GenerationMetrics } from './metrics';
+export { tournamentSelect, type TournamentContestant, type TournamentEvent, type TournamentSetupEvent } from './tournament';
