@@ -184,3 +184,49 @@ describe('limits are warnings', () => {
     expect(make({ setup: { init: { kind: 'random', size: 500 } }, params: { stop: { generationLimit: 2000 } } }).warnings()).toEqual([]);
   });
 });
+
+describe('offspring truncation through the run layer', () => {
+  const truncating = (lambda: number, elites = 1): Partial<GaParams> => ({ elites, truncation: { enabled: true, lambda } });
+
+  test('λ offspring mean λ spins and λ evaluations, and replacement is still one micro-step', () => {
+    const run = make({ setup: { init: { kind: 'random', size: 4 } }, params: truncating(8) });
+    run.forwardCycle();
+    expect(run.layout(1).map((s) => [s.stage, s.micros])).toEqual([
+      ['selection', 8],
+      ['pairing', 4],
+      ['crossover', 4],
+      ['mutation', 8],
+      ['evaluation', 8],
+      ['replacement', 1],
+    ]);
+  });
+
+  test('replaying the events alone reproduces every population, though discarded offspring appear only in evaluation events', () => {
+    const run = make({ seed: 19, eventCacheSize: 0, params: truncating(9, 2) });
+    run.runUntil((s) => s.cycle === 8);
+    for (let c = 1; c <= 8; c++) {
+      expect(populationFromEvents(run.snapshot(c - 1).state.population, run.events(c))).toEqual(run.snapshot(c).state.population);
+    }
+    const events = run.events(1);
+    const evaluated = events.filter((e) => e.stage === 'evaluation').length;
+    expect(evaluated).toBe(9);
+    expect(run.snapshot(1).state.population).toHaveLength(6);
+  });
+
+  test('switching truncation on at a boundary changes the next generation only', () => {
+    const run = make({ seed: 3 });
+    run.forwardCycle();
+    run.setParameters({ ...params, truncation: { enabled: true, lambda: 12 } });
+    run.forwardCycle();
+    run.forwardCycle();
+    const counts = [1, 2, 3].map((c) => run.events(c).filter((e) => e.stage === 'evaluation').length);
+    expect(counts).toEqual([6, 12, 12]);
+    expect(run.snapshot(1).params.truncation).toBeUndefined();
+    expect(run.snapshot(3).state.population).toHaveLength(6);
+  });
+
+  test('a λ that cannot fill the population is refused with a readable reason when the generation is made', () => {
+    const run = make({ params: truncating(1, 0) }); // N = 6, e = 0 needs at least 6
+    expect(() => run.forwardCycle()).toThrow('λ must be a whole number of at least N − e = 6');
+  });
+});

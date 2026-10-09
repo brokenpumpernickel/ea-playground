@@ -41,6 +41,7 @@ export {
   type GenerationConfig,
   type GenerationEvent,
   type ReplacementEvent,
+  type RankedOffspring,
   type ReplacementStrategy,
   type RunState,
   type SelectionConfig,

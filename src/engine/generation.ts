@@ -71,25 +71,57 @@ export function stopReasons(state: RunState, stop: StopConfig): StopReason[] {
  */
 export interface ReplacementStrategy {
   offspringCount(populationSize: number): number;
-  /** `elites` lists the ids carried over from the old population (for the view); the population is the next one, in order. */
+  /**
+   * `elites` lists the ids carried over from the old population (for the view); the population is the next one, in order.
+   * `ranking`, when the policy chose among the offspring, says how every offspring ranked and which were kept.
+   */
   replace(
     population: readonly Individual[],
     offspring: readonly Individual[],
-  ): { population: Individual[]; elites: readonly number[] };
+  ): { population: Individual[]; elites: readonly number[]; ranking?: readonly RankedOffspring[] };
 }
 
-/** Offspring replace the population, except the `elites` best individuals, which are copied over unchanged and first. */
-export function generationalReplacement(elites: number): ReplacementStrategy {
+/** One offspring's place in a ranking by fitness (1 = best); ties keep the order the offspring were made in. */
+export interface RankedOffspring {
+  readonly individualId: number;
+  readonly offspring: number;
+  readonly rank: number;
+  readonly kept: boolean;
+}
+
+/**
+ * Offspring replace the population, except the `elites` best individuals, which are copied over unchanged and first.
+ *
+ * With `lambda` (offspring truncation), λ offspring are made and scored, and only the best N − e survive, best first
+ * after the elites. Without it, N − e offspring are made and all survive, in the order they were made.
+ */
+export function generationalReplacement(elites: number, options: { lambda?: number } = {}): ReplacementStrategy {
+  const { lambda } = options;
   return {
     offspringCount(populationSize) {
       if (!Number.isInteger(elites) || elites < 0 || elites > populationSize) {
         throw new Error(`Elites must be a whole number from 0 to the population size (${populationSize})`);
       }
-      return populationSize - elites;
+      const needed = populationSize - elites;
+      if (lambda === undefined) return needed;
+      if (!Number.isInteger(lambda) || lambda < needed) {
+        throw new Error(`λ must be a whole number of at least N − e = ${needed}, so there are enough offspring to fill the population`);
+      }
+      return lambda;
     },
     replace(population, offspring) {
       const kept = bestFirst(population).slice(0, elites);
-      return { population: [...kept, ...offspring], elites: kept.map((i) => i.id) };
+      if (lambda === undefined) return { population: [...kept, ...offspring], elites: kept.map((i) => i.id) };
+
+      const room = population.length - elites;
+      const ranked = bestFirst(offspring); // a stable sort: equal fitness keeps the order of generation
+      const ranking = ranked.map((individual, k): RankedOffspring => ({
+        individualId: individual.id,
+        offspring: individual.origin.kind === 'offspring' ? individual.origin.offspring : k + 1,
+        rank: k + 1,
+        kept: k < room,
+      }));
+      return { population: [...kept, ...ranked.slice(0, room)], elites: kept.map((i) => i.id), ranking };
     },
   };
 }
@@ -101,6 +133,11 @@ export interface GenerationConfig {
   readonly mutation: MutationConfig;
   /** How many of the best individuals are copied unchanged into the next population (used when no `replacement` is given). */
   readonly elites: number;
+  /**
+   * Offspring truncation: make λ offspring and keep the best N − e (see `generationalReplacement`). Off by default;
+   * λ is remembered while it is off. Ignored when a custom `replacement` is given.
+   */
+  readonly truncation?: { readonly enabled: boolean; readonly lambda: number };
   /** Replaces generational-with-elites. */
   readonly replacement?: ReplacementStrategy;
   readonly stop: StopConfig;
@@ -121,6 +158,8 @@ export interface ReplacementEvent {
   readonly elites: readonly number[];
   /** Ids of the next population, in order. */
   readonly population: readonly number[];
+  /** With offspring truncation: every offspring in rank order, and whether it was kept. */
+  readonly ranking?: readonly RankedOffspring[];
 }
 
 export type GenerationEvent =
@@ -163,7 +202,9 @@ export function runGeneration(
   rng: Rng,
 ): { state: RunState; events: GenerationEvent[]; stops: StopReason[] } {
   stopReasons(state, config.stop); // refuses a nonsense stop configuration before anything is drawn
-  const replacement = config.replacement ?? generationalReplacement(config.elites);
+  const replacement =
+    config.replacement ??
+    generationalReplacement(config.elites, config.truncation?.enabled ? { lambda: config.truncation.lambda } : {});
   const offspringCount = replacement.offspringCount(state.population.length);
   const events: GenerationEvent[] = [];
   const generation = state.generation + 1;
@@ -207,8 +248,14 @@ export function runGeneration(
   });
 
   // 6. replacement
-  const { population, elites } = replacement.replace(state.population, offspring);
-  events.push({ stage: 'replacement', kind: 'summary', elites, population: population.map((i) => i.id) });
+  const { population, elites, ranking } = replacement.replace(state.population, offspring);
+  events.push({
+    stage: 'replacement',
+    kind: 'summary',
+    elites,
+    population: population.map((i) => i.id),
+    ...(ranking ? { ranking } : {}),
+  });
 
   const best = Math.max(...offspring.map((i) => i.fitness), state.bestFitnessSoFar);
   const improved = best > state.bestFitnessSoFar;

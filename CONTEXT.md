@@ -107,7 +107,7 @@ The stage that forms the next population, currently always generational: offspri
 _Avoid_: Survivor selection
 
 **Offspring truncation**:
-An optional mode where λ offspring are generated and evaluated, and only the best N − k survive into the next population, the rest shown as discarded. Off by default, in which case N − k offspring are generated and all survive.
+An optional mode where λ offspring are generated and evaluated, and only the best N − k survive into the next population, the rest shown as discarded. λ must be at least N − k. Survivors follow the elites best first, ties going to the earlier-made offspring. Off by default, in which case N − k offspring are generated and all survive.
 _Avoid_: Overproduction, offspring culling
 
 **Elite**:

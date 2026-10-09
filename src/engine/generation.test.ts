@@ -354,3 +354,199 @@ describe('the replacement seam', () => {
     expect(viaStrategy).toEqual(viaConfig);
   });
 });
+
+describe('offspring truncation (the mock’s worked example: N = 4, e = 1, λ = 4)', () => {
+  const truncating = (elites: number, lambda: number): GenerationConfig => ({
+    ...baseConfig,
+    elites,
+    truncation: { enabled: true, lambda },
+  });
+
+  test('all λ offspring are made and scored, and only the best N − e survive, best first after the elite', () => {
+    const rng = scripted(...mockDraws);
+    const { state, events } = runGeneration(start(), truncating(1, 4), rng);
+
+    // offspring O1..O4 = 625, 144, 729, 576 (ids 5..8); ranked 729 (O3), 625 (O1), 576 (O4), 144 (O2)
+    expect(state.population.map((i) => i.id)).toEqual([2, 7, 5, 8]);
+    expect(state.population.map((i) => i.fitness)).toEqual([576, 729, 625, 576]);
+    expect(state.population.reduce((sum, i) => sum + i.fitness, 0)).toBe(2506);
+    expect(state).toMatchObject({ nextId: 9, evaluations: 8, bestFitnessSoFar: 729 });
+    expect(rng.used).toBe(mockDraws.length);
+
+    expect(events.filter((e) => e.stage === 'evaluation').map((e) => e.individual.id)).toEqual([5, 6, 7, 8]);
+    expect(events.at(-1)).toEqual({
+      stage: 'replacement',
+      kind: 'summary',
+      elites: [2],
+      population: [2, 7, 5, 8],
+      ranking: [
+        { individualId: 7, offspring: 3, rank: 1, kept: true },
+        { individualId: 5, offspring: 1, rank: 2, kept: true },
+        { individualId: 8, offspring: 4, rank: 3, kept: true },
+        { individualId: 6, offspring: 2, rank: 4, kept: false },
+      ],
+    });
+  });
+});
+
+describe('offspring truncation: more cases', () => {
+  const truncating = (elites: number, lambda: number): GenerationConfig => ({ ...baseConfig, elites, truncation: { enabled: true, lambda } });
+  const noVariation = (config: GenerationConfig): GenerationConfig => ({
+    ...config,
+    crossover: { ...config.crossover, enabled: false },
+    mutation: { ...config.mutation, enabled: false },
+  });
+  const ranking = (events: ReturnType<typeof runGeneration>['events']) => {
+    const event = events.at(-1);
+    if (event?.stage !== 'replacement' || !event.ranking) throw new Error('no ranking in the replacement event');
+    return event.ranking;
+  };
+
+  test('ties are broken by the order of generation: the earlier offspring is kept', () => {
+    // N = 4, e = 0, λ = 6, no variation: spins pick 576, 576, 169, 169, 576, 576, so the offspring are copies in that order
+    const { state, events } = runGeneration(start(), noVariation(truncating(0, 6)), scripted(0.58, 0.58, 0.07, 0.07, 0.58, 0.58));
+
+    expect(ranking(events).map((r) => [r.offspring, r.kept])).toEqual([[1, true], [2, true], [5, true], [6, true], [3, false], [4, false]]);
+    expect(state.population.map((i) => i.id)).toEqual([5, 6, 9, 10]); // ids follow offspring numbers 1, 2, 5, 6
+    expect(state.population.map((i) => i.fitness)).toEqual([576, 576, 576, 576]);
+  });
+
+  test('with λ larger than N − e, exactly N survive, they are the best, and nothing kept is worse than anything discarded', () => {
+    const rng = createRng(12);
+    const { state, events } = runGeneration(start(), truncating(0, 8), rng);
+    const ranked = ranking(events);
+    const fitnessOf = (id: number) => events.flatMap((e) => (e.stage === 'evaluation' && e.individual.id === id ? [e.individual.fitness] : []))[0]!;
+
+    expect(state.population).toHaveLength(4);
+    expect(ranked).toHaveLength(8);
+    expect(ranked.filter((r) => r.kept)).toHaveLength(4);
+    expect(ranked.map((r) => r.rank)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    const kept = ranked.filter((r) => r.kept).map((r) => fitnessOf(r.individualId));
+    const discarded = ranked.filter((r) => !r.kept).map((r) => fitnessOf(r.individualId));
+    expect(Math.min(...kept)).toBeGreaterThanOrEqual(Math.max(...discarded));
+    expect(state.population.map((i) => i.fitness)).toEqual([...kept]); // best first
+    expect(state).toMatchObject({ evaluations: 4 + 8, nextId: 5 + 8 });
+  });
+
+  test('with truncation off, λ is remembered but ignored: the run is exactly the ordinary one', () => {
+    const off: GenerationConfig = { ...baseConfig, truncation: { enabled: false, lambda: 10 } };
+    expect(runGeneration(start(), off, createRng(2))).toEqual(runGeneration(start(), baseConfig, createRng(2)));
+  });
+
+  test('λ equal to N − e discards nothing, but the survivors are ordered best first rather than as made', () => {
+    // N = 4, e = 1: three offspring, four parents drawn; the same 22 draws as the elitism test
+    const draws = [0.58, 0.07, 0.91, 0.31, 0.41, 0.8, 0.93, ...mockDraws.slice(7, 22)];
+    const plain = runGeneration(start(), { ...baseConfig, elites: 1 }, scripted(...draws));
+    const truncated = runGeneration(start(), truncating(1, 3), scripted(...draws));
+
+    expect(plain.state.population.map((i) => i.id)).toEqual([2, 5, 6, 7]); // 576, 625, 144, 729
+    expect(truncated.state.population.map((i) => i.id)).toEqual([2, 7, 5, 6]); // 576, 729, 625, 144
+    expect(ranking(truncated.events).every((r) => r.kept)).toBe(true);
+  });
+
+  test('an odd λ draws one extra parent and drops the last child before scoring, so exactly λ are evaluated', () => {
+    const { state, events } = runGeneration(start(), truncating(0, 5), createRng(6));
+    expect(events.filter((e) => e.stage === 'selection' && e.kind === 'spin')).toHaveLength(6);
+    expect(events.filter((e) => e.stage === 'evaluation')).toHaveLength(5);
+    expect(ranking(events)).toHaveLength(5);
+    expect(state).toMatchObject({ evaluations: 4 + 5, nextId: 5 + 5 });
+    expect(state.population).toHaveLength(4);
+  });
+
+  test('elites stay first and unchanged, and are still eligible as parents', () => {
+    const before = start();
+    const { state, events } = runGeneration(before, truncating(2, 6), createRng(4));
+
+    expect(state.population.slice(0, 2).map((i) => i.id)).toEqual([2, 4]); // fitness 576 and 361
+    expect(state.population.slice(0, 2)).toEqual([before.population[1], before.population[3]]);
+    expect(state.population).toHaveLength(4);
+    expect(ranking(events)).toHaveLength(6);
+    expect(ranking(events).filter((r) => r.kept)).toHaveLength(2);
+
+    const picked = new Set(events.flatMap((e) => (e.stage === 'selection' && e.kind === 'spin' ? [e.individualId] : [])));
+    const elitePickedSomewhere = [0, 1, 2, 3, 4, 5, 6, 7].some((seed) => {
+      const run = runGeneration(before, truncating(2, 6), createRng(seed));
+      return run.events.some((e) => e.stage === 'selection' && e.kind === 'spin' && (e.individualId === 2 || e.individualId === 4));
+    });
+    expect(picked.size).toBeGreaterThan(0);
+    expect(elitePickedSomewhere).toBe(true);
+  });
+
+  test('when every individual is an elite, the λ offspring are made and scored but none can be kept', () => {
+    const { state, events } = runGeneration(start(), truncating(4, 2), createRng(3));
+    expect(state.population.map((i) => i.id)).toEqual([2, 4, 1, 3]);
+    expect(ranking(events).every((r) => !r.kept)).toBe(true);
+    expect(state.evaluations).toBe(4 + 2);
+  });
+
+  test.each([
+    [{ elites: 1, lambda: 2 }, 'λ must be a whole number of at least N − e = 3, so there are enough offspring to fill the population'],
+    [{ elites: 0, lambda: 3 }, 'λ must be a whole number of at least N − e = 4, so there are enough offspring to fill the population'],
+    [{ elites: 0, lambda: 4.5 }, 'λ must be a whole number of at least N − e = 4'],
+    [{ elites: 0, lambda: Number.NaN }, 'λ must be a whole number of at least N − e = 4'],
+  ])('refuses a λ that cannot fill the population: %j', ({ elites, lambda }, message) => {
+    expect(() => runGeneration(start(), truncating(elites, lambda), scripted())).toThrow(message);
+  });
+
+  test('refuses nothing it should accept: λ = 0 is fine when no offspring are needed', () => {
+    expect(() => runGeneration(start(), truncating(4, 0), createRng(1))).not.toThrow();
+  });
+
+  test('a custom replacement strategy still wins over the truncation setting', () => {
+    const custom: ReplacementStrategy = { offspringCount: () => 4, replace: (_p, offspring) => ({ population: [...offspring], elites: [] }) };
+    const { events } = runGeneration(start(), { ...truncating(0, 9), replacement: custom }, createRng(1));
+    expect(events.filter((e) => e.stage === 'evaluation')).toHaveLength(4);
+  });
+});
+
+describe('offspring truncation: invariants and draws', () => {
+  const cases = Array.from({ length: 6 }, (_, k) => k + 1).flatMap((n) =>
+    Array.from({ length: n + 1 }, (_, e) => [n, e] as const).flatMap(([nn, e]) => [nn - e, nn - e + 1, 2 * nn].map((lambda) => [nn, e, lambda] as const)),
+  );
+
+  test.each(cases)('N = %i, e = %i, λ = %i: size, ids and counters hold over six generations', (n, e, lambda) => {
+    const rng = createRng(500 + n * 100 + e * 10 + lambda);
+    let { state } = startRun(goldberg, { kind: 'random', size: n }, rng);
+    const config: GenerationConfig = { ...baseConfig, elites: e, truncation: { enabled: true, lambda } };
+
+    for (let generation = 1; generation <= 6; generation++) {
+      const before = state;
+      const result = runGeneration(before, config, rng);
+      state = result.state;
+      expect(state.population).toHaveLength(n);
+      expect(new Set(state.population.map((i) => i.id)).size).toBe(n);
+      expect(state.evaluations).toBe(n + generation * lambda);
+      expect(state.nextId).toBe(n + 1 + generation * lambda);
+      expect(state.bestFitnessSoFar).toBeGreaterThanOrEqual(before.bestFitnessSoFar);
+    }
+  });
+
+  test('a generation makes exactly the draws its stages need, with λ offspring', () => {
+    const rng = createRng(5);
+    let used = 0;
+    const counting = { next: () => { used++; return rng.next(); } };
+    const { state } = startRun(goldberg, { kind: 'explicit', chromosomes: textbook }, counting);
+    used = 0;
+    const { events } = runGeneration(state, { ...baseConfig, elites: 1, truncation: { enabled: true, lambda: 5 } }, counting);
+
+    const recombined = events.filter((e) => e.stage === 'crossover' && e.decision === 'recombined').length;
+    const pairs = events.filter((e) => e.stage === 'pairing').length;
+    expect(pairs).toBe(3);
+    expect(used).toBe(6 + pairs + recombined + 5 * 5); // six parents for five offspring, then five offspring of five genes
+  });
+
+  test('the same configuration and seed give the identical truncated run', () => {
+    const play = () => {
+      const rng = createRng(77);
+      let { state } = startRun(goldberg, { kind: 'random', size: 6 }, rng);
+      const all = [];
+      for (let g = 0; g < 8; g++) {
+        const result = runGeneration(state, { ...baseConfig, elites: 1, truncation: { enabled: true, lambda: 9 } }, rng);
+        all.push(result);
+        state = result.state;
+      }
+      return all;
+    };
+    expect(play()).toEqual(play());
+  });
+});
