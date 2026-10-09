@@ -1,0 +1,4 @@
+{
+  "//": "Editor default. Real checks run through tsconfig.engine.json and tsconfig.app.json (npm run check).",
+  "extends": "./tsconfig.app.json"
+}

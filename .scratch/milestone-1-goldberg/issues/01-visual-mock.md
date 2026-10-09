@@ -1,6 +1,6 @@
 # 01 Throwaway visual mock of the Goldberg screen
 
-Status: open
+Status: claimed
 Type: prototype (needs instructor review)
 Blocked by: none
 Spec: ../spec.md

@@ -24,6 +24,6 @@ The algorithm-agnostic run layer in `src/run` (ADR 0001, ADR 0003), knowing only
 - Scrubbing to any point shows the state the live run showed there.
 - Pending changes apply only at the boundary; reset-required changes are refused until a reset.
 - Truncation lists the discarded generations and leaves a reproducible run.
-- `src/run` has no import from `src/engine` internals other than the contract.
+- The run contract (cycle, stage and event types) is defined in `src/run`, and the GA engine implements it; `src/run` never imports `src/engine` (enforced by `npm run check`). Run-layer tests use a small fake engine.
 
 ## Comments

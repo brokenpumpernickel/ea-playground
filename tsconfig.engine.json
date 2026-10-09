@@ -1,0 +1,17 @@
+{
+  "//": "Strict project for src/engine and src/run. No DOM lib and no ambient types, so browser globals (window, document, ...) are type errors here. See ADR 0002.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": [],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src/engine/**/*.ts", "src/run/**/*.ts"]
+}
