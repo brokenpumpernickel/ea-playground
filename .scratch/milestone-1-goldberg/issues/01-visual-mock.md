@@ -76,4 +76,23 @@ Animation (spin, cut, flip, replacement flow), the tournament view, the per-indi
 
 The elite card's fitness label touches its thick border and the "discarded" badge is tight in the ranked column. The ✂ marker above the cut is rough. None of these affect the layout decisions.
 
+### Visual direction chosen by the instructor: Studio
+
+After seeing three directions built from the same data (`mock/directions.html`: Studio, Midnight, Paper), the instructor chose **Studio**. The reasons, as discussed:
+
+- Projector-first and often used in rooms with the lights on: dark text on a light surface degrades best; Midnight's glow and light-on-dark text lose contrast when the room is lit, and Paper's serif and italic notes are hardest to read from the back.
+- A light canvas also works on laptops, in slides and in print, and leaves room for the later heatmap, 3-D surface and block views.
+
+Decisions that go with it (built in `mock/studio.html`, screenshots in `mock/screenshots/studio-*.png`):
+
+1. **Stage-first layout** (borrowed from Midnight): the stage view is the large left panel; population and offspring tables stack on the right; plots and the scrub bar below. The population table drops the redundant x² column to fit.
+2. **Light by default, dark theme as a toggle**, from the same colour tokens. The plot palette passed the validator on both surfaces (`#ffffff` light, `#171c36` dark).
+3. **A 1 must differ from a 0 by weight, fill and border**, not tint alone (pale tints wash out on projectors): ones are bold with a darker fill and a 2 px violet border.
+4. **Chrome accent is violet (`#7040ec` light, `#a78bfa` dark)**, deliberately unlike the plot's blue, so interface highlights never look like data. Data colours are never used for chrome.
+5. Parent B's genes keep their hatching, and every status (kept, discarded, bypass, elite, flipped gene) keeps its symbol and label as well as its colour.
+
+Fixed while building the directions: the hatch had been lost in two skins (a `background` shorthand overrode it), and a caption under the crossover view was hidden behind the narration bar even in the first mock.
+
+**Still open from the findings above (proceeding with these defaults unless the instructor says otherwise):** 1366×768 scales as one unit for the first milestone; secondary text and plot ticks stay at 18 px; the scrub bar shows a window around the cursor with an overview strip (design in ticket 19); the plot x-axis grows with the run; the population table keeps showing the generation's starting population; the narration bar stays; key bindings are decided in ticket 22; the drawer scrolls and covers the stage view while open.
+
 ## Comments
