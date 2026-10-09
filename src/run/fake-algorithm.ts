@@ -35,6 +35,7 @@ export function createFakeAlgorithm() {
     },
     step(state, _setup, params, rng: Rng) {
       calls.step++;
+      if (params.step < 0) throw new Error('The step must not be negative');
       const draws = [rng.next(), rng.next(), rng.next()];
       const value = state.value + params.step;
       const events: FakeEvent[] = [
@@ -44,7 +45,7 @@ export function createFakeAlgorithm() {
         { stage: 'finish', kind: 'sum', micro: 1, value },
       ];
       const next = { value, total: state.total + draws.reduce((a, b) => a + b, 0) };
-      return { state: next, events, stops: value >= 100 ? ['big'] : [] };
+      return { state: next, events, stops: value >= 200 ? ['big', 'huge'] : value >= 100 ? ['big'] : [] };
     },
     microStepOf: (event) => event.micro,
     setupDifferences: (a, b) => (['start', 'label'] as const).filter((key) => a[key] !== b[key]),

@@ -103,6 +103,7 @@ A working end-to-end GA teaching app for one example, Goldberg's integer x² max
 
 - ~~The specific seedable generator algorithm.~~ **Decided (ticket 03): mulberry32**, one 32-bit state, so snapshots can store it. A random gene is 1 when its draw is below 0.5.
 - ~~Defaults for ε in Shift, selection pressure s in Linear ranking, the Power exponent~~ **Decided (ticket 05): ε = 1, s = 1.5, exponent = 2.** **Stagnation window default 10, generation limit default 50 (ticket 09):** the engine takes these as explicit configuration, so the defaults live in the Goldberg default configuration (ticket 14) and the presets (ticket 21).
+- **Decided (ticket 13), tune after trying it on a projector:** playback tier tick intervals are slow 1000 ms (one micro-step), medium 1500 ms (one stage), fast 500 ms (one generation), maximum 0 ms (up to 25 generations per tick). They live in one table in `src/run/playback.ts`.
 - Exact key bindings.
 - The symbol set for elite, parent, offspring, mutated gene, and bypass.
 

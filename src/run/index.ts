@@ -10,3 +10,13 @@ export {
   type StageLayout,
   type View,
 } from './run';
+export {
+  createPlayback,
+  tiers,
+  type AnimationFlags,
+  type Playback,
+  type PlaybackStatus,
+  type Scheduler,
+  type Tier,
+  type TierName,
+} from './playback';
