@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import DiscardNotice from './DiscardNotice.svelte';
   import HistoryStrip from './HistoryStrip.svelte';
   import MetricsPanel from './MetricsPanel.svelte';
   import PopulationPanel from './PopulationPanel.svelte';
@@ -58,5 +59,6 @@
     <PopulationPanel {session} />
     <MetricsPanel {session} />
     <HistoryStrip {session} />
+    {#if session.pendingChange}<DiscardNotice {session} />{/if}
   </main>
 </div>

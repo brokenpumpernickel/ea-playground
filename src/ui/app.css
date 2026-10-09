@@ -358,3 +358,26 @@ input[type=range].speed { width:260px; accent-color:var(--acc); }
 .allele .gene b { display:block; font-size:19px; }
 .allele .gene span { font-size:17px; color:var(--ink2); }
 .plot .summary { margin:6px 16px 0; font-size:18px; line-height:1.25; color:var(--ink2); }
+
+/* run history bar and the discard notice */
+.history { position:absolute; left:0; top:1014px; width:1920px; height:66px; display:flex; align-items:center; background:var(--surface); box-shadow:0 -1px 0 var(--hair); }
+.history .title { width:200px; padding-left:24px; box-sizing:border-box; line-height:1.15; }
+.history .title b { display:block; font-size:20px; }
+.history .title span { font-size:17px; }
+.history .scrub { width:1440px; height:66px; cursor:pointer; touch-action:none; border-radius:8px; }
+.history .scrub:focus-visible { outline:3px solid var(--acc); outline-offset:-3px; }
+.history .scrub svg { display:block; }
+.history .track { fill:var(--grid); }
+.history .fill { fill:var(--acc); }
+.history .cell-tick { stroke:var(--ink2); stroke-width:2; }
+.history .stage-tick { stroke:var(--axis); stroke-width:1.5; }
+.history .thumb { fill:var(--ink); }
+.history text { fill:var(--ink2); font-size:17px; font-family:inherit; }
+.history text.current { fill:var(--ink); font-weight:700; }
+.history .live { margin-left:auto; margin-right:24px; }
+.history .live:disabled { opacity:.45; cursor:default; }
+.scrim { position:absolute; inset:0; background:rgba(10,14,30,.45); display:flex; align-items:center; justify-content:center; z-index:20; }
+.dialog { width:760px; background:var(--surface); border:2px solid var(--ink); border-radius:16px; padding:28px 32px; box-shadow:0 20px 60px rgba(0,0,0,.35); }
+.dialog h2 { margin:0 0 12px; font-size:30px; }
+.dialog p { margin:0 0 12px; font-size:23px; }
+.dialog .actions { display:flex; gap:14px; justify-content:flex-end; margin-top:20px; }
