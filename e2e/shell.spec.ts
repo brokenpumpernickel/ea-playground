@@ -9,6 +9,6 @@ test('app shell opens from the build folder without a server', async ({ page }) 
 
   await page.goto(pathToFileURL(resolve('dist/index.html')).href);
 
-  await expect(page.getByRole('heading', { name: 'Evolutionary Algorithms Playground' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /Goldberg/ })).toBeVisible();
   expect(requests.filter((u) => !u.startsWith('file:'))).toEqual([]);
 });

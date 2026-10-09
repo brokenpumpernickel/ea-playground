@@ -6,6 +6,8 @@ const channel = process.env.PW_CHANNEL ?? 'msedge';
 
 export default defineConfig({
   testDir: 'e2e',
+  timeout: 20_000,
+  expect: { timeout: 5_000 },
   outputDir: 'test-results',
   reporter: 'list',
   use: {

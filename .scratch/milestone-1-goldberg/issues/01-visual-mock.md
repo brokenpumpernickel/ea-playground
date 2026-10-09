@@ -1,6 +1,6 @@
 # 01 Throwaway visual mock of the Goldberg screen
 
-Status: claimed
+Status: resolved
 Type: prototype (needs instructor review)
 Blocked by: none
 Spec: ../spec.md
@@ -28,7 +28,7 @@ The instructor has reviewed the mock and either approved the layout or listed ch
 
 ## Answer
 
-**Status of this ticket:** the mock is built and checked; **waiting for the instructor's review** before it can be resolved. It stays `claimed` until then.
+**Status of this ticket:** resolved. The instructor chose the Studio direction (see below) and said "go" to the remaining defaults.
 
 ### Where it is
 
@@ -93,6 +93,6 @@ Decisions that go with it (built in `mock/studio.html`, screenshots in `mock/scr
 
 Fixed while building the directions: the hatch had been lost in two skins (a `background` shorthand overrode it), and a caption under the crossover view was hidden behind the narration bar even in the first mock.
 
-**Still open from the findings above (proceeding with these defaults unless the instructor says otherwise):** 1366×768 scales as one unit for the first milestone; secondary text and plot ticks stay at 18 px; the scrub bar shows a window around the cursor with an overview strip (design in ticket 19); the plot x-axis grows with the run; the population table keeps showing the generation's starting population; the narration bar stays; key bindings are decided in ticket 22; the drawer scrolls and covers the stage view while open.
+**The remaining findings were settled by the instructor accepting these defaults ("go"):** 1366×768 scales as one unit for the first milestone; secondary text and plot ticks stay at 18 px; the scrub bar shows a window around the cursor with an overview strip (design in ticket 19); the plot x-axis grows with the run; the population table keeps showing the generation's starting population; the narration bar stays; key bindings are decided in ticket 22; the drawer scrolls and covers the stage view while open.
 
 ## Comments
