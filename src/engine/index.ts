@@ -5,3 +5,14 @@ export type { Problem, Scores } from './problem';
 export { createRng, type Rng } from './rng';
 export { matingPoolSize, pair, type Pair, type PairingEvent } from './pairing';
 export { rouletteSelect, type SelectionEntry, type SelectionEvent, type SelectionResult } from './selection';
+export {
+  transformWeights,
+  weightSteps,
+  type ParameterSpec,
+  type StepDescriptor,
+  type StepName,
+  type StepSpec,
+  type WeightChainColumn,
+  type WeightChainEvent,
+  type WeightChainResult,
+} from './weights';
