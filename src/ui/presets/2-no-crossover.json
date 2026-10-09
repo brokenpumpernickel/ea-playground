@@ -1,0 +1,14 @@
+{
+  "name": "No crossover",
+  "lesson": "With crossover switched off, selection still runs but every child is a copy of its parent, so only mutation can change a chromosome.",
+  "lookFor": "Every pair is a bypass and no gene is inherited from a second parent. Progress comes only from the occasional ✱ flip, so it is slow: with this seed the best fitness is still 900 (11110, one gene short of the optimum 961) after 50 generations.",
+  "seed": 888,
+  "setup": { "init": { "kind": "random", "size": 6 } },
+  "params": {
+    "selection": { "method": "roulette", "chain": [{ "step": "identity" }] },
+    "crossover": { "enabled": false, "operator": "one-point", "probability": 0.8 },
+    "mutation": { "enabled": true, "mode": "per-gene", "probability": 0.05 },
+    "elites": 0,
+    "stop": { "generationLimit": 50, "targetFitness": 961, "stagnationWindow": 10 }
+  }
+}

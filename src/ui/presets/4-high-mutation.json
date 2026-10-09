@@ -1,0 +1,14 @@
+{
+  "name": "High mutation",
+  "lesson": "With pm = 0.3 about one gene in three flips in every child, so offspring barely resemble the parents that selection chose.",
+  "lookFor": "The population never settles: diversity stays high, and best of generation keeps falling below best so far (in this seed in 23 of the first 30 generations). It can still stumble on the optimum by luck, which is not the same as converging to it.",
+  "seed": 4,
+  "setup": { "init": { "kind": "random", "size": 6 } },
+  "params": {
+    "selection": { "method": "roulette", "chain": [{ "step": "identity" }] },
+    "crossover": { "enabled": true, "operator": "one-point", "probability": 0.8 },
+    "mutation": { "enabled": true, "mode": "per-gene", "probability": 0.3 },
+    "elites": 0,
+    "stop": { "generationLimit": 50, "targetFitness": 961, "stagnationWindow": 10 }
+  }
+}

@@ -40,7 +40,7 @@
     <span class="logo" aria-hidden="true">x²</span>
     <div>
       <h1 class="t" style="margin:0">Goldberg x²</h1>
-      <div class="s">Maximise x² on 0…31</div>
+      <div class="s" class:withpreset={session.presetName}>Maximise x² on 0…31{#if session.presetName}&nbsp;· preset: {session.presetName}{/if}</div>
     </div>
   </div>
 

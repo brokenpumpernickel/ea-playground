@@ -5,6 +5,7 @@
   import DrawerRow from './DrawerRow.svelte';
   import { changes, draftOf, toParams, toSetup, validate, type Draft, type Field } from './drawer-model';
   import PopulationEditor from './PopulationEditor.svelte';
+  import { presets } from './presets';
   import type { Session } from './session.svelte';
 
   let { session, onclose }: { session: Session; onclose: () => void } = $props();
@@ -78,6 +79,13 @@
   });
   const blamed = $derived(validation.chainStep);
 
+  let chosenPreset = $state(presets[0]?.id ?? '');
+  const preset = $derived(presets.find((p) => p.id === chosenPreset));
+  const loadPreset = () => {
+    if (!preset) return;
+    session.requestReset({ setup: preset.setup, seed: preset.seed, params: preset.params, changed: [], preset: preset.name });
+  };
+
   const keydown = (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
       event.stopPropagation();
@@ -98,6 +106,23 @@
       {#each warnings as warning (warning)}<p>{warning}</p>{/each}
     </div>
   {/if}
+
+  <div class="sec" data-section="presets">
+    <h3>Presets</h3>
+    <DrawerRow label="Preset" id="preset">
+      <select id="preset" value={chosenPreset} onchange={(e) => (chosenPreset = e.currentTarget.value)}>
+        {#each presets as p (p.id)}<option value={p.id}>{p.name}</option>{/each}
+      </select>
+    </DrawerRow>
+    {#if preset}
+      <p class="lesson" data-testid="preset-lesson">{preset.lesson}</p>
+      <p class="help" data-testid="preset-lookfor"><b>Look for:</b> {preset.lookFor}</p>
+      <div class="applyreset">
+        <button class="btn primary" onclick={loadPreset} data-testid="load-preset">Load preset</button>
+        <span class="help">Restarts the run with this configuration and seed {preset.seed}.</span>
+      </div>
+    {/if}
+  </div>
 
   <div class="sec" data-section="setup">
     <h3>Run setup <span class="tag reset"><span aria-hidden="true">↺</span> needs reset</span></h3>

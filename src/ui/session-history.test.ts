@@ -271,3 +271,20 @@ describe('pending parameters', () => {
     expect(session.run.parameters.elites).toBe(2);
   });
 });
+
+describe('presets', () => {
+  test('loading one is a reset that names the preset, remembers it, and is forgotten when a setting is changed by hand', () => {
+    const { session } = make();
+    generations(session, 2);
+    session.requestReset({ setup: defaultSetup, seed: 5, params: defaultParams, changed: [], preset: 'No mutation' });
+    expect(session.resetNotice).toBe('Loading the preset “No mutation” restarts the run from generation 0 and discards the 2 recorded generations (1–2).');
+    session.confirmReset();
+    expect(session.presetName).toBe('No mutation');
+    expect(session.seed).toBe(5);
+    session.reset();
+    session.newSeed();
+    expect(session.presetName).toBe('No mutation'); // still the preset's configuration
+    session.changeParameters({ ...defaultParams, elites: 1 });
+    expect(session.presetName).toBeUndefined();
+  });
+});

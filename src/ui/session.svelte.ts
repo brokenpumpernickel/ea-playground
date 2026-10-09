@@ -37,6 +37,8 @@ export interface PendingReset {
   readonly params: GaParams;
   /** Names of the settings that need the reset, as `changes` words them. */
   readonly changed: readonly string[];
+  /** Set when the reset loads a preset, by name. */
+  readonly preset?: string;
 }
 
 const settingPhrase = (label: string) => `the ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
@@ -53,6 +55,8 @@ export function createSession(options: SessionOptions) {
   let change = $state<PendingChange | undefined>(undefined);
 
   let reset = $state<PendingReset | undefined>(undefined);
+  /** The preset the run was started from, until a setting is changed by hand. */
+  let presetName = $state<string | undefined>(undefined);
   /** Bumped whenever the setup, seed or parameters are replaced wholesale, so the drawer rereads them. */
   let epoch = $state(0);
 
@@ -158,12 +162,15 @@ export function createSession(options: SessionOptions) {
     },
     get resetNotice(): string | undefined {
       if (!reset) return undefined;
-      const what = `Changing ${joinWords(reset.changed.map(settingPhrase))} restarts the run from generation 0.`;
+      const what = reset.preset ? `Loading the preset “${reset.preset}” restarts the run from generation 0.` : `Changing ${joinWords(reset.changed.map(settingPhrase))} restarts the run from generation 0.`;
       const n = run.lastCycle;
       return n === 0 ? `${what} Nothing recorded will be lost.` : `${what.slice(0, -1)} and discards the ${n} recorded ${n === 1 ? 'generation' : 'generations'} (${n === 1 ? '1' : `1–${n}`}).`;
     },
     get epoch(): number {
       return epoch;
+    },
+    get presetName(): string | undefined {
+      return presetName;
     },
     /** Names of operator parameters that have been changed and wait for the next generation boundary. */
     get pending(): string[] {
@@ -209,6 +216,7 @@ export function createSession(options: SessionOptions) {
       const result = run.setParameters(params);
       if (result.status === 'pending') {
         change = undefined;
+        presetName = undefined;
         bump();
         return { status: 'applied' };
       }
@@ -224,6 +232,7 @@ export function createSession(options: SessionOptions) {
     confirmReset() {
       if (!reset) return;
       const { setup, seed, params } = reset;
+      presetName = reset.preset;
       reset = undefined;
       act(() => {
         change = undefined;
@@ -239,6 +248,7 @@ export function createSession(options: SessionOptions) {
       if (!change) return;
       const { params } = change;
       change = undefined;
+      presetName = undefined;
       act(() => void run.setParameters(params, { confirmDiscard: true }));
     },
     cancelChange() {

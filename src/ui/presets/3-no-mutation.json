@@ -1,0 +1,14 @@
+{
+  "name": "No mutation",
+  "lesson": "With mutation switched off, crossover can only reshuffle genes the population already has, so a gene that starts missing stays missing.",
+  "lookFor": "In this seed no individual starts with a 1 in gene 1. The share of 1s for gene 1 stays at 0 for the whole run, diversity falls to 0 as the population fills with copies of one chromosome, and the run is expected to stall at 225 (01111, x = 15), well short of the optimum 961.",
+  "seed": 4,
+  "setup": { "init": { "kind": "random", "size": 6 } },
+  "params": {
+    "selection": { "method": "roulette", "chain": [{ "step": "identity" }] },
+    "crossover": { "enabled": true, "operator": "one-point", "probability": 0.8 },
+    "mutation": { "enabled": false, "mode": "per-gene", "probability": 0.05 },
+    "elites": 0,
+    "stop": { "generationLimit": 50, "targetFitness": 961, "stagnationWindow": 10 }
+  }
+}
