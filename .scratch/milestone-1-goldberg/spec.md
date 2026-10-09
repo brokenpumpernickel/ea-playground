@@ -101,7 +101,7 @@ A working end-to-end GA teaching app for one example, Goldberg's integer x² max
 
 ## To decide during implementation (record the choice here when made)
 
-- The specific seedable generator algorithm.
+- ~~The specific seedable generator algorithm.~~ **Decided (ticket 03): mulberry32**, one 32-bit state, so snapshots can store it. A random gene is 1 when its draw is below 0.5.
 - Defaults for ε in Shift, selection pressure s in Linear ranking, the Power exponent, and the stagnation window.
 - Exact key bindings.
 - The symbol set for elite, parent, offspring, mutated gene, and bypass.
