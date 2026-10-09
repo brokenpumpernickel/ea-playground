@@ -15,8 +15,7 @@ const engine = (generations: number) => {
 };
 
 const rows = async (page: Page) => {
-  const table = page.getByRole('table');
-  const body = table.locator('tbody tr');
+  const body = populationTable(page).locator('tbody tr');
   return body.evaluateAll((trs) =>
     trs.map((tr) => ({
       id: Number(tr.querySelector('[data-col="id"]')!.textContent!.replace(/\D/g, '')),
@@ -26,6 +25,7 @@ const rows = async (page: Page) => {
     })),
   );
 };
+const populationTable = (page: Page) => page.getByRole('table', { name: /^(Population|Parents) · generation \d+$/ });
 const title = (page: Page) => page.getByRole('heading', { level: 2, name: /^(Population|Parents) · generation \d+$/ });
 const button = (page: Page, name: string | RegExp) => page.getByRole('button', { name, exact: typeof name === 'string' });
 
@@ -84,20 +84,20 @@ test('inside a generation the table shows the parents, with weights and parent c
   await button(page, /^Micro-step/).click(); // generation 1, selection entered
   await expect(title(page)).toHaveText('Parents · generation 0');
   expect(await rows(page)).toEqual(engine(0));
-  await expect(page.getByRole('table').locator('tbody tr').first().locator('[data-col="weight"]')).not.toHaveText('—');
-  await expect(page.getByRole('table').locator('tbody tr').first().locator('[data-col="parent"]')).toHaveText('—'); // no spin yet
+  await expect(populationTable(page).locator('tbody tr').first().locator('[data-col="weight"]')).not.toHaveText('—');
+  await expect(populationTable(page).locator('tbody tr').first().locator('[data-col="parent"]')).toHaveText('—'); // no spin yet
 
   await button(page, /^Micro-step/).click(); // first spin
-  const counts = await page.getByRole('table').locator('[data-col="parent"]').allTextContents();
+  const counts = await populationTable(page).locator('[data-col="parent"]').allTextContents();
   expect(counts.filter((c) => c.includes('×1'))).toHaveLength(1);
 });
 
-test('the stage panel lists what happened in plain sentences, and the latest one is the narration', async ({ page }) => {
-  await button(page, /^Micro-step/).click();
-  await button(page, /^Micro-step/).click(); // first spin
-  await expect(page.getByTestId('stage-events')).toContainText('Spin 1: r =');
-  await expect(page.getByTestId('narration')).toContainText('Spin 1: r =');
-  await expect(page.getByTestId('narration')).toContainText('Micro-step 1 of 6');
+test('stages without a dedicated view list what happened in plain sentences, and the latest one is the narration', async ({ page }) => {
+  for (let k = 0; k < 3; k++) await button(page, /^Stage/).click(); // selection, pairing, then crossover, each to its end
+  await expect(page.getByRole('heading', { level: 2, name: /Crossover/ })).toBeVisible();
+  await expect(page.getByTestId('stage-events')).toContainText('Pair 1: u =');
+  await expect(page.getByTestId('narration')).toContainText('Pair 3: u =');
+  await expect(page.getByTestId('narration')).toContainText('Micro-step 3 of 3');
 });
 
 test('Run plays on, Pause freezes it, and Reset returns to the same start', async ({ page }) => {

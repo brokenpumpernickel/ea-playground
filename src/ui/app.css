@@ -237,10 +237,10 @@ button:focus-visible, input:focus-visible { outline:3px solid var(--acc); outlin
 .btn:disabled { cursor:not-allowed; }
 .tablewrap { position:absolute; left:0; right:0; top:50px; bottom:0; overflow:auto; }
 .tablewrap thead th { position:sticky; top:0; background:var(--surface); z-index:1; }
-#stagebody ol { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
-#stagebody li { padding:8px 14px; border-radius:12px; font-size:20px; line-height:1.3; }
-#stagebody li.latest { background:var(--acc-tint); font-weight:650; }
-#stagebody li.older { color:var(--ink2); }
+#stagebody ol.events { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+#stagebody ol.events li { padding:8px 14px; border-radius:12px; font-size:20px; line-height:1.3; }
+#stagebody ol.events li.latest { background:var(--acc-tint); font-weight:650; }
+#stagebody ol.events li.older { color:var(--ink2); }
 .empty { color:var(--ink2); font-style:italic; }
 .statrow { display:flex; gap:14px; padding:6px 22px 0; }
 .stat { flex:1; background:var(--wash); border-radius:16px; padding:10px 16px; }
@@ -249,3 +249,52 @@ button:focus-visible, input:focus-visible { outline:3px solid var(--acc); outlin
 #statusline { margin-left:14px; font-size:20px; color:var(--ink2); display:flex; align-items:center; gap:8px; max-width:420px; }
 #statusline.err { color:var(--flip-ink); }
 input[type=range].speed { width:260px; accent-color:var(--acc); }
+
+/* ---- selection and pairing views ---- */
+.expl { margin:0 0 8px; font-size:20px; color:var(--ink2); }
+.roulette { display:flex; gap:22px; height:calc(100% - 36px); }
+.wheelbox { width:350px; flex:none; margin:0; text-align:center; }
+.wheelbox figcaption { font-size:18px; color:var(--ink2); margin-top:-8px; }
+.sidecol { flex:1; min-width:0; display:flex; flex-direction:column; gap:10px; }
+.formula { font-size:19px; color:var(--ink2); }
+.formula b { color:var(--ink); }
+.notice { background:var(--flip-bg); color:var(--flip-ink); border-radius:14px; padding:8px 14px; font-size:19px; line-height:1.25; }
+.notice b::before { content:"⚠ "; }
+.weights { flex:1; min-height:0; overflow:auto; }
+.weights table { font-size:20px; }
+.weights td { height:36px; }
+.weights th small { display:block; text-transform:none; letter-spacing:0; font-weight:500; font-size:16px; }
+.chips { list-style:none; margin:0; padding:0; display:flex; gap:8px; }
+.chips .chip { flex:1; padding:4px 8px; text-align:center; font-size:19px; white-space:nowrap; }
+.poolbox { display:flex; align-items:center; gap:12px; }
+.poollabel { font-weight:700; font-size:19px; color:var(--ink2); white-space:nowrap; }
+.poolstrip { list-style:none; margin:0; padding:0; display:flex; gap:8px; flex-wrap:wrap; }
+.poolstrip li { min-width:68px; text-align:center; padding:3px 10px; border-radius:12px; border:1.5px dashed var(--axis); font-weight:800; font-size:22px; color:var(--ink2); }
+.poolstrip li.filled { border-style:solid; border-color:var(--one-line); background:var(--one-bg); color:var(--one-ink); }
+.poolstrip .slotno { display:block; font-size:16px; font-weight:600; line-height:1.1; }
+.tournament, .pairing { display:flex; flex-direction:column; gap:10px; height:100%; }
+.tournament .expl { margin:0; }
+.tgrid { flex:1; min-height:0; overflow:auto; display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; align-content:start; }
+.tcard, .pcard { padding:8px 14px; }
+.tcard.current, .pcard.current { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-tint); }
+.tcard.pending, .pcard.pending { border-style:dashed; background:transparent; box-shadow:none; }
+.thead { display:flex; align-items:center; gap:10px; font-size:20px; }
+.contestants { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:4px; }
+.contestants li { display:flex; align-items:center; gap:12px; font-size:19px; padding:2px 6px; border-radius:10px; }
+.contestants li.win { background:var(--ok-bg); }
+.pgrid { display:flex; gap:12px; flex-wrap:wrap; }
+.pcard { flex:1; min-width:380px; }
+.parents { display:flex; gap:18px; margin-top:6px; flex-wrap:wrap; }
+.parent { display:flex; flex-direction:column; gap:4px; font-size:19px; }
+.notes { margin:0; padding:0 0 0 22px; font-size:19px; color:var(--ink2); }
+
+/* ---- layout fixes found by looking at the real screens ---- */
+.chips { flex-wrap:wrap; }
+.chips .chip { flex:0 0 auto; padding:3px 12px; }
+.poolstrip { max-height:84px; overflow:auto; }
+.pairing { overflow:hidden; height:calc(100% - 36px); }
+.pgrid { flex:1; min-height:0; overflow:auto; display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; align-content:start; }
+.pcard { min-width:0; flex:none; }
+.parents { display:flex; flex-direction:column; gap:2px; margin-top:4px; }
+.parent { display:flex; flex-direction:row; align-items:center; gap:12px; font-size:19px; }
+.notes { flex:none; margin:0; padding:0 0 0 22px; font-size:18px; max-height:84px; overflow:auto; }

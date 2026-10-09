@@ -1,8 +1,8 @@
 import { formatBits, type GaEvent } from '../engine';
+import { num } from './format';
 
 /** Plain-language sentences for what the engine recorded, so every number a view shows can be traced to an event. */
 
-const num = (v: number) => String(Math.round(v * 1000) / 1000);
 const geneList = (genes: readonly number[]) => {
   if (genes.length === 1) return `gene ${genes[0]}`;
   const head = genes.slice(0, -1).join(', ');
