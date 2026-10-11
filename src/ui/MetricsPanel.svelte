@@ -4,6 +4,8 @@
   import FitnessPlot from './FitnessPlot.svelte';
   import FunctionPlot from './FunctionPlot.svelte';
   import { landscapeModel } from './landscape-model';
+  import MatchRateStrip from './MatchRateStrip.svelte';
+  import { matchRates } from './match-rate-model';
   import { num } from './format';
   import type { Session } from './session.svelte';
 
@@ -12,7 +14,9 @@
   const m = $derived(session.metrics);
   const plots = $derived(session.plots);
   const size = $derived(session.table.rows.length);
-  const landscape = $derived(session.run.setup.problem.landscape);
+  const entry = $derived(session.problemEntry);
+  const rates = $derived(entry.genePanel === 'match-rate' && session.problemOptions ? matchRates(m, session.problemOptions.target, session.problem.alphabet) : undefined);
+  const landscape = $derived(session.problem.landscape);
   const curve = $derived(landscape ? landscapeModel(landscape, session.table.rows) : undefined);
 </script>
 
@@ -37,7 +41,7 @@
 <section class="panel plot" style="left:860px;top:758px;width:540px;height:244px" aria-labelledby="diversity-heading">
   <div class="ph">
     <h2 id="diversity-heading">Diversity</h2>
-    <span class="r legend">mean pairwise Hamming, 0–1{#if curve}
+    <span class="r legend">{entry.diversityNote}{#if curve}
         <button class="btn quiet tiny" onclick={toggleFunction} aria-keyshortcuts="F" data-testid="show-function">f(x) <kbd aria-hidden="true">F</kbd></button>{/if}</span>
   </div>
   <DiversityPlot model={plots} />
@@ -45,10 +49,10 @@
 
 <section class="panel plot" style="left:1416px;top:758px;width:480px;height:244px" aria-labelledby="allele-heading">
   <div class="ph">
-    <h2 id="allele-heading">Share of 1s per gene</h2>
+    <h2 id="allele-heading">{rates ? 'Match rate per position' : 'Share of 1s per gene'}</h2>
     <span class="r legend" data-testid="distinct">{m.distinct} of {size} distinct</span>
   </div>
-  <AlleleStrip shares={m.alleleFrequencies} />
+  {#if rates}<MatchRateStrip {rates} />{:else}<AlleleStrip shares={m.alleleFrequencies} />{/if}
   <p class="summary" data-testid="summary">
     generation {m.generation} · best now {m.best} · best so far {m.bestSoFar}<br />
     average {num(Math.round(m.average * 10) / 10)} · worst {m.worst} · evaluations {m.evaluations}

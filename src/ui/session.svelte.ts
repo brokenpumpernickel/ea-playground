@@ -1,4 +1,4 @@
-import { gaAlgorithm, metricsOf, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
+import { gaAlgorithm, metricsOf, type Problem, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
 import { createPlayback, createRun, type AnimationFlags, type Playback, type PlaybackStatus, type Position, type Run, type Scheduler, type Tier, type View } from '../run';
 import { defaultParams, defaultSeed, defaultSetup } from './config';
 import { changes, draftOf } from './drawer-model';
@@ -190,6 +190,11 @@ export function createSession(options: SessionOptions) {
     get shareConfig(): RunConfig {
       void version;
       return configOf(run.setup, run.parameters, run.seed, problemId, problemOptions);
+    },
+    /** The engine problem the run has now (it changes when the problem is switched). */
+    get problem(): Problem {
+      void version;
+      return run.setup.problem;
     },
     get problemEntry(): ProblemEntry {
       return entryOf(problemId)!;

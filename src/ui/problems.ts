@@ -23,6 +23,10 @@ export interface ProblemEntry {
   readonly name: string;
   /** The two or three characters in the logo tile. */
   readonly logo: string;
+  /** Which panel sits beside the diversity plot: Goldberg's share of 1s per gene, or the string problem's match rate. */
+  readonly genePanel: 'ones' | 'match-rate';
+  /** What the diversity plot says it measures. */
+  readonly diversityNote: string;
   /** The line under the name in the brand area. */
   subtitle(options: ProblemOptions | undefined): string;
   /** Whether this problem is configured by options (an alphabet and a target, say). Goldberg is not. */
@@ -43,6 +47,8 @@ const goldbergEntry: ProblemEntry = {
   id: 'goldberg',
   name: 'Goldberg x²',
   logo: 'x²',
+  genePanel: 'ones',
+  diversityNote: 'mean pairwise Hamming, 0–1',
   subtitle: () => 'Maximise x² on 0…31',
   hasOptions: false,
   defaultOptions: () => undefined,
@@ -55,6 +61,8 @@ const targetStringEntry: ProblemEntry = {
   id: 'target-string',
   name: 'Target string',
   logo: 'Aa',
+  genePanel: 'match-rate',
+  diversityNote: 'mean pairwise mismatch, 0–1',
   subtitle: (options) => (options ? `Match “${options.target}” · ${[...options.alphabet].length} symbols` : 'Match a target string'),
   hasOptions: true,
   defaultOptions: () => ({ ...targetStringDefaults.options }),

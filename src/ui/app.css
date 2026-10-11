@@ -513,3 +513,11 @@ input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radi
 .menuitem span { width:1.2em; }
 .menuitem:hover, .menuitem:focus-visible { background:var(--acc-tint); }
 .menuitem[aria-checked=true] { font-weight:800; }
+
+/* match rate per position: a bar per position of the target, with the target's letter under it */
+.matchbar { display:flex; align-items:flex-end; gap:6px; height:112px; padding:6px 14px 0; box-sizing:border-box; }
+.matchbar .gene { flex:1; text-align:center; min-width:0; }
+.matchbar .bar { margin:0 2px; border:2px solid var(--ink2); background:var(--seq4); border-radius:4px 4px 0 0; }
+.matchbar .gene b { display:block; font-size:17px; }
+.matchbar .gene span { font-size:21px; font-weight:700; font-family:ui-monospace,Consolas,monospace; }
+.projector .matchbar .gene b { font-size:19px; }
