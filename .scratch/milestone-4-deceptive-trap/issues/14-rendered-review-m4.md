@@ -44,3 +44,10 @@ The spec's "To decide" list records the decoded text, loose linkage drawing, mar
 ### For the instructor's walkthrough
 
 Open https://brokenpumpernickel.github.io/ea-playground/, choose Trap, switch on Projector mode, load "Loose blocks" and step through one generation with the Micro-step button (the crossover stage shows the blocks split by the cut, the mutation stage the changed blocks), then open "Schema tracker" and "Block states". Also try the largest instance (6 blocks of 5, Parameters → Block size 6). Report anything illegible from the back of the room; issues go in as tickets in this folder.
+
+### Findings from the instructor's first look (fixed, 2026-10-12)
+
+1. **Tournament cards overflowed** ("individual 6" and "fitness 4" ran into each other and out of the card, at both sizes): a 20-gene chromosome does not fit a card in two columns. Tournament and pairing cards are now one per line when the chromosomes are made of blocks, and each contestant's row stays on one line. Not caught earlier because the geometry specs only looked at scrolling regions, not at the rows of the selection and pairing cards.
+2. **The badge for a changed block sat tight under the result row** in the mutation cards (touching the flipped gene's shadow): 10 px of room added.
+
+Both are covered by a new test, `e2e/trap-selection.spec.ts` (17): for 4 × 5 tight and loose, 6 × 5 loose and 3 × 10, with tournament and with roulette selection, at both sizes in projector mode, at every micro-step of selection and pairing nothing leaves its card, no two items of a row overlap and no text is broken over several lines; and the gap under the result row is at least 10 px. 425 Playwright tests pass.

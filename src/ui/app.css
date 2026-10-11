@@ -786,3 +786,10 @@ table:has(.itemhdr) thead th:first-child { vertical-align:top; }
 .schema .scharts .gr { stroke:var(--line, var(--ink2)); opacity:.5; }
 .schema .sum { margin:0; font-weight:600; }
 .schema .caveat { margin:0; color:var(--ink2); font-size:14px; font-style:italic; }
+
+/* the trap's chromosomes are too long for two columns of cards: tournaments and pairs one card per line, each row on one line */
+.tgrid:has(.bits.blocked), .pgrid:has(.bits.blocked) { grid-template-columns:1fr; }
+.contestants li:has(.bits.blocked) { flex-wrap:nowrap; white-space:nowrap; }
+.contestants li:has(.bits.blocked) > span { flex:none; }
+/* room under a mutation card's result row for the badges about the blocks (the star and shadow of a flipped gene reach down) */
+.mcard .crow.blockmarks { margin-top:10px; }
