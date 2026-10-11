@@ -51,3 +51,4 @@ export {
 export { gaAlgorithm, populationFromEvents, supportedLimits, type GaEvent, type GaParams, type GaSetup } from './algorithm';
 export { metricsOf, type GenerationMetrics } from './metrics';
 export { tournamentSelect, type TournamentContestant, type TournamentEvent, type TournamentSetupEvent } from './tournament';
+export { targetStringDefaults, targetStringLimits, targetStringProblem, validateTargetString, type TargetStringOptions, type TargetStringProblem } from './target-string';

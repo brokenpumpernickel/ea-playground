@@ -39,9 +39,9 @@ The second goal is the first real test of the promise made in milestone 1: that 
 
 **Problem: target string**
 - Chromosome length is the target's length. The **alphabet** and **target** are configurable; both are part of the setup, so changing them is a reset.
-- Default alphabet: `A`–`Z` and space (27 symbols). Default target: `HELLO WORLD`. Limits: target 1–24 characters, alphabet 2–40 distinct symbols, every target character in the alphabet, population up to the existing 500 (with the existing warning). Symbols are case-sensitive as typed. A space is shown as `␣` inside cells.
+- Default alphabet: `A`–`Z` and space (27 symbols). Limits: target 1–24 characters, alphabet 2–40 distinct symbols, every target character in the alphabet, population up to the existing 500 (with the existing warning). Symbols are case-sensitive as typed. A space is shown as `␣` inside cells.
 - Objective value is the number of positions equal to the target; fitness equals the objective (identity rule, shown as such). Known optimum: the target's length.
-- Defaults: population 12, one-point crossover with pc 0.8, per-gene mutation with pm of about 1/length (0.09 for the default target), no elites, roulette with Identity. Stop: generation limit 100, target reached (every position matches), stagnation window 15. Fitness can be zero for every individual; the existing automatic switch to Shift handles that and says so.
+- Defaults, **changed from the first draft after measurement** (the first draft's `HELLO WORLD`, population 12, roulette with Identity and no elites reached the target in none of 20 seeds within 150 generations, median best 7 of 11): target `HELLO`, population 12, **tournament selection of size 3**, one-point crossover with pc 0.8, per-gene mutation with pm 0.1, no elites. Measured over 20 seeds this reaches the target in all of them within 100 generations (median 56). Stop: generation limit 100, target reached (every position matches), stagnation window 15. Longer targets stay available in the drawer. Fitness can be zero for every individual; the existing automatic switch to Shift handles that when roulette is used and says so.
 - A hand-edited initial population is typed as strings and validated against the alphabet and the length, with a message naming the character or chromosome that is wrong.
 
 **Problem selection and presets**
