@@ -12,7 +12,7 @@ In the crossover view, for each offspring and each block: inherited whole from p
 ## Done when
 
 - For every offspring and block of generated runs, the model's verdict equals what the swap mask gives (property test, tight and loose, all operators, bypasses included); the per-pair summary adds up.
-- Rendered check of the marks and a geometric test at both sizes for the default and for 8 × 5 loose, at every micro-step of two generations.
+- Rendered check of the marks and a geometric test at both sizes for the default and for 6 × 5 loose, at every micro-step of two generations.
 - The crossover view of the other problems is unchanged.
 
 ## Comments

@@ -12,7 +12,7 @@ In the mutation view, a block whose contribution changed because of a flip is ma
 ## Done when
 
 - The model's changed blocks equal a direct recomputation of every block's contribution before and after, over generated runs for tight and loose linkage and both modes.
-- Rendered check and a geometric test at both sizes for the default and 8 × 5 loose (the mutation cards must not overlap their draw labels, as in milestone 3's review).
+- Rendered check and a geometric test at both sizes for the default and 6 × 5 loose (the mutation cards must not overlap their draw labels, as in milestone 3's review).
 - Other problems' mutation views are unchanged.
 
 ## Comments

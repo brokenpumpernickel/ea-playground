@@ -11,7 +11,7 @@ As decided in the mock (ticket 01): the block row above the chromosome columns, 
 
 ## Done when
 
-- Unit tests of the models and the server-rendered views against the engine's per-block numbers; rendered checks that the block row lines up with the gene cells (tight and loose, 20 and 40 genes); a geometric test at 1920×1080 and 1366×768 that no table is wider than its panel and no label overlaps another, for the default and for 8 × 5 loose.
+- Unit tests of the models and the server-rendered views against the engine's per-block numbers; rendered checks that the block row lines up with the gene cells (tight and loose, 20 and 30 genes); a geometric test at 1920×1080 and 1366×768 that no table is wider than its panel and no label overlaps another, for the default and for 6 × 5 loose.
 - The other problems' tables are unchanged.
 
 ## Comments

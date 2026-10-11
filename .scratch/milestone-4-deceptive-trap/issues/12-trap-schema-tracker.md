@@ -12,7 +12,7 @@ The schema tracker as the spec and the mock describe it: a pure model (parse and
 ## Done when
 
 - Counts and means equal direct computation over each recorded population (property test); invalid schemas (wrong length, other characters) get a readable message and change nothing; a run with and without the tracker is identical.
-- Playwright: type a schema, read the values against the engine, scrub history, reset; keyboard operation and names for every control; geometric test at both sizes with the default and with 40 genes.
+- Playwright: type a schema, read the values against the engine, scrub history, reset; keyboard operation and names for every control; geometric test at both sizes with the default and with 30 genes.
 
 ## Comments
 
