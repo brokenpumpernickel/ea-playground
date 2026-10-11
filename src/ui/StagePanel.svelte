@@ -1,5 +1,7 @@
 <script lang="ts">
   import { describer, stageTitle } from './describe';
+  import { parseSchema, schemaOfBlock } from './schema-model';
+  import SchemaTracker from './SchemaTracker.svelte';
   import CrossoverView from './CrossoverView.svelte';
   import EvaluationView from './EvaluationView.svelte';
   import MutationView from './MutationView.svelte';
@@ -24,6 +26,24 @@
   const position = $derived(order.indexOf(stage));
   const heading = $derived(position < 0 ? stageTitle(stage) : `Stage ${position + 1} · ${stageTitle(stage)}`);
 
+  // the trap's schema tracker is a second view of the stage panel: a view setting, so it is not part of the run or of a link and starts over with the run
+  const blocks = $derived(session.blocks);
+  let showSchema = $state(false);
+  let typedSchema = $state<string | undefined>(undefined);
+  let seenEpoch: number | undefined;
+  $effect(() => {
+    if (seenEpoch === undefined) seenEpoch = session.epoch;
+    else if (session.epoch !== seenEpoch) {
+      seenEpoch = session.epoch;
+      typedSchema = undefined;
+      showSchema = false;
+    }
+  });
+  const schemaOpen = $derived(blocks !== undefined && showSchema);
+  const schemaText = $derived(typedSchema ?? (blocks ? schemaOfBlock(blocks, 1) : ''));
+  const schemaParsed = $derived(blocks ? parseSchema(schemaText, blocks.blockSize * blocks.blocks) : undefined);
+  const schemaPoints = $derived(schemaOpen && schemaParsed?.ok ? session.schemaHistory(schemaParsed.symbols) : undefined);
+
   // the parameters this generation was made with, so the views can explain pc, pm, the operator and the mode
   const params = $derived(session.run.snapshot(view.position.cycle).params);
   const tournament = $derived(view.events.some((e) => e.stage === 'selection' && e.kind === 'tournament-setup'));
@@ -45,11 +65,19 @@
 
 <section class="panel" style="left:24px;top:172px;width:1096px;height:574px" aria-labelledby="stage-heading">
   <div class="ph">
-    <h2 id="stage-heading">{heading}</h2>
+    <h2 id="stage-heading">{schemaOpen ? 'Schema tracker' : heading}</h2>
     {#if session.pending.length > 0}<span class="pendingchip" data-testid="pending-chip" title="Changed settings apply when the next generation starts">● pending: {session.pending.join(', ')}</span>{/if}
   </div>
-  <div id="stagebody" style="top:56px">
-    {#if stage === 'selection' && tournament}
+  {#if blocks}
+    <div class="tabs" role="group" aria-label="View of this panel">
+      <button class="tab" class:on={!showSchema} type="button" aria-pressed={!showSchema} data-testid="show-stage" onclick={() => (showSchema = false)}>Stage view</button>
+      <button class="tab" class:on={showSchema} type="button" aria-pressed={showSchema} data-testid="show-schema" onclick={() => (showSchema = true)}>Schema tracker</button>
+    </div>
+  {/if}
+  <div id="stagebody" style={blocks ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
+    {#if schemaOpen && blocks}
+      <SchemaTracker info={blocks} text={schemaText} oninput={(t) => (typedSchema = t)} history={schemaPoints} now={view.position.cycle} />
+    {:else if stage === 'selection' && tournament}
       <TournamentView model={tournamentModel(view, display)} />
     {:else if stage === 'selection'}
       <p class="expl">{explanation}</p>
@@ -75,5 +103,5 @@
       </ol>
     {/if}
   </div>
-  <div id="narr" data-testid="narration" data-long={narration.text.length > 150 ? 2 : narration.text.length > 100 ? 1 : undefined} aria-live="polite"><span class="m">{narration.label}</span><span>{narration.text}</span></div>
+ {#if !schemaOpen}<div id="narr" data-testid="narration" data-long={narration.text.length > 150 ? 2 : narration.text.length > 100 ? 1 : undefined} aria-live="polite"><span class="m">{narration.label}</span><span>{narration.text}</span></div>{/if}
 </section>

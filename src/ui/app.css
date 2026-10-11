@@ -763,3 +763,26 @@ table:has(.itemhdr) thead th:first-child { vertical-align:top; }
 .projector .bsrow, .projector .bsnum { font-size:15px; }
 /* the summary under the block states is smaller, so the bars of ten blocks and two lines of figures both fit */
 .panel:has(.bstates) .summary, .projector .panel:has(.bstates) .summary { font-size:15px; line-height:1.25; margin-top:3px; }
+
+/* ---------- the trap's schema tracker, a second view of the stage panel ---------- */
+.tabs { position:absolute; left:16px; top:48px; display:flex; gap:6px; }
+.tab { padding:3px 14px; border:2px solid var(--line, var(--ink2)); border-radius:10px; font:inherit; font-size:17px; font-weight:600; color:var(--ink2); background:transparent; cursor:pointer; }
+.tab.on { border-color:var(--acc); background:var(--acc-tint); color:var(--ink); }
+.schema { font-size:17px; display:flex; flex-direction:column; gap:3px; overflow:auto; max-height:100%; }
+.schema .expl { margin:0; }
+.schema .srow { display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px; margin:2px 0; }
+.schema .srow label { font-weight:600; }
+.schema input.textfield { font-family:ui-monospace,Consolas,monospace; letter-spacing:.06em; height:34px; max-width:100%; }
+.schema .srow .btn { height:32px; padding:0 10px; font-size:16px; }
+.schema .srow .btn.compact { min-width:34px; padding:0 6px; }
+.schema .srow .pick { color:var(--ink2); font-size:16px; }
+.schema .err { margin:0; color:var(--flip-ink); font-weight:600; }
+.schema .sfacts { display:flex; flex-wrap:wrap; gap:4px 28px; margin:0; color:var(--ink2); font-size:16px; }
+.schema .sfacts i { font-style:normal; }
+.schema .scharts { display:flex; gap:20px; margin:0; }
+.schema .scharts figure { margin:0; flex:1; min-width:0; }
+.schema .scharts figcaption { font-size:15px; font-weight:600; }
+.schema .scharts svg text { fill:var(--ink); font-size:14px; }
+.schema .scharts .gr { stroke:var(--line, var(--ink2)); opacity:.5; }
+.schema .sum { margin:0; font-weight:600; }
+.schema .caveat { margin:0; color:var(--ink2); font-size:14px; font-style:italic; }

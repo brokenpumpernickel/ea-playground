@@ -4,6 +4,7 @@ import { defaultParams, defaultSeed, defaultSetup } from './config';
 import type { BagInfo } from './bag-context';
 import { blockInfoOf, type BlockInfo } from './block-context';
 import { blockStatesModel, type BlockStatesModel } from './block-states-model';
+import { schemaHistory, type SchemaPoint, type SchemaSymbol } from './schema-model';
 import { changes, draftOf } from './drawer-model';
 import { displayOf, type Display } from './format';
 import { entryOf, type ProblemEntry, type ProblemOptions } from './problems';
@@ -213,6 +214,11 @@ export function createSession(options: SessionOptions) {
       void version;
       const p = run.setup.problem as Partial<TrapProblem>;
       return p.blockGenes && p.options && p.outcomeOf ? blockInfoOf(run.setup.problem as TrapProblem) : undefined;
+    },
+    /** For every recorded generation, how many individuals are instances of a schema and the mean fitnesses (the schema tracker). It only reads the run. */
+    schemaHistory(symbols: readonly SchemaSymbol[]): SchemaPoint[] {
+      void version;
+      return schemaHistory(run, symbols);
     },
     /** The trap's block states for the generation the cursor shows and the recorded history; absent for other problems. */
     get blockStates(): BlockStatesModel | undefined {
