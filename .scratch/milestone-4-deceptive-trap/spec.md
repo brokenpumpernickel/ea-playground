@@ -1,6 +1,6 @@
 # Milestone 4: the deceptive trap
 
-Status: draft, awaiting the instructor's approval to break into tickets
+Status: broken into tickets (14), see `issues/`
 
 Vocabulary follows `CONTEXT.md` (including the new **Block**, **Trap function**, **Deceptive attractor**, **Linkage** and **Schema**). Architecture follows ADRs 0001–0005 in `docs/adr/`. Where this spec and those disagree, the ADRs and glossary win and this spec is wrong. Milestones 1–3 are complete and published; this milestone builds on the problem registry, the problem-declared columns, the contexts that give views problem-specific information (as the knapsack's bag context does), and the share-link configuration.
 
