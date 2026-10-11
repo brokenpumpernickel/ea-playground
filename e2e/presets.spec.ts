@@ -63,6 +63,7 @@ test('the textbook seed shows both pairs recombining and one rare mutation in ge
 });
 
 test('the no-mutation preset stalls as described: gene 1 never gets a 1 and the best is 225', async ({ page }) => {
+  test.slow(); // it runs a whole run to its stop: over the default 20 s when the whole suite runs at once
   await load(page, 'No mutation');
   await expect(page.getByTestId('seed')).toHaveText('4');
   for (let k = 0; k < 50; k++) await page.getByRole('button', { name: /^Generation/ }).click();
