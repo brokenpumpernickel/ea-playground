@@ -1,15 +1,30 @@
 <script lang="ts">
+  import { getContext } from 'svelte';
   import Bits from './Bits.svelte';
+  import BlockRow from './BlockRow.svelte';
+  import { blockContextKey, type BlockGetter } from './block-context';
+  import { blockMutation, describeCancel, describeChange } from './block-model';
   import { geneList, num } from './format';
   import { revealWhenCurrent } from './reveal';
   import TargetRow from './TargetRow.svelte';
   import type { MutationModel, MutationRow } from './variation-models';
 
   let { model }: { model: MutationModel } = $props();
+  const getBlocks = getContext<BlockGetter | undefined>(blockContextKey);
+  const blocks = $derived(getBlocks?.());
 
   const genes = $derived(Array.from({ length: model.geneCount }, (_, k) => k + 1));
   const pm = $derived(num(model.threshold));
 
+  /**
+   * A draw under its gene. In a trap the columns are narrow, so the leading 0 goes (.281), and above 20 genes only the
+   * draws that flipped a gene are printed (the others were all at or above the threshold).
+   */
+  const drawText = (d: { u: number; flipped: boolean }) => {
+    if (!blocks) return num(d.u);
+    if (blocks.blockSize * blocks.blocks > 20) return d.flipped ? `.${String(Math.floor(d.u * 100)).padStart(2, '0')}` : '';
+    return num(d.u).replace(/^0\./, '.');
+  };
   const shown = (symbol: string) => (symbol === ' ' ? '␣' : symbol);
   /** With several symbols per gene each change says what the gene became and which draw r chose it. */
   const changed = (c: MutationRow['changes'][number]) => `gene ${c.gene}: ${shown(c.from)} → ${shown(c.to)}`;
@@ -28,16 +43,24 @@
   {:else}<span class="muted">unchanged</span>{/if}
 {/snippet}
 
+{#snippet blockMarks(row: MutationRow)}
+  {#if blocks && row.revealed && row.after}
+    {@const m = blockMutation(blocks, row.before, row.after)}
+    {#each m.changed as c (c.block)}<span class="badge flip" data-testid="block-change"><span aria-hidden="true">✱</span> {describeChange(c)}</span>{/each}
+    {#each m.cancelled as c (c.block)}<span class="badge quiet" data-testid="block-cancel">{describeCancel(c)}</span>{/each}
+  {/if}
+{/snippet}
+
 <div class="mutation">
   <p class="expl">{model.explanation}</p>
   {#if underEach}
     <div class="mwrap mcards">
-      <div class="crow ctarget"><span class="who"></span><TargetRow /></div>
+      <div class="crow ctarget"><span class="who"></span><TargetRow /><BlockRow wide /></div>
       {#each model.rows as row (row.offspring)}
         <section use:revealWhenCurrent={row.current} class="card mcard" class:current={row.current} class:pending={!row.revealed} aria-current={row.current ? 'true' : undefined} data-offspring={row.offspring} data-state={row.revealed ? 'revealed' : 'pending'} aria-label={`Offspring ${row.offspring}`}>
           <div class="crow">
             <span class="who">O{row.offspring}</span>
-            <Bits chromosome={row.before} small flipped={row.flipped} unders={row.geneDraws?.map((d) => ({ text: num(d.u), flag: d.flipped, value: d.u }))} />
+            <Bits chromosome={row.before} small wideColumns flipped={row.flipped} unders={row.geneDraws?.map((d) => ({ text: drawText(d), flag: d.flipped, value: d.u }))} />
             {#if !row.revealed}<span class="muted">not yet drawn</span>{/if}
           </div>
           {#if row.revealed}
@@ -46,6 +69,7 @@
               <Bits chromosome={row.after!} small flipped={row.flipped} />
               {@render outcome(row)}
             </div>
+            {#if blocks && row.decision === 'mutated'}<div class="crow blockmarks"><span class="who"></span>{@render blockMarks(row)}</div>{/if}
           {/if}
         </section>
       {/each}
@@ -90,6 +114,7 @@
               {:else}
                 <Bits chromosome={row.after!} small flipped={row.flipped} />
                 {@render outcome(row)}
+                {#if blocks}<div class="blockmarks">{@render blockMarks(row)}</div>{/if}
               {/if}
             </td>
           </tr>

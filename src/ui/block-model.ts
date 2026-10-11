@@ -104,3 +104,52 @@ export function blockSplitSummary(origins: readonly BlockOrigin[]): { whole: num
   const n = origins.length;
   return { whole: n - split, split, text: split === 0 ? 'no block split' : `${split} of ${n} block${n === 1 ? '' : 's'} split` };
 }
+
+/** A block whose number of 1s, and so its score, a mutation changed. */
+export interface BlockChange {
+  readonly block: number;
+  /** The block's genes in the block's own order, before and after. */
+  readonly before: string;
+  readonly after: string;
+  readonly from: number;
+  readonly to: number;
+}
+
+/** A block that mutation flipped genes in, but whose number of 1s (and so score) did not change. */
+export interface BlockCancel {
+  readonly block: number;
+  /** The 1-based genes that flipped. */
+  readonly genes: readonly number[];
+  readonly ones: number;
+  readonly score: number;
+}
+
+/** What a mutation did to the blocks of a chromosome: which changed their score, and which were touched but cancelled out. */
+export function blockMutation(info: BlockInfo, before: string, after: string): { changed: BlockChange[]; cancelled: BlockCancel[] } {
+  const b = genesOf(info, before);
+  const a = genesOf(info, after);
+  if (!b || !a) return { changed: [], cancelled: [] };
+  const was = info.outcomeOf(b).blocks;
+  const now = info.outcomeOf(a).blocks;
+  const changed: BlockChange[] = [];
+  const cancelled: BlockCancel[] = [];
+  info.blockGenes.forEach((genes, i) => {
+    const flipped = genes.filter((g) => b[g] !== a[g]).map((g) => g + 1);
+    if (flipped.length === 0) return;
+    if (was[i]!.contribution !== now[i]!.contribution) {
+      changed.push({ block: i + 1, before: genes.map((g) => b[g]).join(''), after: genes.map((g) => a[g]).join(''), from: was[i]!.contribution, to: now[i]!.contribution });
+    } else {
+      cancelled.push({ block: i + 1, genes: flipped, ones: now[i]!.ones, score: now[i]!.contribution });
+    }
+  });
+  return { changed, cancelled };
+}
+
+/** "block 3: 0100 → 1110 · 2 → 0" */
+export const describeChange = (c: BlockChange): string => `block ${c.block}: ${c.before} → ${c.after} · ${c.from} → ${c.to}`;
+
+/** "block 3: genes 10 and 11 flipped but the block still has 1 one, so it still scores 2" */
+export const describeCancel = (c: BlockCancel): string => {
+  const genes = c.genes.length === 1 ? `gene ${c.genes[0]}` : `genes ${c.genes.slice(0, -1).join(', ')} and ${c.genes[c.genes.length - 1]}`;
+  return `block ${c.block}: ${genes} flipped but the block still has ${c.ones} ${c.ones === 1 ? 'one' : 'ones'}, so it still scores ${c.score}`;
+};

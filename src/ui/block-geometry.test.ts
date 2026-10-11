@@ -1,6 +1,20 @@
 import { describe, expect, test } from 'vitest';
 import { linkages, trapLimits } from '../engine';
-import { blockGeometry, chromosomeWidth, groupWidth } from './block-geometry';
+import { blockGeometry, chromosomeWidth, drawExtra, groupWidth } from './block-geometry';
+
+describe('room for the draws printed under the genes of a mutation card', () => {
+  test('up to 20 genes each gene column is 8 px wider than its cell, so a draw like .281 fits under it; above 20 only the draws that flipped a gene are printed, so there is no extra', () => {
+    expect(drawExtra(20)).toBe(8);
+    expect(drawExtra(8)).toBe(8);
+    expect(drawExtra(21)).toBe(0);
+    expect(drawExtra(30)).toBe(0);
+  });
+
+  test('a group of wide columns is as wide as its columns and gaps', () => {
+    expect(groupWidth(4, 20, 8)).toBe(4 * 28 + 3 * 2);
+    expect(groupWidth(4, 20)).toBe(groupWidth(4, 20, 0));
+  });
+});
 
 describe('the size of the cells of a chromosome made of blocks', () => {
   test('up to 20 genes the cells are 20 px wide; from 21 genes they are 15 px, so that 30 genes still fit', () => {

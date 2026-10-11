@@ -3,7 +3,7 @@
   import { itemName } from '../engine';
   import { bagContextKey, type BagGetter } from './bag-context';
   import { blockContextKey, type BlockGetter } from './block-context';
-  import { blockGeometry } from './block-geometry';
+  import { blockGeometry, drawExtra } from './block-geometry';
   import { blockSentence, type BlockNote } from './block-model';
   import { geneList } from './format';
   import { targetContextKey, type TargetGetter } from './target-context';
@@ -39,6 +39,7 @@
     marks,
     unders,
     blockNotes = [],
+    wideColumns = false,
   }: {
     chromosome: string;
     small?: boolean;
@@ -51,6 +52,8 @@
     unders?: readonly { readonly text: string; readonly flag: boolean; readonly value?: number }[];
     /** A note under each block of a trap chromosome (its mark and score, or what crossover did to it). */
     blockNotes?: readonly BlockNote[];
+    /** The mutation card's top row: every gene's column is a little wider than its cell, whether or not the draws are printed yet. */
+    wideColumns?: boolean;
   } = $props();
 
   const letters = $derived(!/^[01]*$/.test(chromosome));
@@ -75,7 +78,7 @@
   /** Whether this is a chromosome of the running trap (a binary string of the right length). */
   const blocked = $derived(blocks !== undefined && /^[01]+$/.test(chromosome) && chromosome.length === blocks.blockSize * blocks.blocks);
   const geometry = $derived(blocked ? blockGeometry(chromosome.length) : undefined);
-  const blockStyle = $derived(geometry ? `--bw:${geometry.cell}px;--bh:${geometry.height}px;--bf:${geometry.font}px;--bg:${geometry.gap}px;--bgg:${geometry.blockGap}px;--bk:${blocks!.blockSize}` : undefined);
+  const blockStyle = $derived(geometry ? `--bw:${geometry.cell}px;--bh:${geometry.height}px;--bf:${geometry.font}px;--bg:${geometry.gap}px;--bgg:${geometry.blockGap}px;--bk:${blocks!.blockSize}${unders || wideColumns ? `;--bcw:${geometry.cell + drawExtra(chromosome.length)}px` : ''}` : undefined);
   const tightBlocks = $derived(blocked && blocks!.linkage === 'tight');
   const noteOf = (b: number) => blockNotes.find((n) => n.block === b + 1);
 
@@ -105,7 +108,7 @@
 
 {#snippet cell(bit: string, k: number)}<b class="bit" class:knap={knap} class:dense={dense} class:skip={skippedAt.includes(k)} class:one={marks ? marks[k] : matched ? matched[k] : bit === '1' && !skippedAt.includes(k)} class:match={matched?.[k] === true} class:miss={matched?.[k] === false} class:letter={letters} class:blocked={blocked} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cut={dropped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{skippedAt.includes(k) ? '✕' : bit === ' ' ? '␣' : bit}</b>{/snippet}
 
-{#snippet gene(bit: string, k: number)}{#if unders}<span class="gcell">{@render cell(bit, k)}<span class="under" class:flag={unders[k]?.flag} data-gene={k + 1} data-u={unders[k]?.value} aria-hidden="true">{unders[k]?.text ?? ''}</span></span>{:else}{@render cell(bit, k)}{/if}{/snippet}
+{#snippet gene(bit: string, k: number)}{#if unders || (wideColumns && blocked)}<span class="gcell">{@render cell(bit, k)}<span class="under" class:flag={unders?.[k]?.flag} data-gene={k + 1} data-u={unders?.[k]?.value} aria-hidden="true">{unders?.[k]?.text ?? ''}</span></span>{:else}{@render cell(bit, k)}{/if}{/snippet}
 
 <span
   class="bits"

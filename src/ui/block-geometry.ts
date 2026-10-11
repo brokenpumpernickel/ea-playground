@@ -18,10 +18,16 @@ export interface BlockGeometry {
 export const blockGeometry = (genes: number): BlockGeometry =>
   genes <= 20 ? { cell: 20, height: 26, font: 16, gap: 2, blockGap: 6 } : { cell: 15, height: 24, font: 13, gap: 1, blockGap: 4 };
 
-/** The width of a group of `size` cells in a chromosome of `genes` genes. */
-export const groupWidth = (size: number, genes: number): number => {
+/**
+ * How much wider than its cell each gene's column is in a mutation card, where a draw is printed under every gene: room
+ * for a draw like .281 up to 20 genes; above that only the draws that flipped a gene are printed, so none.
+ */
+export const drawExtra = (genes: number): number => (genes <= 20 ? 8 : 0);
+
+/** The width of a group of `size` cells in a chromosome of `genes` genes, each column `extra` px wider than its cell. */
+export const groupWidth = (size: number, genes: number, extra = 0): number => {
   const g = blockGeometry(genes);
-  return size * g.cell + (size - 1) * g.gap;
+  return size * (g.cell + extra) + (size - 1) * g.gap;
 };
 
 /** The width of a whole chromosome of `blocks` blocks of `blockSize` genes. */

@@ -85,6 +85,23 @@ describe('a chromosome in a trap screen', () => {
   });
 });
 
+describe('with draws printed under the genes (the mutation cards)', () => {
+  const unders = (n: number) => Array.from({ length: n }, () => ({ text: '.281', flag: false }));
+
+  test('each gene column is 8 px wider than its cell, up to 20 genes, and the block row can ask for the same widths', () => {
+    const markup = bits(sample, infoOf(4, 5), { unders: unders(20) });
+    expect(markup).toContain('--bcw:28px');
+    const wide = plain(render(BlockRow as never, { props: { wide: true } as never, context: withBlocks(infoOf(4, 5)) }).body);
+    expect([...wide.matchAll(/<span class="brk" style="width:(\d+)px"/g)].map((m) => Number(m[1]))).toEqual(Array(5).fill(groupWidth(4, 20, 8)));
+    const wideLoose = plain(render(BlockRow as never, { props: { wide: true } as never, context: withBlocks(infoOf(4, 5, 'loose')) }).body);
+    expect(new Set([...wideLoose.matchAll(/<span class="bn b[01]" style="width:(\d+)px"/g)].map((m) => Number(m[1])))).toEqual(new Set([28]));
+  });
+
+  test('above 20 genes there is no extra width', () => {
+    expect(bits('1'.repeat(30), infoOf(6, 5), { unders: unders(30) })).toContain('--bcw:15px');
+  });
+});
+
 describe('the block row', () => {
   test('tight: one label per block, “block n”, as wide as its group of cells', () => {
     const markup = blockRow(infoOf(4, 5));
