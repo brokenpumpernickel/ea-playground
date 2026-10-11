@@ -3,17 +3,33 @@
   import DiscardNotice from './DiscardNotice.svelte';
   import Drawer from './Drawer.svelte';
   import HistoryStrip from './HistoryStrip.svelte';
+  import LinkNotice from './LinkNotice.svelte';
   import MetricsPanel from './MetricsPanel.svelte';
   import PopulationPanel from './PopulationPanel.svelte';
   import ResetNotice from './ResetNotice.svelte';
+  import { setupOf } from './run-config';
   import { createSession } from './session.svelte';
+  import { startupOf } from './share-link';
   import { shortcutFor } from './shortcuts';
   import StagePanel from './StagePanel.svelte';
   import TopBar from './TopBar.svelte';
   import Transport from './Transport.svelte';
 
   const reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // a share link in the address asks for its configuration; a damaged one is reported and the defaults open instead
+  const startup = startupOf(location.hash);
+  const startConfig = startup.kind === 'config' ? startup.config : undefined;
+  let linkProblems = $state<readonly string[] | undefined>(startup.kind === 'invalid' ? startup.problems : undefined);
+  if (startup.kind !== 'none') {
+    try {
+      // the address would otherwise say a state the screen no longer shows after the first change
+      history.replaceState(null, '', location.pathname + location.search);
+    } catch {
+      /* some contexts refuse to rewrite the address; the link is then simply still there */
+    }
+  }
   const session = createSession({
+    config: startConfig && { setup: setupOf(startConfig), params: startConfig.params, seed: startConfig.seed },
     scheduler: { setTimeout: (callback, ms) => window.setTimeout(callback, ms), clearTimeout: (handle) => window.clearTimeout(handle as number) },
     reducedMotion,
   });
@@ -111,6 +127,7 @@
     <PopulationPanel {session} />
     <MetricsPanel {session} {showFunction} toggleFunction={() => (showFunction = !showFunction)} />
     <HistoryStrip {session} />
+    {#if linkProblems}<LinkNotice problems={linkProblems} ondismiss={() => (linkProblems = undefined)} />{/if}
     {#if drawerOpen}<Drawer {session} onclose={closeDrawer} />{/if}
     {#if session.pendingChange}<DiscardNotice {session} />{/if}
     {#if session.pendingReset}<ResetNotice {session} />{/if}

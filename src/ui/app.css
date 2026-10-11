@@ -488,3 +488,10 @@ input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radi
 
 /* switching the bottom-right plots */
 .plot .legend .btn.tiny { height:30px; padding:0 8px; font-size:16px; margin-left:10px; vertical-align:middle; }
+
+/* share link */
+.linknotice { position:absolute; left:50%; top:96px; transform:translateX(-50%); width:1000px; z-index:30; display:flex; gap:20px; align-items:flex-start; justify-content:space-between; padding:14px 20px; background:var(--flip-bg); color:var(--flip-ink); border:3px solid var(--flip); border-radius:12px; font-size:20px; box-shadow:0 12px 40px rgba(0,0,0,.25); }
+.linknotice ul { margin:6px 0 0; padding-left:22px; font-size:18px; }
+.linknotice .btn { flex:none; background:var(--surface); }
+#drawer .sharerow { display:flex; align-items:center; gap:12px; padding:4px 0; }
+#drawer .linkfield { width:100%; text-align:left; font-size:15px; margin-top:4px; }

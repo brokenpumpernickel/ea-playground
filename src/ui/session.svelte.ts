@@ -2,6 +2,7 @@ import { gaAlgorithm, metricsOf, type GaEvent, type GaParams, type GaSetup, type
 import { createPlayback, createRun, type AnimationFlags, type Playback, type PlaybackStatus, type Position, type Run, type Scheduler, type Tier, type View } from '../run';
 import { defaultParams, defaultSeed, defaultSetup } from './config';
 import { changes, draftOf } from './drawer-model';
+import { configOf, type RunConfig } from './run-config';
 import { plotModel, type PlotModel } from './plot-models';
 import { atCycleEnd, populationTable, type PopulationTable } from './population';
 
@@ -11,6 +12,8 @@ export interface SessionOptions {
   /** Runs callbacks later; the app passes the browser's timers, tests pass a fake. */
   scheduler: Scheduler;
   seed?: number;
+  /** Start from this configuration (a share link) instead of the defaults. */
+  config?: { readonly setup: GaSetup; readonly params: GaParams; readonly seed: number };
   reducedMotion?: boolean;
   /** Where "New seed" gets its number from. */
   drawSeed?: () => number;
@@ -47,7 +50,11 @@ const joinWords = (words: readonly string[]) => (words.length < 2 ? words.join('
 const generationRange = (cycles: readonly number[]) => (cycles.length === 1 ? `Generation ${cycles[0]} will` : `Generations ${cycles[0]}–${cycles[cycles.length - 1]} will`);
 
 export function createSession(options: SessionOptions) {
-  const run: GaRun = createRun(gaAlgorithm, { setup: defaultSetup, params: defaultParams, seed: options.seed ?? defaultSeed });
+  const run: GaRun = createRun(gaAlgorithm, {
+    setup: options.config?.setup ?? defaultSetup,
+    params: options.config?.params ?? defaultParams,
+    seed: options.config?.seed ?? options.seed ?? defaultSeed,
+  });
   const playback: Playback = createPlayback(run, { scheduler: options.scheduler, reducedMotion: options.reducedMotion });
   const drawSeed = options.drawSeed ?? randomSeed;
 
@@ -165,6 +172,11 @@ export function createSession(options: SessionOptions) {
       const what = reset.preset ? `Loading the preset “${reset.preset}” restarts the run from generation 0.` : `Changing ${joinWords(reset.changed.map(settingPhrase))} restarts the run from generation 0.`;
       const n = run.lastCycle;
       return n === 0 ? `${what} Nothing recorded will be lost.` : `${what.slice(0, -1)} and discards the ${n} recorded ${n === 1 ? 'generation' : 'generations'} (${n === 1 ? '1' : `1–${n}`}).`;
+    },
+    /** The configuration the run has now, with any pending parameters applied: what a share link carries. */
+    get shareConfig(): RunConfig {
+      void version;
+      return configOf(run.setup, run.parameters, run.seed);
     },
     get epoch(): number {
       return epoch;

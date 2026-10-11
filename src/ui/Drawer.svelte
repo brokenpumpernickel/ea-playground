@@ -5,6 +5,7 @@
   import DrawerRow from './DrawerRow.svelte';
   import { changes, draftOf, toParams, toSetup, validate, type Draft, type Field } from './drawer-model';
   import PopulationEditor from './PopulationEditor.svelte';
+  import ShareLink from './ShareLink.svelte';
   import { presets } from './presets';
   import type { Session } from './session.svelte';
 
@@ -122,6 +123,11 @@
         <span class="help">Restarts the run with this configuration and seed {preset.seed}.</span>
       </div>
     {/if}
+  </div>
+
+  <div class="sec" data-section="share">
+    <h3>Share</h3>
+    <ShareLink {session} />
   </div>
 
   <div class="sec" data-section="setup">

@@ -288,3 +288,24 @@ describe('presets', () => {
     expect(session.presetName).toBeUndefined();
   });
 });
+
+describe('starting from a configuration (a share link)', () => {
+  test('the run opens paused at generation 0 with that setup, parameters and seed, and says so in its share configuration', () => {
+    const setup = { ...defaultSetup, init: { kind: 'explicit' as const, chromosomes: ['01101', '11000'] } };
+    const params = { ...defaultParams, elites: 1 };
+    const session = createSession({ scheduler: createFakeScheduler(), config: { setup, params, seed: 7 } });
+    expect(session.seed).toBe(7);
+    expect(session.run.lastCycle).toBe(0);
+    expect(session.status).toEqual({ playing: false });
+    expect(session.table.rows.map((r) => r.chromosome)).toEqual(['01101', '11000']);
+    expect(session.shareConfig).toEqual({ v: 1, problem: 'goldberg', setup: { init: setup.init }, params, seed: 7 });
+  });
+
+  test('the share configuration includes parameters that are still pending, and not setup edits that were never applied', () => {
+    const { session } = make();
+    generations(session, 2);
+    session.changeParameters({ ...defaultParams, crossover: { ...defaultParams.crossover, probability: 0.3 } });
+    expect(session.shareConfig.params.crossover.probability).toBe(0.3);
+    expect(session.shareConfig.setup.init).toEqual({ kind: 'random', size: 6 });
+  });
+});
