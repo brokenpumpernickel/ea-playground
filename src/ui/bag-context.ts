@@ -11,6 +11,8 @@ export const bagContextKey = Symbol('knapsack');
 export interface BagInfo {
   readonly items: readonly KnapsackItem[];
   readonly capacity: number;
+  /** True when a chromosome's bag may weigh more than the capacity (the penalty method): bars then leave room for all the items. */
+  readonly mayExceed?: boolean;
   outcomeOf(chromosome: readonly number[]): BagOutcome;
 }
 

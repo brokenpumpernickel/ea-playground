@@ -204,7 +204,7 @@ export function createSession(options: SessionOptions) {
     get bag(): BagInfo | undefined {
       void version;
       const p = run.setup.problem as Partial<KnapsackProblem>;
-      return p.outcomeOf && p.options ? { items: p.options.items, capacity: p.options.capacity, outcomeOf: p.outcomeOf.bind(p) } : undefined;
+      return p.outcomeOf && p.options ? { items: p.options.items, capacity: p.options.capacity, mayExceed: p.mayBeInfeasible === true, outcomeOf: p.outcomeOf.bind(p) } : undefined;
     },
     get problemEntry(): ProblemEntry {
       return entryOf(problemId)!;

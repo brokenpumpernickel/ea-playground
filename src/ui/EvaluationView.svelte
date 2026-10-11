@@ -27,9 +27,9 @@
         <tr>
           <th scope="col">Offspring</th>
           <th scope="col">Chromosome<TargetRow /><ItemRow /></th>
-          {#if model.explains}<th scope="col">What happened</th>{/if}
-          {#each model.columns as column (column.header)}
-            <th scope="col" class="num">{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>
+          {#if model.explains}<th scope="col" class="why">What happened</th>{/if}
+          {#each model.columns as column, c (column.header)}
+            <th scope="col" class="num" class:meter={model.rows.some((r) => r.meters?.[c])}>{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>
           {/each}
           <th scope="col">Becomes</th>
         </tr>
@@ -42,7 +42,7 @@
             {#if row.revealed}
               {#if model.explains}<td class="why" data-col="what happened">{row.why?.summary}</td>{/if}
               {#each model.columns as column, c (column.header)}
-                <td class="num" class:strong={c === model.columns.length - 1} data-col={column.header.toLowerCase()}>{#if row.meters?.[c]}<CapacityBar value={row.meters[c]!.value} limit={row.meters[c]!.limit} /> {/if}{row.cells?.[c]}</td>
+                <td class="num" class:meter={row.meters?.[c]} class:strong={c === model.columns.length - 1} data-col={column.header.toLowerCase()}>{#if row.meters?.[c]}<CapacityBar value={row.meters[c]!.value} limit={row.meters[c]!.limit} /> {/if}{row.cells?.[c]}</td>
               {/each}
               <td data-col="id">individual {row.id}</td>
             {:else}

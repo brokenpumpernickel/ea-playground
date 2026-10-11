@@ -1,6 +1,6 @@
 # 17 Rendered review and sign-off
 
-Status: awaiting instructor sign-off
+Status: awaiting instructor sign-off (second pass after review findings)
 Type: review (needs instructor)
 Blocked by: 14, 15, 16
 Spec: ../spec.md
@@ -46,3 +46,17 @@ The spec's "To decide" list now records the instance, the defaults and preset se
 ### For the instructor's walkthrough
 
 Open https://brokenpumpernickel.github.io/ea-playground/, choose Knapsack, switch on Projector mode, and step through one generation with the Micro-step button (especially stages 5 and 6 under Repair (Lamarckian) and Penalty). Report anything illegible from the back of the room, in particular the smaller narration line at the bottom of the stage panel. Issues you find will be filed as tickets in this folder.
+
+### Review findings from the instructor's first look at projector mode (fixed)
+
+Found with penalty ρ = 0, where most bags are far overweight; each was reproduced by a failing Playwright test first (`e2e/knapsack-a11y.spec.ts`, at 1920×1080 and 1366×768) and is fixed:
+
+1. **Mutation cards: the orange draw label ran into the ✱ of the gene below it.** The result row now has 20 px of room above it.
+2. **Population table: the weight meter of one row sat 20 px to the right of the others** (the cell was right-aligned, so a shorter text pushed the meter along). The weight column is now left-aligned in header and cells when it has meters, so every meter starts at the same place.
+3. **Evaluation: the stacked bar ran past the end of its track and over its caption** when a bag weighed more than 1.5 × the capacity (80 against 48 under ρ = 0). Where overweight bags are allowed (penalty) the bar is now as long as all the items together, so the capacity mark stays in one place and no bag can overrun it; for the other methods it is unchanged, and a segment past the end is cut off rather than drawn outside. (Unit tests in `knapsack-bars.test.ts`.)
+4. **Evaluation header: "OFFSPRING" sat on the item / weight / value labels.** The first heading is now top-aligned, above them.
+5. Found on the way, same cause (very overweight bags make the figures wider): the Parents table's Fitness column was clipped at 1920×1080 (small meters are now hidden when parent marks and a penalty column are both present; the figures say the same), and with 20 items the evaluation table was 6 px wider than its panel (tighter dense padding, "What happened" heading and text may wrap). A new test plays eight generations and every stage with ρ = 0, for 12 and 20 items, and requires every table to fit its panel.
+6. A missing space in "weight 71 of 48· 23 over (hatched)" (same in "repaired from").
+7. `app.spec.ts` "stepping by micro-step, by stage and by generation" timed out at 20 s whenever the whole suite ran at once; it is now marked slow (3× timeout). The test itself is unchanged.
+
+Rechecked: `npm run check` clean, 1233 unit tests, 289 Playwright tests, all passing. New screenshots: `1920-15-fix-mutation-cards.png`, `1920-16-fix-penalty-meters.png`, `1920-17-fix-penalty-stacked-bar.png`.

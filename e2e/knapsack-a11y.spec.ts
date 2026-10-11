@@ -10,10 +10,10 @@ const url = pathToFileURL(resolve('dist/index.html')).href;
 const entry = entryOf('knapsack')!;
 const base = entry.defaultOptions() as KnapsackOptions;
 
-const setupOf = (handling: Handling, o: { items?: number; params?: GaParams; seed?: number } = {}) => {
+const setupOf = (handling: Handling, o: { items?: number; params?: GaParams; seed?: number; rho?: number } = {}) => {
   const items = Array.from({ length: o.items ?? 12 }, (_, k) => base.items[k % 12]!);
   const total = items.reduce((t, i) => t + i.weight, 0);
-  const options: KnapsackOptions = { ...base, handling, items, capacity: o.items && o.items !== 12 ? Math.floor(total / 2) : base.capacity };
+  const options: KnapsackOptions = { ...base, handling, rho: o.rho ?? base.rho, items, capacity: o.items && o.items !== 12 ? Math.floor(total / 2) : base.capacity };
   const problem = entry.create(options);
   return { options, problem, setup: { problem, init: entry.defaults.init }, params: o.params ?? entry.defaults.params, seed: o.seed ?? 42 };
 };
@@ -206,6 +206,130 @@ for (const [width, height] of [
       for (let k = 0; k < 2 * 40; k++) {
         await page.keyboard.press('ArrowRight');
         expect(await outside(), `micro-step ${k + 1}`).toEqual([]);
+      }
+    });
+  }
+}
+
+type Box = { left: number; right: number; top: number; bottom: number };
+const meet = (a: Box, b: Box) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+const gotoStage = async (page: Page, stage: number) => {
+  await page.keyboard.press('ArrowRight');
+  for (let k = 0; k < stage; k++) await page.keyboard.press('Shift+ArrowRight');
+};
+
+for (const [width, height] of [
+  [1920, 1080],
+  [1366, 768],
+] as const) {
+  test(`at ${width}×${height} in projector mode, a gene's ✱ in the mutation cards does not run into the draw printed under the gene above it`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    const params: GaParams = { ...entry.defaults.params, mutation: { ...entry.defaults.params.mutation, probability: 0.3 } };
+    await open(page, setupOf('decoder', { params, seed: 4 }));
+    await page.getByRole('button', { name: 'Projector mode' }).click();
+    await gotoStage(page, 4);
+    await expect(page.getByRole('heading', { level: 2, name: /Mutation/ })).toBeVisible();
+    const clashes = await page.evaluate(() => {
+      const boxOf = (r: DOMRect) => ({ left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+      const out: string[] = [];
+      let flips = 0;
+      for (const card of document.querySelectorAll('.mcard')) {
+        const unders = [...card.querySelectorAll('.under')].map((el) => boxOf(el.getBoundingClientRect()));
+        for (const bit of card.querySelectorAll('.bit.flip')) {
+          const r = bit.getBoundingClientRect();
+          const k = r.width / (bit as HTMLElement).offsetWidth; // the screen is scaled to fit the window
+          const star = { left: r.left + r.width / 2 - 9 * k, right: r.left + r.width / 2 + 9 * k, top: r.top - 18 * k, bottom: r.top };
+          if (!card.contains(bit) || unders.length === 0) continue;
+          flips++;
+          if (bit.closest('.crow')!.querySelector('.under') === null && unders.some((u) => u.left < star.right && star.left < u.right && u.top < star.bottom && star.top < u.bottom)) out.push(`${card.getAttribute('data-offspring')}`);
+        }
+      }
+      return { out, flips };
+    });
+    expect(clashes.flips).toBeGreaterThan(0);
+    expect(clashes.out).toEqual([]);
+  });
+
+  test(`at ${width}×${height}, the weight meters in the population table line up whatever the text beside them says`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await open(page, setupOf('penalty', { rho: 0, seed: 9 }));
+    await page.getByRole('button', { name: 'Projector mode' }).click();
+    for (let g = 0; g < 8; g++) await page.keyboard.press('g');
+    const lefts = await page.locator('.tablewrap tbody tr [data-col="bag weight"] .capbar').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().left)));
+    const texts = await page.locator('.tablewrap tbody tr [data-col="bag weight"]').allTextContents();
+    expect(lefts.length).toBe(8);
+    expect(new Set(texts.map((t) => t.trim().length)).size, 'the test needs texts of different lengths').toBeGreaterThan(1);
+    expect(new Set(lefts).size).toBe(1);
+  });
+
+  test(`at ${width}×${height}, with ρ = 0 and a bag of 80 against a capacity of 48, the stacked bar stays inside its track and clear of its caption`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    const chromosomes = ['111101111011', '111111111111', '011000000000'];
+    const s = setupOf('penalty', { rho: 0 });
+    await page.goto('about:blank');
+    await page.goto(url + encodeConfig(configOf({ ...s.setup, init: { kind: 'explicit', chromosomes } }, s.params, 3, 'knapsack', s.options)));
+    await page.getByRole('button', { name: 'Projector mode' }).click();
+    await gotoStage(page, 4);
+    const seen: number[] = [];
+    for (let k = 0; k < 8; k++) {
+      await page.keyboard.press('ArrowRight');
+      const geometry = await page.evaluate(() => {
+        const bar = document.querySelector('.bigbar');
+        if (!bar) return null;
+        const track = bar.getBoundingClientRect();
+        const segs = [...bar.querySelectorAll('.seg')].map((el) => el.getBoundingClientRect());
+        const caption = document.querySelector('.bagwrap .legend2')!.getBoundingClientRect();
+        return { overrun: Math.max(0, ...segs.map((r) => r.right - track.right)), captionClear: caption.left >= track.right - 1 };
+      });
+      if (!geometry) continue;
+      seen.push(Number(await page.locator('[data-testid="bag-bar"]').getAttribute('data-weight')));
+      expect(geometry.overrun).toBeLessThanOrEqual(1);
+      expect(geometry.captionClear).toBe(true);
+    }
+    expect(Math.max(...seen), 'the test needs a bag heavier than 72').toBeGreaterThan(72);
+  });
+
+  test(`at ${width}×${height}, in the evaluation table the first column's heading does not sit on the item row's labels`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await open(page, setupOf('repair-lamarckian', { seed: 19 }));
+    await page.getByRole('button', { name: 'Projector mode' }).click();
+    await gotoStage(page, 5);
+    await expect(page.getByRole('heading', { level: 2, name: /Evaluation/ })).toBeVisible();
+    const boxes = await page.evaluate(() => {
+      const th = document.querySelector('.etable thead th:first-child')!;
+      const range = document.createRange();
+      range.selectNodeContents(th.firstChild!);
+      const box = (r: DOMRect) => ({ left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+      return { heading: box(range.getBoundingClientRect()), labels: [...document.querySelectorAll('.etable .itemhdr .lbl i')].map((el) => box(el.getBoundingClientRect())) };
+    });
+    expect(boxes.labels.length).toBe(3);
+    for (const label of boxes.labels) expect(meet(boxes.heading, label), 'heading and a label overlap').toBe(false);
+  });
+}
+
+for (const [width, height] of [
+  [1920, 1080],
+  [1366, 768],
+] as const) {
+  for (const [handling, items] of [['penalty', 12] as const, ['penalty', 20] as const]) {
+    test(`at ${width}×${height} in projector mode, ${handling} with ρ = 0 and ${items} items, where nearly every bag is far overweight: no table is wider than its panel at any stage of eight generations`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await open(page, setupOf(handling, { items, rho: 0, seed: 9 }));
+      await page.getByRole('button', { name: 'Projector mode' }).click();
+      const wide = () =>
+        page.evaluate(() =>
+          [...document.querySelectorAll('.tablewrap, .mwrap')]
+            .filter((el) => el.scrollWidth > el.clientWidth + 1 || [...el.querySelectorAll('th, td')].some((cell) => cell.getBoundingClientRect().right > el.getBoundingClientRect().right + 1))
+            .map((el) => `${el.className} ${el.scrollWidth}>${el.clientWidth}`),
+        );
+      for (let g = 0; g < 8; g++) {
+        await page.keyboard.press('g');
+        expect(await wide(), `generation ${g + 1}`).toEqual([]);
+      }
+      await page.keyboard.press('ArrowRight');
+      for (let stage = 0; stage < 6; stage++) {
+        await page.keyboard.press('Shift+ArrowRight');
+        expect(await wide(), `stage ${stage + 1}`).toEqual([]);
       }
     });
   }

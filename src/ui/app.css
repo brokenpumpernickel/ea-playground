@@ -661,7 +661,7 @@ table.tight .capbar { display:none; }
 .itemrow.dense b { font-size:13px; }
 .itemrow.dense u, .itemrow.dense s { font-size:11px; }
 .pcard .parent { flex-wrap:wrap; }
-.tablewrap:has(.bit.dense) th, .tablewrap:has(.bit.dense) td { padding-left:3px; padding-right:3px; }
+.tablewrap:has(.bit.dense) th, .tablewrap:has(.bit.dense) td { padding-left:2px; padding-right:2px; }
 .etable:has(.bit.dense) th, .etable:has(.bit.dense) td { padding-left:3px; padding-right:3px; }
 .tablewrap:has(.parentmark) .capbar { width:26px; }
 .tablewrap .parentmark { margin-left:3px; font-size:14px; }
@@ -673,3 +673,15 @@ table.tight .capbar { display:none; }
 .etable:has(.bit.dense) .capbar { display:none; }
 .etable:has(.bit.dense) td.why { font-size:13px; }
 .etable:has(.bit.dense) td[data-col="id"] { font-size:13px; }
+
+/* the weight column: the meter always starts at the same place, whatever the text after it says ("54/48 ✗ +6" is shorter than "80/48 ✗ +32") */
+table:not(.tight) th.meter, table:not(.tight) td.meter { text-align:left; }
+/* the ✱ over a mutated gene in the result row needs the room the draw printed under the gene above would otherwise take */
+.mcard .crow.res { margin-top:20px; }
+/* the first heading of a table with the item row: at the top, clear of the item / weight / value labels beside the cells */
+table:has(.itemhdr) thead th:first-child { vertical-align:top; }
+/* parent marks and a penalty column together leave no room for the small bars (the figures beside them say the same) */
+.tablewrap:has(.parentmark):has([data-col="penalty"]) .capbar { display:none; }
+/* twenty items and a heavy overweight: the long "over by 120 (0 × 120)" may wrap rather than push the table out of its panel */
+.etable:has(.bit.dense) td.why { white-space:normal; max-width:130px; line-height:1.15; }
+.etable:has(.bit.dense) th.why { white-space:normal; width:90px; }

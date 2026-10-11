@@ -65,6 +65,23 @@ describe('the stacked bag', () => {
     expect(attr(markup, 'data-excess')).toBe(1);
   });
 
+  test('where overweight bags are allowed the bar is as long as all the items together, so even the heaviest bag stays inside it and the capacity mark never moves', () => {
+    const roomy: BagInfo = { ...bag, mayExceed: true };
+    const total = builtInKnapsack.items.reduce((t, i) => t + i.weight, 0); // 97
+    const markup = draw('ABCDEFGHIJKL', { bag: roomy }); // everything: weight 97, 49 over
+    const s = segments(markup);
+    expect(s.map((x) => x.left + x.width).reduce((x, y) => Math.max(x, y))).toBeCloseTo(100, 6);
+    expect(s.find((x) => x.over)!.left).toBeCloseTo((48 / total) * 100, 6);
+    expect(markup).toContain(`left:${((48 / total) * 100).toString().slice(0, 6)}`);
+    for (const letters of ['B', 'ABEFG', 'ACDFGHIKL']) expect(draw(letters, { bag: roomy })).toContain(`left:${((48 / total) * 100).toString().slice(0, 6)}`);
+  });
+
+  test('where they are not, a bag can only be as heavy as the capacity and the bar stays one and a half times the capacity; a bag heavier than the bar is cut off at its end rather than drawn outside it', () => {
+    const heavy = draw('ABCDEFGHIJKL'); // the bag of this test allows no excess, but is given one: the bar must not be overrun
+    expect(Math.max(...segments(heavy).map((x) => x.left + x.width))).toBeLessThanOrEqual(100.000001);
+    expect(draw('B')).toContain('left:66.66');
+  });
+
   test('says what it is in words: how many items, the weight against the capacity, and what repair started from', () => {
     expect(draw('')).toContain('nothing packed');
     expect(draw('B')).toContain('1 item');

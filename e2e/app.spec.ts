@@ -59,6 +59,7 @@ test('pressing Generation three times shows the engine’s population for genera
 });
 
 test('stepping by micro-step, by stage and by generation reaches the same screen', async ({ page, browser }) => {
+  test.slow(); // three browser pages and about a hundred key presses: over the default 20 s when the whole suite runs at once
   const reach = async (p: Page, step: string | RegExp) => {
     for (let n = 0; n < 200; n++) {
       if ((await title(p).textContent()) === 'Population · generation 2') return;

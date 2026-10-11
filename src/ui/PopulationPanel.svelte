@@ -36,7 +36,7 @@
           <th scope="col">#</th>
           <th scope="col">Chromosome<TargetRow /><ItemRow /></th>
           {#each columns as { column } (column.header)}
-            <th scope="col" class="num">{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>
+            <th scope="col" class="num" class:meter={column.meter}>{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>
           {/each}
           {#if showSelection}
             <th scope="col" class="num">Weight</th>
@@ -51,7 +51,7 @@
             <td data-col="id"><span class="sym" title={row.elite ? 'Elite: carried over unchanged' : undefined}>{row.elite ? '★' : ''}</span>{row.id}{#if knapsack && row.parentCount}<span class="parentmark" title="selected as a parent {row.parentCount} {row.parentCount === 1 ? 'time' : 'times'}" data-col="parent"><span class="sym" aria-hidden="true">◆</span>×{row.parentCount}</span>{/if}</td>
             <td><Bits chromosome={row.chromosome} small /></td>
             {#each columns as { column, c } (column.header)}
-              <td class="num" data-col={column.header.toLowerCase()}>{#if row.meters?.[c]}<CapacityBar value={row.meters[c]!.value} limit={row.meters[c]!.limit} /> {/if}{row.cells[c]}</td>
+              <td class="num" class:meter={row.meters?.[c]} data-col={column.header.toLowerCase()}>{#if row.meters?.[c]}<CapacityBar value={row.meters[c]!.value} limit={row.meters[c]!.limit} /> {/if}{row.cells[c]}</td>
             {/each}
             {#if showSelection}
               <td class="num" data-col="weight">{row.weight ?? '—'}</td>

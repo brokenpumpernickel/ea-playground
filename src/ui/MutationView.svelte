@@ -41,7 +41,7 @@
             {#if !row.revealed}<span class="muted">not yet drawn</span>{/if}
           </div>
           {#if row.revealed}
-            <div class="crow">
+            <div class="crow res">
               <span class="who sub">result</span>
               <Bits chromosome={row.after!} small flipped={row.flipped} />
               {@render outcome(row)}
