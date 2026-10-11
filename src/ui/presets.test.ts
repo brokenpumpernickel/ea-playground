@@ -3,19 +3,23 @@ import { gaAlgorithm, metricsOf, type GaEvent, type GaParams, type GaSetup, type
 import { createRun, type Run } from '../run';
 import { draftOf, validate } from './drawer-model';
 import { presetFromData, presets, type Preset } from './presets';
+import { entryOf } from './problems';
 
 type GaRun = Run<GaSetup, GaParams, RunState, GaEvent>;
-const byId = (suffix: string): Preset => presets.find((p) => p.id.endsWith(suffix))!;
+const byId = (suffix: string): Preset => presets.find((p) => p.problem === 'goldberg' && p.id.endsWith(suffix))!;
+const wordPreset = (suffix: string): Preset => presets.find((p) => p.problem === 'target-string' && p.id.endsWith(suffix))!;
 const play = (preset: Preset, generations: number): GaRun => {
   const run: GaRun = createRun(gaAlgorithm, { setup: preset.setup, params: preset.params, seed: preset.seed });
   for (let g = 0; g < generations; g++) run.forwardCycle();
   return run;
 };
 const metrics = (run: GaRun) => Array.from({ length: run.lastCycle + 1 }, (_, g) => metricsOf(run.snapshot(g).state));
+const metrics27 = (run: GaRun) => Array.from({ length: run.lastCycle + 1 }, (_, g) => metricsOf(run.snapshot(g).state, run.setup.problem.alphabet.length));
 
 describe('the preset files', () => {
-  test('there are four, in the order of their file names, each with a name and a one-sentence lesson', () => {
-    expect(presets.map((p) => p.name)).toEqual(['Textbook population', 'No crossover', 'No mutation', 'High mutation']);
+  test('there are four for Goldberg and three for the target string, in the order of their file names, each with a name and a one-sentence lesson', () => {
+    expect(presets.filter((p) => p.problem === 'goldberg').map((p) => p.name)).toEqual(['Textbook population', 'No crossover', 'No mutation', 'High mutation']);
+    expect(presets.filter((p) => p.problem === 'target-string').map((p) => p.name)).toEqual(['Evolve a word', 'No mutation', 'Mutation too high']);
     expect(new Set(presets.map((p) => p.id)).size).toBe(presets.length);
     for (const preset of presets) {
       expect(preset.lesson.endsWith('.')).toBe(true);
@@ -25,9 +29,9 @@ describe('the preset files', () => {
   });
 
   test.each(presets.map((p) => [p.name, p] as const))('%s is a valid configuration that the drawer accepts and the engine runs', (_name, preset) => {
-    const draft = draftOf(preset.params, preset.setup, preset.seed);
+    const draft = draftOf(preset.params, preset.setup, preset.seed, preset.options);
     const sample = play(preset, 0).snapshot(0).state.population.map((i) => i.fitness);
-    expect(validate(draft, preset.setup.problem, sample).errors).toEqual({});
+    expect(validate(draft, preset.setup.problem, sample, entryOf(preset.problem)).errors).toEqual({});
     expect(() => play(preset, 5)).not.toThrow();
   });
 
@@ -41,6 +45,16 @@ describe('the preset files', () => {
     expect(() => presetFromData('9-bad', { ...good, setup: { init: { kind: 'magic' } } })).toThrow('"setup.init.kind" must be "random" or "explicit"');
     expect(() => presetFromData('9-bad', { ...good, params: { ...good.params, crossover: undefined } })).toThrow('"params.crossover" is missing');
     expect(() => presetFromData('9-bad', null)).toThrow('must hold one JSON object');
+  });
+
+  test('a preset of a problem with options must carry valid ones, and one of a problem without must not', () => {
+    const word = JSON.parse(JSON.stringify({ v: 1, problem: 'target-string', name: 'x', lesson: 'y', lookFor: 'z', seed: 1, options: { alphabet: 'AB', target: 'AB' }, setup: { init: { kind: 'random', size: 4 } }, params: wordPreset('evolve-a-word').params }));
+    expect(() => presetFromData('9-ok', word)).not.toThrow();
+    expect(presetFromData('9-ok', word).setup.problem.chromosomeLength).toBe(2);
+    expect(() => presetFromData('9-bad', { ...word, options: undefined })).toThrow('"options" is not valid');
+    expect(() => presetFromData('9-bad', { ...word, options: { alphabet: 'AB', target: 'ABC' } })).toThrow('The target contains "C" (position 3), which is not in the alphabet');
+    const bits = { ...word, problem: 'goldberg' };
+    expect(() => presetFromData('9-bad', bits)).toThrow('the problem "goldberg" takes no "options"');
   });
 });
 
@@ -101,5 +115,82 @@ describe('the other presets behave as their descriptions say for their seeds', (
     expect(m.filter((x) => x.best < x.bestSoFar)).toHaveLength(23);
     const late = m.slice(15);
     expect(late.reduce((sum, x) => sum + x.diversity, 0) / late.length).toBeGreaterThan(0.3);
+  });
+});
+
+describe('the target string presets behave as their descriptions say for their seeds', () => {
+  const wordsOf = (run: GaRun, generation: number) => run.snapshot(generation).state.population.map((i) => i.decoded as string);
+
+  test('evolve a word: HELLO is found for the first time in generation 65, from an average of 0.42 matches and a diversity of 0.97 that falls to 0.39', () => {
+    const preset = wordPreset('evolve-a-word');
+    expect(preset.seed).toBe(42);
+    expect(preset.options).toEqual({ alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ', target: 'HELLO' });
+    const run = play(preset, 100);
+    const m = metrics27(run);
+    expect(m.findIndex((x) => x.bestSoFar === 5)).toBe(65);
+    expect(wordsOf(run, 65)).toContain('HELLO');
+    expect(m[0]!.average.toFixed(2)).toBe('0.42');
+    expect(m[0]!.diversity.toFixed(2)).toBe('0.97');
+    expect(m[65]!.diversity.toFixed(2)).toBe('0.39');
+    expect(m[64]!.best).toBeLessThan(5); // not found a generation earlier
+  });
+
+  test('evolve a word: the first stop criterion to hold is stagnation, in generation 20, and the target is reached later (65), as the description says', () => {
+    const run = play(wordPreset('evolve-a-word'), 100);
+    const stops = (g: number) => run.snapshot(g).stops;
+    expect(stops(19)).toEqual([]);
+    expect(stops(20)).toEqual(['stagnation']);
+    expect(stops(64)).not.toContain('target-reached');
+    expect(stops(65)).toContain('target-reached');
+    expect(wordPreset('evolve-a-word').lookFor).toContain('pauses at generation 20');
+  });
+
+  test('evolve a word uses the problem’s defaults, so the first run a student sees is this one', () => {
+    const preset = wordPreset('evolve-a-word');
+    const entry = entryOf('target-string')!;
+    expect(preset.params).toEqual(entry.defaults.params);
+    expect(preset.setup.init).toEqual(entry.defaults.init);
+    expect(preset.seed).toBe(entry.defaults.seed);
+  });
+
+  test('no mutation: no starting string has an O in position 5, the match rate of position 5 stays 0 all run, the population is copies of one string from generation 22, and the best stalls at 3', () => {
+    const preset = wordPreset('no-mutation');
+    expect(preset.params.mutation.enabled).toBe(false);
+    const run = play(preset, 100);
+    expect(wordsOf(run, 0).map((w) => w[4])).not.toContain('O');
+    const m = metrics27(run);
+    const o = preset.setup.problem.alphabet.indexOf('O');
+    expect(m.every((x) => x.symbolCounts[4]![o] === 0)).toBe(true);
+    expect(m[21]!.diversity).toBeGreaterThan(0);
+    expect(m[22]!.diversity).toBe(0);
+    expect(m[22]!.distinct).toBe(1);
+    expect(m.slice(22).every((x) => x.diversity === 0)).toBe(true);
+    expect(m[100]!.bestSoFar).toBe(3);
+    expect(m.every((x) => x.bestSoFar < 4)).toBe(true);
+    for (let g = 1; g <= 100; g++) {
+      const events = run.events(g).flatMap((e) => (e.stage === 'mutation' ? [e] : []));
+      expect(events.every((e) => e.decision === 'bypassed' && e.flipped.length === 0)).toBe(true);
+    }
+  });
+
+  test('mutation too high: pm = 0.5, the best of a generation is below the best so far in 93 of 100 generations, the best so far stops at 3 (generation 8), HELLO is never found, and diversity stays above 0.83', () => {
+    const preset = wordPreset('mutation-too-high');
+    expect(preset.params.mutation).toEqual({ enabled: true, mode: 'per-gene', probability: 0.5 });
+    const run = play(preset, 100);
+    const m = metrics27(run);
+    expect(m.slice(1).filter((x) => x.best < x.bestSoFar)).toHaveLength(93);
+    expect(m.findIndex((x) => x.bestSoFar === 3)).toBe(8);
+    expect(m[100]!.bestSoFar).toBe(3);
+    expect(Math.max(...m.map((x) => x.best))).toBe(3);
+    expect(Math.min(...m.slice(1).map((x) => x.diversity))).toBeGreaterThan(0.83);
+  });
+
+  test('every claim of the three descriptions about numbers appears in the text, so a changed seed or setting is noticed', () => {
+    expect(wordPreset('evolve-a-word').lookFor).toContain('generation 65');
+    expect(wordPreset('no-mutation').lookFor).toContain('position 5');
+    expect(wordPreset('no-mutation').lookFor).toContain('generation 22');
+    expect(wordPreset('no-mutation').lookFor).toContain('3 of 5');
+    expect(wordPreset('mutation-too-high').lookFor).toContain('93 of the 100');
+    expect(wordPreset('mutation-too-high').lookFor).toContain('generation 8');
   });
 });

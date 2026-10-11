@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "problem": "target-string",
+  "name": "Mutation too high",
+  "lesson": "When about half of all letters are rewritten every generation, selection cannot hold on to what it has found.",
+  "lookFor": "With pm = 0.5 per gene and this seed, the best string of a generation is below the best seen so far in 93 of the 100 generations. The best so far reaches 3 of 5 in generation 8 and is never improved, so HELLO is not found in 100 generations, and diversity stays above 0.83.",
+  "seed": 3,
+  "options": {"alphabet": "ABCDEFGHIJKLMNOPQRSTUVWXYZ ", "target": "HELLO"},
+  "setup": {"init": {"kind": "random", "size": 12}},
+  "params": {
+    "selection": {"method": "tournament", "size": 3},
+    "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
+    "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.5},
+    "elites": 0,
+    "stop": {"generationLimit": 100, "targetFitness": 5, "stagnationWindow": 15}
+  }
+}

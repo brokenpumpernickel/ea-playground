@@ -101,7 +101,7 @@
   const preset = $derived(presets.find((p) => p.id === chosenPreset));
   const loadPreset = () => {
     if (!preset) return;
-    session.requestReset({ setup: preset.setup, seed: preset.seed, params: preset.params, changed: [], preset: preset.name });
+    session.requestPreset(preset);
   };
 
   const keydown = (event: KeyboardEvent) => {

@@ -4,6 +4,7 @@ import { gaAlgorithm } from '../engine';
 import { createRun } from '../run';
 import { defaultParams, defaultSetup } from './config';
 import { problemEntries } from './problems';
+import { presets } from './presets';
 import { createSession } from './session.svelte';
 
 const make = () => {
@@ -355,6 +356,39 @@ describe('switching problem', () => {
     expect(session.run.parameters.elites).toBe(0);
     expect(session.shareConfig).not.toHaveProperty('options');
     expect(session.run.snapshot(0).state.population).toHaveLength(6);
+  });
+
+  test('loading a preset of the same problem is a reset to its configuration with a notice; one of another problem switches the problem through the same notice', () => {
+    const { session } = make();
+    generations(session, 2);
+    const word = presets.find((p) => p.problem === 'target-string' && p.id.endsWith('mutation-too-high'))!;
+    session.requestPreset(word);
+    expect(session.problemEntry.id).toBe('goldberg'); // held
+    expect(session.resetNotice).toBe('Loading the preset “Mutation too high” switches to the problem Target string and restarts the run from generation 0 and discards the 2 recorded generations (1–2).');
+    session.cancelReset();
+    expect(session.problemEntry.id).toBe('goldberg');
+    session.requestPreset(word);
+    session.confirmReset();
+    expect(session.problemEntry.id).toBe('target-string');
+    expect(session.problemOptions).toEqual(word.options);
+    expect(session.seed).toBe(3);
+    expect(session.run.parameters.mutation.probability).toBe(0.5);
+    expect(session.presetName).toBe('Mutation too high');
+    expect(session.shareConfig).toMatchObject({ problem: 'target-string', seed: 3, options: word.options });
+
+    // the same problem: no switching words
+    const nomut = presets.find((p) => p.problem === 'target-string' && p.id.endsWith('word-no-mutation'))!;
+    session.requestPreset(nomut);
+    expect(session.resetNotice).toBe('Loading the preset “No mutation” restarts the run from generation 0. Nothing recorded will be lost.');
+    session.confirmReset();
+    expect(session.run.parameters.mutation.enabled).toBe(false);
+
+    // and back to a Goldberg preset
+    session.requestPreset(presets.find((p) => p.problem === 'goldberg' && p.id.endsWith('textbook'))!);
+    session.confirmReset();
+    expect(session.problemEntry.id).toBe('goldberg');
+    expect(session.problemOptions).toBeUndefined();
+    expect(session.shareConfig).not.toHaveProperty('options');
   });
 
   test('a session started from a target string configuration says so', () => {

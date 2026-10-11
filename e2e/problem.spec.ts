@@ -100,7 +100,7 @@ test('the presets offered are those of the running problem', async ({ page }) =>
   await page.getByRole('menuitemradio', { name: /Target string/ }).click();
   await page.getByRole('button', { name: 'Restart and apply' }).click();
   await page.getByRole('button', { name: /Parameters/ }).click();
-  await expect(page.locator('#preset')).toHaveCount(0); // none for the string problem yet
+  await expect(page.locator('#preset option')).toHaveText(['Evolve a word', 'No mutation', 'Mutation too high']); // the string problem's own
 });
 
 test('a share link from the string problem opens the string problem', async ({ page, context }) => {

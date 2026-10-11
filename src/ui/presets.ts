@@ -1,4 +1,5 @@
-import { goldberg, type GaParams, type GaSetup } from '../engine';
+import type { GaParams, GaSetup } from '../engine';
+import { entryOf, type ProblemOptions } from './problems';
 import { problemIds } from './run-config';
 
 /**
@@ -16,6 +17,8 @@ export interface Preset {
   /** What to look for, including plainly when the run is expected to stall or fail. */
   readonly lookFor: string;
   readonly seed: number;
+  /** The problem's own options (the string problem's alphabet and target); absent for a problem without any. */
+  readonly options?: ProblemOptions;
   readonly setup: GaSetup;
   readonly params: GaParams;
 }
@@ -30,6 +33,11 @@ export function presetFromData(id: string, data: unknown): Preset {
   const d = data as Record<string, unknown>;
   if (d.v !== 1) fail(id, '"v" must be 1, the version of the configuration format.');
   if (typeof d.problem !== 'string' || !problemIds().includes(d.problem)) fail(id, `"problem" must be one of ${problemIds().map((p) => `"${p}"`).join(', ')}.`);
+  const entry = entryOf(d.problem as string)!;
+  if (entry.hasOptions) {
+    const found = entry.validateOptions(d.options);
+    if (found.length > 0) fail(id, `"options" is not valid: ${found[0]}`);
+  } else if (d.options !== undefined) fail(id, `the problem "${entry.id}" takes no "options".`);
   for (const key of ['name', 'lesson', 'lookFor'] as const) {
     if (typeof d[key] !== 'string' || (d[key] as string).trim() === '') fail(id, `"${key}" must be a non-empty text.`);
   }
@@ -53,7 +61,8 @@ export function presetFromData(id: string, data: unknown): Preset {
     lesson: d.lesson as string,
     lookFor: d.lookFor as string,
     seed: d.seed as number,
-    setup: { problem: goldberg, init: init as GaSetup['init'] },
+    ...(entry.hasOptions ? { options: d.options as ProblemOptions } : {}),
+    setup: { problem: entry.create(entry.hasOptions ? (d.options as ProblemOptions) : undefined), init: init as GaSetup['init'] },
     params: params as GaParams,
   };
 }

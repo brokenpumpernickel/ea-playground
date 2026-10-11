@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "problem": "target-string",
+  "name": "No mutation",
+  "lesson": "With mutation switched off, crossover can only reshuffle letters the population already has, so a letter that is missing from a position stays missing.",
+  "lookFor": "In this seed none of the 12 starting strings has an O in position 5. The match rate for position 5 stays at 0% for the whole run, the population collapses to copies of one string by generation 22 (diversity 0), and the best stalls at 3 of 5, short of HELLO.",
+  "seed": 9,
+  "options": {"alphabet": "ABCDEFGHIJKLMNOPQRSTUVWXYZ ", "target": "HELLO"},
+  "setup": {"init": {"kind": "random", "size": 12}},
+  "params": {
+    "selection": {"method": "tournament", "size": 3},
+    "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
+    "mutation": {"enabled": false, "mode": "per-gene", "probability": 0.1},
+    "elites": 0,
+    "stop": {"generationLimit": 100, "targetFitness": 5, "stagnationWindow": 15}
+  }
+}

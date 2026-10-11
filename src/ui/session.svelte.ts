@@ -4,6 +4,7 @@ import { defaultParams, defaultSeed, defaultSetup } from './config';
 import { changes, draftOf } from './drawer-model';
 import { displayOf, type Display } from './format';
 import { entryOf, type ProblemEntry, type ProblemOptions } from './problems';
+import type { Preset } from './presets';
 import { configOf, type RunConfig } from './run-config';
 import { plotModel, type PlotModel } from './plot-models';
 import { atCycleEnd, populationTable, type PopulationTable } from './population';
@@ -184,7 +185,7 @@ export function createSession(options: SessionOptions) {
     get resetNotice(): string | undefined {
       if (!reset) return undefined;
       const switched = reset.problem ? entryOf(reset.problem.id)?.name : undefined;
-      const what = switched ? `Switching to the problem ${switched} restarts the run from generation 0.` : reset.preset ? `Loading the preset “${reset.preset}” restarts the run from generation 0.` : `Changing ${joinWords(reset.changed.map(settingPhrase))} restarts the run from generation 0.`;
+      const what = switched && reset.preset ? `Loading the preset “${reset.preset}” switches to the problem ${switched} and restarts the run from generation 0.` : switched ? `Switching to the problem ${switched} restarts the run from generation 0.` : reset.preset ? `Loading the preset “${reset.preset}” restarts the run from generation 0.` : `Changing ${joinWords(reset.changed.map(settingPhrase))} restarts the run from generation 0.`;
       const n = run.lastCycle;
       return n === 0 ? `${what} Nothing recorded will be lost.` : `${what.slice(0, -1)} and discards the ${n} recorded ${n === 1 ? 'generation' : 'generations'} (${n === 1 ? '1' : `1–${n}`}).`;
     },
@@ -276,6 +277,19 @@ export function createSession(options: SessionOptions) {
       change = { params, discarded: result.discarded, from: run.cursor.cycle };
       bump();
       return { status: 'needs-confirmation' };
+    },
+    /** Asks to load a preset: a reset to its configuration, which also switches the problem when it belongs to another one. */
+    requestPreset(preset: Preset) {
+      reset = {
+        setup: preset.setup,
+        seed: preset.seed,
+        params: preset.params,
+        changed: [],
+        preset: preset.name,
+        ...(preset.options ? { options: preset.options } : {}),
+        ...(preset.problem !== problemId ? { problem: { id: preset.problem, options: preset.options } } : {}),
+      };
+      bump();
     },
     /** Holds a change that needs a reset until `confirmReset`. */
     requestReset(request: PendingReset) {
