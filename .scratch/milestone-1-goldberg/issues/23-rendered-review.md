@@ -1,6 +1,6 @@
 # 23 Rendered review and sign-off
 
-Status: claimed
+Status: resolved
 Type: review (needs instructor)
 Blocked by: 19, 21, 22
 Spec: ../spec.md
@@ -21,7 +21,7 @@ All nine criteria have recorded evidence, the instructor has signed off, and any
 
 ## Comments
 
-## Answer (everything that can be checked without the instructor is done; sign-off is pending)
+## Answer
 
 ### The scripted classroom scenario
 
@@ -46,3 +46,7 @@ Run the app from `dist/index.html` (after `npm run build`) or `npm run dev`, swi
 ### Spec's "To decide" list
 
 Brought up to date: key bindings and the symbol set (ticket 22), the plot axes and the parameter-apply behaviour (tickets 18 and 20). The tier timings stay marked "tune after trying it on a projector", which is part of the instructor's pass.
+
+### Instructor sign-off
+
+Signed off by the instructor after their own pass through the app. Problems found during the pass were fixed at once rather than filed: nested scrollbars in the crossover cards, and the speed slider thumb sitting above its track. One addition was requested and built: a toggle (F key and a button) that swaps the diversity and gene-share plots for a plot of the function being optimised, with the population marked on it; it is not remembered between visits, by choice. No open issues remain, so Milestone 2 (target string and share-by-link) can now be specified.
