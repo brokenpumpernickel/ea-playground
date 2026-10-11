@@ -108,10 +108,17 @@ The second goal is the first real test of the promise made in milestone 1: that 
 ## To decide during implementation (record the choice here when made)
 
 - ~~Exactly how a match is marked without colour.~~ **Decided (ticket 01):** the target is shown once above the columns; matching cells are filled with a heavy baseline and mismatching cells have a dashed outline. The space symbol stays `␣`. Layouts: one merged fitness column in the population table, per-gene draws under each letter in the mutation view, and a two-column replacement view that leaves the old population to the table.
-- The seeds for the three target-string presets (found by search and verified, as in milestone 1).
-- Names of the new engine interfaces (the alphabet declaration, the problem's column declaration).
-- Whether to write an ADR for "genes are alphabet indices" when the engine ticket lands. It is hard to reverse, surprising without context, and the result of a real trade-off, so it probably should be.
-- The link-length warning threshold (starting at 2,000 characters) after trying real hand-edited populations.
-- Whether the symbol shown for a space (`␣`) is legible at projector size.
+- ~~The seeds for the three target-string presets.~~ **Decided (ticket 15):** Evolve a word is the defaults with seed 42 (HELLO found in generation 65); No mutation is seed 9 (no O in position 5 at the start, population is copies of one string from generation 22, best stalls at 3 of 5); Mutation too high is pm = 0.5 with seed 3 (best of generation below best so far in 93 of 100 generations, best so far stops at 3). Each is verified by a test that asserts what its description says.
+- ~~Names of the new engine interfaces.~~ **Decided:** `Problem.alphabet` (the symbols, in order), `Problem.columns` and `evaluationColumns` (the table columns as `ProblemColumn`s), `Problem.scoreText` and `evaluationExplanation` (how a score reads in a sentence); in the app `ProblemEntry` (a registry in `src/ui/problems.ts`: name, logo, options, defaults, gene panel), `Display` (what the views need to show a problem) and `RunConfig` (the share-link configuration).
+- ~~Whether to write an ADR for "genes are alphabet indices".~~ **Decided:** written, `docs/adr/0004-genes-are-alphabet-indices.md`.
+- ~~The link-length warning threshold.~~ **Decided (ticket 04):** 2,000 characters, kept after trying a 220-chromosome hand-edited population.
+- ~~Whether the symbol shown for a space (`␣`) is legible at projector size.~~ **Decided (instructor, ticket 01 review):** it is.
+- **Decided while building (tickets 11–17):**
+  - Strings use a two-column replacement view (offspring and next population); the old population is the table beside the stage. Goldberg keeps three columns.
+  - A chromosome of letters is named letter by letter with the positions that match, and a space is "space".
+  - A crossover type needs enough genes (one-point 2, two-point 3): a target too short for the chosen type is an error in the drawer and in links (the engine would otherwise throw).
+  - When the target changes length and "target fitness reached" is still the old optimum, the restart moves it to the new length and says so.
+  - A preset of another problem switches the problem through the restart notice (`session.requestPreset`); the drawer lists only the running problem's presets.
+  - The target string defaults are HELLO, tournament size 3 (chosen by the instructor after measurement; see the defaults above).
 
 ## Comments

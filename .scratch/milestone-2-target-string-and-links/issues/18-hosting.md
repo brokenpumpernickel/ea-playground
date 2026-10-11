@@ -17,3 +17,7 @@ A documented build-and-publish workflow so a copied link opens for anyone: a Git
 - The README note exists and the instructor has approved the publication.
 
 ## Comments
+
+## Notes (not started: waiting for the instructor)
+
+This repository has no git remote yet (`git remote -v` is empty; the only branch is `master`, while the brief names `main`). Before I add a workflow or push anything I need: which GitHub repository (new or existing, and under which account or organisation), its visibility (public or private; Pages from a private repository needs a paid plan), and which branch to publish from. The workflow itself is small (install, `npm run check`, `npm run build`, upload `dist/` as the Pages artifact, deploy), and the README note would say that links use the published address while opening `dist/index.html` from a folder still works and gives links valid on that machine only.

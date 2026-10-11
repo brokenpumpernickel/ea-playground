@@ -3,6 +3,8 @@ import { gaAlgorithm, populationFromEvents, type GaParams, type GaSetup } from '
 import { formatGenes, parseGenes } from './chromosome';
 import { metricsOf } from './metrics';
 import { targetStringDefaults, targetStringLimits, targetStringProblem, validateTargetString } from './target-string';
+import { createFakeScheduler } from '../run/fake-scheduler';
+import { createPlayback } from '../run/playback';
 import { createRun } from '../run/run';
 
 const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ';
@@ -155,6 +157,23 @@ describe('reproducibility and agreement', () => {
     const until = make({ seed: 21, eventCacheSize: 0 });
     until.runUntil((s) => s.cycle === 6);
     expect(Array.from({ length: 7 }, (_, c) => ({ snapshot: until.snapshot(c), events: until.events(c) }))).toEqual(byMicro);
+  });
+
+  test.each(['slow', 'medium', 'fast', 'maximum'] as const)('playback at the %s tier makes the identical run', (tier) => {
+    const reference = make({ seed: 21, eventCacheSize: 0 });
+    while (reference.lastCycle < 6) reference.forwardCycle();
+    const run = make({ seed: 21, eventCacheSize: 0 });
+    const scheduler = createFakeScheduler();
+    const playback = createPlayback(run, { scheduler });
+    playback.setTier(tier);
+    playback.play();
+    for (let n = 0; n < 100_000 && run.lastCycle < 6 && scheduler.fire(); n++);
+    playback.pause();
+    expect(run.lastCycle).toBeGreaterThanOrEqual(6);
+    for (let c = 0; c <= 6; c++) {
+      expect(run.snapshot(c)).toEqual(reference.snapshot(c));
+      expect(run.events(c)).toEqual(reference.events(c));
+    }
   });
 
   test('replaying the events alone reproduces every population, with elites and truncation too', () => {
