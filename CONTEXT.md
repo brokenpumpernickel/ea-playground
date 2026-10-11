@@ -31,8 +31,12 @@ One of the continuous-run speeds, each defined by how much advances per tick and
 _Avoid_: Speed level, animation speed
 
 **Preset**:
-A named, complete configuration plus seed that reproduces a specific teaching scenario, shareable as a link. A preset expected to fail says so in its description.
+A named, curated configuration plus seed that reproduces a specific teaching scenario. A preset expected to fail says so in its description.
 _Avoid_: Template, scenario, demo
+
+**Share link**:
+A URL that carries a complete configuration and seed (problem, setup including any hand-edited population, every parameter), so that opening it starts a fresh, paused run at generation 0 that is identical to the one it was copied from. It carries no history and no cursor position.
+_Avoid_: Permalink, saved run, session link
 
 **Pending parameter**:
 An operator setting changed mid-generation that takes effect at the next generation boundary.
@@ -51,6 +55,10 @@ _Avoid_: Candidate, member, solution (a solution is the decoded part only)
 **Chromosome**:
 The genotype of an individual: a sequence of genes (bits, characters, or real numbers depending on the example).
 _Avoid_: Genome, string (for non-string examples)
+
+**Alphabet**:
+The ordered set of symbols a gene can take in a problem: 0 and 1 for the binary examples, the allowed letters for the target string. A gene is stored as a position in the alphabet and shown as its symbol.
+_Avoid_: Character set, charset
 
 **Gene**:
 One position in a chromosome.
