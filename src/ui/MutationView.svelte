@@ -2,6 +2,7 @@
   import Bits from './Bits.svelte';
   import { geneList, num } from './format';
   import { revealWhenCurrent } from './reveal';
+  import TargetRow from './TargetRow.svelte';
   import type { MutationModel, MutationRow } from './variation-models';
 
   let { model }: { model: MutationModel } = $props();
@@ -9,22 +10,52 @@
   const genes = $derived(Array.from({ length: model.geneCount }, (_, k) => k + 1));
   const pm = $derived(num(model.threshold));
 
-  const flipLabel = (row: MutationRow): string => {
-    if (row.flipped.length === 1) {
-      const g = row.flipped[0]! - 1;
-      return `✱ gene ${row.flipped[0]}: ${row.before[g]} → ${row.after![g]}`;
-    }
-    return `✱ ${geneList(row.flipped)} flipped`;
-  };
+  const shown = (symbol: string) => (symbol === ' ' ? '␣' : symbol);
+  /** With several symbols per gene each change says what the gene became and which draw r chose it. */
+  const changed = (c: MutationRow['changes'][number]) => `gene ${c.gene}: ${shown(c.from)} → ${shown(c.to)}`;
+  const flipLabel = (row: MutationRow): string => (row.flipped.length === 1 ? `✱ ${changed(row.changes[0]!)}` : `✱ ${geneList(row.flipped)} flipped`);
+  /** Letters with a draw under each one, instead of a column per gene. */
+  const underEach = $derived(model.multiSymbol && model.mode === 'per-gene' && model.enabled);
 </script>
+
+{#snippet outcome(row: MutationRow)}
+  {#if row.decision === 'mutated'}
+    <span class="badge flip">
+      {#if model.multiSymbol}✱ {#each row.changes as c, k (c.gene)}{#if k > 0} · {/if}<span data-replacement={c.gene}>{changed(c)} <small>(r = {num(c.r!)})</small></span>{/each}
+      {:else}{flipLabel(row)}{/if}
+    </span>
+  {:else if row.decision === 'bypassed'}<span class="badge bypass"><span aria-hidden="true">⤼</span> bypassed: mutation is off</span>
+  {:else}<span class="muted">unchanged</span>{/if}
+{/snippet}
 
 <div class="mutation">
   <p class="expl">{model.explanation}</p>
+  {#if underEach}
+    <div class="mwrap mcards">
+      <div class="crow ctarget"><span class="who"></span><TargetRow /></div>
+      {#each model.rows as row (row.offspring)}
+        <section use:revealWhenCurrent={row.current} class="card mcard" class:current={row.current} class:pending={!row.revealed} aria-current={row.current ? 'true' : undefined} data-offspring={row.offspring} data-state={row.revealed ? 'revealed' : 'pending'} aria-label={`Offspring ${row.offspring}`}>
+          <div class="crow">
+            <span class="who">O{row.offspring}</span>
+            <Bits chromosome={row.before} small flipped={row.flipped} unders={row.geneDraws?.map((d) => ({ text: num(d.u), flag: d.flipped, value: d.u }))} />
+            {#if !row.revealed}<span class="muted">not yet drawn</span>{/if}
+          </div>
+          {#if row.revealed}
+            <div class="crow">
+              <span class="who sub">result</span>
+              <Bits chromosome={row.after!} small flipped={row.flipped} />
+              {@render outcome(row)}
+            </div>
+          {/if}
+        </section>
+      {/each}
+    </div>
+  {:else}
   <div class="mwrap">
     <table class="mtable" aria-label="Mutation draws">
       <thead>
         <tr>
-          <th scope="col">Offspring</th>
+          <th scope="col">Offspring<TargetRow /></th>
           {#if model.mode === 'per-gene' && model.enabled}
             {#each genes as g (g)}<th scope="col" class="num">gene {g}</th>{/each}
           {:else if model.enabled}
@@ -58,9 +89,7 @@
                 <span class="muted">not yet drawn</span>
               {:else}
                 <Bits chromosome={row.after!} small flipped={row.flipped} />
-                {#if row.decision === 'mutated'}<span class="badge flip">{flipLabel(row)}</span>
-                {:else if row.decision === 'bypassed'}<span class="badge bypass"><span aria-hidden="true">⤼</span> bypassed: mutation is off</span>
-                {:else}<span class="muted">unchanged</span>{/if}
+                {@render outcome(row)}
               {/if}
             </td>
           </tr>
@@ -68,4 +97,5 @@
       </tbody>
     </table>
   </div>
+  {/if}
 </div>

@@ -1,4 +1,4 @@
-import type { GaEvent } from '../engine';
+import type { GaEvent, MutationEvent } from '../engine';
 import { goldbergDisplay, type Display } from './format';
 import { geneList, num } from './format';
 
@@ -22,6 +22,13 @@ export const describer = (display: Display) => (event: GaEvent): string => descr
 
 /** The describer for Goldberg (and any other binary problem). */
 export const describeEvent = describer(goldbergDisplay);
+
+/** For alphabets of more than 2 symbols: which symbol each flipped gene became, and the draw r that picked it. */
+function replaced(event: MutationEvent, display: Display): string {
+  if (!event.replacements) return '';
+  const shown = (g: number) => display.show([g]);
+  return `; ${event.replacements.map((x) => `gene ${x.gene}: ${shown(x.from)} → ${shown(x.to)} (r = ${num(x.r)})`).join(', ')}`;
+}
 
 function describeWith(event: GaEvent, display: Display): string {
   const formatBits = display.show;
@@ -87,14 +94,14 @@ function describeWith(event: GaEvent, display: Display): string {
       if (event.mode === 'per-individual') {
         const u = num(event.individualDraw!.u);
         if (event.decision === 'unchanged') return `${head} u = ${u} ≥ pm ${pm} → unchanged (${before})`;
-        return `${head} u = ${u} < pm ${pm} → mutated, gene ${event.chosenGene!.gene} chosen (${before} → ${after})`;
+        return `${head} u = ${u} < pm ${pm} → mutated, gene ${event.chosenGene!.gene} chosen (${before} → ${after})${replaced(event, display)}`;
       }
       if (event.decision === 'unchanged') return `${head} no gene drew below pm ${pm} → unchanged (${before})`;
       if (event.flipped.length === 1) {
         const u = event.geneDraws!.find((d) => d.gene === event.flipped[0])!.u;
-        return `${head} gene ${event.flipped[0]} drew u = ${num(u)} < pm ${pm} → flipped (${before} → ${after})`;
+        return `${head} gene ${event.flipped[0]} drew u = ${num(u)} < pm ${pm} → flipped (${before} → ${after})${replaced(event, display)}`;
       }
-      return `${head} ${geneList(event.flipped)} drew below pm ${pm} → flipped (${before} → ${after})`;
+      return `${head} ${geneList(event.flipped)} drew below pm ${pm} → flipped (${before} → ${after})${replaced(event, display)}`;
     }
 
     case 'evaluation': {

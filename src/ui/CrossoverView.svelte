@@ -2,6 +2,7 @@
   import Bits from './Bits.svelte';
   import { geneList, num } from './format';
   import { revealWhenCurrent } from './reveal';
+  import TargetRow from './TargetRow.svelte';
   import type { CrossoverModel, PairResult } from './variation-models';
 
   let { model }: { model: CrossoverModel } = $props();
@@ -42,11 +43,13 @@
           <div class="cbody">
             <div class="cside">
               <div class="chead">Parents</div>
+              <div class="crow ctarget"><span class="who"></span><TargetRow wide cuts={pair.cuts} /></div>
               <div class="crow"><span class="who">A · individual {pair.parentA.id}</span><Bits chromosome={pair.parentA.bits} cuts={pair.cuts} /></div>
               <div class="crow"><span class="who">B · individual {pair.parentB.id}</span><Bits chromosome={pair.parentB.bits} cuts={pair.cuts} sources={allB(pair.parentB.bits)} /></div>
             </div>
             <div class="cside">
               <div class="chead">Children</div>
+              <div class="crow ctarget"><span class="who"></span><TargetRow wide cuts={pair.cuts} /></div>
               {#each pair.children as child (child.offspring)}
                 <div class="crow" class:dropped={child.discarded} data-child={child.offspring} data-dropped={child.discarded ? 'true' : undefined}>
                   <span class="who">O{child.offspring} · {child.origin}</span>

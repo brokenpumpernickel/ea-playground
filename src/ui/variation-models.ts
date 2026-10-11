@@ -103,6 +103,8 @@ export interface MutationRow {
   readonly decision?: 'mutated' | 'unchanged' | 'bypassed';
   /** 1-based genes that flipped. */
   readonly flipped: readonly number[];
+  /** What each flipped gene was and became; `r` is the replacement draw, recorded only for alphabets of more than 2 symbols. */
+  readonly changes: readonly { readonly gene: number; readonly from: string; readonly to: string; readonly r?: number }[];
   /** Per-gene mode: one draw per gene. */
   readonly geneDraws?: readonly { readonly gene: number; readonly u: number; readonly flipped: boolean }[];
   /** Per-individual mode: the draw that decides whether this offspring mutates, and then the gene it picked. */
@@ -111,6 +113,8 @@ export interface MutationRow {
 }
 
 export interface MutationModel {
+  /** More than two symbols per gene: a mutated gene becomes one of several others, picked by a further draw. */
+  readonly multiSymbol: boolean;
   readonly enabled: boolean;
   readonly mode: MutationConfig['mode'];
   readonly threshold: number;
@@ -125,15 +129,21 @@ export function mutationModel(view: GaView, config: MutationConfig, display: Dis
   const revealed = view.events.flatMap((e) => (e.stage === 'mutation' ? [e] : []));
   const rows = Array.from({ length: view.micros }, (_, k): MutationRow => {
     const event = revealed[k];
-    if (!event) return { offspring: made[k]!.offspring, revealed: false, current: false, before: formatBits(made[k]!.chromosome), flipped: [] };
+    if (!event) return { offspring: made[k]!.offspring, revealed: false, current: false, before: formatBits(made[k]!.chromosome), flipped: [], changes: [] };
+    const before = formatBits(event.before);
+    const after = formatBits(event.after);
     return {
       offspring: event.offspring,
       revealed: true,
       current: k === revealed.length - 1,
-      before: formatBits(event.before),
-      after: formatBits(event.after),
+      before,
+      after,
       decision: event.decision,
       flipped: event.flipped,
+      changes: event.flipped.map((gene) => {
+        const r = event.replacements?.find((x) => x.gene === gene)?.r;
+        return { gene, from: before[gene - 1]!, to: after[gene - 1]!, ...(r !== undefined ? { r } : {}) };
+      }),
       ...(event.geneDraws ? { geneDraws: event.geneDraws } : {}),
       ...(event.individualDraw ? { individualDraw: event.individualDraw.u } : {}),
       ...(event.chosenGene ? { chosenGene: event.chosenGene } : {}),
@@ -141,12 +151,18 @@ export function mutationModel(view: GaView, config: MutationConfig, display: Dis
   });
 
   const pm = num(config.probability);
+  const multiSymbol = display.alphabetSize > 2;
+  // with more than two symbols a gene that flips needs a new symbol, chosen by one further draw r
+  const replacement = multiSymbol
+    ? ` A gene that flips becomes a different symbol: one more draw r picks it from the other ${display.alphabetSize - 1}, in alphabet order.`
+    : '';
   const explanation = !config.enabled
     ? 'Mutation is switched off, so every offspring passes through unchanged. No random number is drawn.'
     : config.mode === 'per-gene'
-      ? `Every gene of every offspring gets its own draw u; the gene flips if u < pm (${pm}).`
-      : `Each offspring gets one draw u. If u < pm (${pm}) it is mutated, and one more draw picks the single gene that flips.`;
+      ? `Every gene of every offspring gets its own draw u; the gene flips if u < pm (${pm}).${replacement}`
+      : `Each offspring gets one draw u. If u < pm (${pm}) it is mutated, and one more draw picks the single gene that flips.${replacement}`;
   return {
+    multiSymbol,
     enabled: config.enabled,
     mode: config.mode,
     threshold: config.probability,

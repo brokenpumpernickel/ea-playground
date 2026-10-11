@@ -10,6 +10,8 @@ export const geneList = (genes: readonly number[]): string =>
 /** How a problem's chromosomes and scores are shown: the symbols, and the columns of the tables. */
 export interface Display {
   readonly show: (chromosome: Chromosome) => string;
+  /** How many symbols a gene can take. */
+  readonly alphabetSize: number;
   readonly columns: readonly ProblemColumn[];
   readonly evaluationColumns: readonly ProblemColumn[];
   /** How a score reads in a sentence; absent when sentences use the decoded value. */
@@ -19,6 +21,7 @@ export interface Display {
 
 export const displayOf = (problem: Problem): Display => ({
   show: (chromosome) => formatGenes(chromosome, problem.alphabet),
+  alphabetSize: problem.alphabet.length,
   columns: problem.columns,
   evaluationColumns: problem.evaluationColumns ?? problem.columns,
   ...(problem.scoreText ? { scoreText: problem.scoreText } : {}),

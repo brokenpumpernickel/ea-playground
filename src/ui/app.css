@@ -534,3 +534,35 @@ input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radi
 .tgtrow { display:inline-flex; gap:3px; color:var(--ink2); font-family:ui-monospace,Consolas,monospace; }
 .tgtrow span { width:26px; text-align:center; font-size:19px; }
 .rtarget { padding-left:calc(1.8em + 8px); min-height:24px; }
+
+/* mutation of letters: each gene with its own draw under it, then the result row */
+.bits.withunders { align-items:flex-start; }
+.gcell { display:inline-flex; flex-direction:column; align-items:center; gap:3px; }
+.gcell { width:44px; }
+.gcell .under { font-size:14px; height:20px; line-height:20px; width:44px; box-sizing:border-box; text-align:center; color:var(--ink2); font-weight:700; font-variant-numeric:tabular-nums; }
+.gcell .under.flag { outline:2px solid var(--flip); outline-offset:-2px; border-radius:6px; color:var(--flip); }
+.mcards { display:flex; flex-direction:column; gap:8px; }
+.mcard { padding:6px 12px; flex:none; margin:0; }
+.mcard.current { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-tint); }
+.mcard.pending { border-style:dashed; background:transparent; box-shadow:none; }
+.mcard .crow .who { width:60px; font-weight:700; font-size:20px; }
+.mcard .crow .who.sub { font-weight:400; font-size:15px; }
+.mcard .crow .badge { font-size:17px; padding:2px 10px; }
+.mcard .crow .badge small { font-size:15px; }
+.crow.ctarget { gap:14px; }
+.crow.ctarget .who { height:0; }
+.mcard .crow.ctarget .who, .mcards > .crow.ctarget .who { width:60px; }
+.mcards > .crow.ctarget { padding:0 12px; }
+.crow.ctarget .tgtheader { margin:0; }
+.mtable:has(.tgtheader) .who { display:inline-block; min-width:2.2em; }
+.mtable th .tgtheader { margin-left:calc(2.2em + 8px + 12px); }
+
+.mcards > .crow.ctarget { position:sticky; top:0; z-index:2; background:var(--surface); }
+.mcards .tgtrow { gap:3px; }
+.mcards .tgtrow span { width:44px; }
+
+.tgtrow.wide span { width:36px; }
+.tgtrow span.cutafter { margin-right:10px; }
+.mcards > .crow.ctarget { padding-bottom:2px; }
+/* the column titles (and the target above the strings) stay in view while the offspring scroll */
+.mtable thead th { position:sticky; top:0; z-index:2; background:var(--surface); }
