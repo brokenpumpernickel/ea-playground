@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knapsack – design mock (throwaway)</title>
+<style>
+* { box-sizing: border-box; }
+html, body { margin:0; height:100%; overflow:hidden; background:var(--page); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+.canvas { width:1920px; height:1080px; transform-origin:0 0; position:relative; overflow:hidden;
+  background:var(--page); color:var(--ink); font-size:20px; line-height:1.3; }
+/* ---------- top ribbon ---------- */
+#top { position:absolute; left:0; top:0; width:1920px; height:84px; display:flex; align-items:center; gap:24px; padding:0 24px;
+  background:var(--surface); border-bottom:1px solid var(--hair); }
+#brand { width:430px; }
+#brand .t { font-size:26px; font-weight:700; }
+#brand .s { font-size:20px; color:var(--ink2); }
+#ribbon { display:flex; flex:1; gap:0; }
+.stage { flex:1; height:56px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:22px; font-weight:600;
+  color:var(--ink2); background:var(--wash); clip-path:polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%, 22px 50%);
+  margin-left:-10px; padding:0 22px; }
+.stage:first-child { margin-left:0; clip-path:polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%); }
+.stage.done { color:var(--ink); }
+.stage.cur { background:var(--s1); color:var(--on-s1); }
+.stage .n { font-weight:700; }
+#gen { width:300px; text-align:right; }
+#gen .g { font-size:30px; font-weight:700; }
+#gen .l { font-size:20px; color:var(--ink2); }
+
+/* ---------- transport ---------- */
+#transport { position:absolute; left:0; top:84px; width:1920px; height:72px; display:flex; align-items:center; gap:6px; padding:0 24px;
+  background:var(--surface); border-bottom:1px solid var(--hair); }
+.btn { height:48px; padding:0 9px; border:2px solid var(--ink2); border-radius:8px; background:var(--surface); color:var(--ink);
+  font:600 20px system-ui,"Segoe UI",sans-serif; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+.btn kbd { font:600 14px ui-monospace,Consolas,monospace; color:var(--ink2); border:1px solid var(--axis); border-radius:4px; padding:0 4px; background:var(--wash); }
+.btn.primary { background:var(--s1); border-color:var(--s1); color:var(--on-s1); }
+.btn.primary kbd { color:#fff; background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.5); }
+.btn.quiet { border-color:var(--axis); }
+.vsep { width:2px; height:36px; background:var(--axis); margin:0 6px; }
+#tier { display:flex; align-items:center; gap:10px; }
+#tier .track { position:relative; width:240px; height:10px; background:var(--grid); border-radius:5px; }
+#tier .stop { position:absolute; top:-5px; width:20px; height:20px; border-radius:50%; background:var(--surface); border:2px solid var(--ink2); transform:translateX(-10px); }
+#tier .stop.cur { background:var(--s1); border-color:var(--s1); }
+#tier .labels { display:flex; justify-content:space-between; width:340px; font-size:18px; color:var(--ink2); margin-top:4px; }
+#seedbox { display:flex; align-items:center; gap:8px; color:var(--ink2); }
+#seedbox b { color:var(--ink); }
+
+/* ---------- panels ---------- */
+.panel { position:absolute; background:var(--surface); border:1px solid var(--hair); border-radius:10px; overflow:hidden; }
+.ph { display:flex; align-items:baseline; justify-content:space-between; padding:10px 16px 8px; border-bottom:1px solid var(--hair); }
+.ph h2 { margin:0; font-size:22px; font-weight:700; }
+.ph .r { font-size:20px; color:var(--ink2); }
+table { border-collapse:collapse; width:100%; font-size:21px; }
+th { text-align:left; font-weight:600; color:var(--ink2); font-size:19px; padding:6px 10px; border-bottom:2px solid var(--axis); white-space:nowrap; }
+td { padding:0 10px; height:44px; border-bottom:1px solid var(--grid); white-space:nowrap; }
+td.num, th.num { text-align:right; }
+.mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-weight:700; letter-spacing:.14em; font-size:25px; }
+tr.hl td { background:color-mix(in srgb, var(--s1) 14%, transparent); }
+tr.dim td { color:var(--ink2); }
+.sym { display:inline-block; min-width:1.3em; text-align:center; font-weight:700; }
+.muted { color:var(--ink2); }
+.pending { color:var(--ink2); font-style:italic; }
+
+/* bits */
+.bits { display:inline-flex; gap:4px; vertical-align:middle; }
+.bit { width:36px; height:44px; display:inline-flex; align-items:center; justify-content:center; border:2px solid var(--ink2); border-radius:6px;
+  font:700 27px ui-monospace,"Cascadia Mono",Consolas,monospace; background:var(--surface); position:relative; }
+.bit.sm { width:30px; height:38px; font-size:23px; }
+.bit.hatch { background-image:repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ink2) 55%, transparent) 5px 7px); }
+.bit.flip { border-color:var(--flip); border-width:3px; box-shadow:0 5px 0 -1px var(--flip); }
+.bit.flip::after { content:"✱"; position:absolute; top:-17px; left:50%; transform:translateX(-50%); color:var(--flip); font-size:18px; }
+.bit.cutafter { margin-right:10px; }
+.bit.cutafter::before { content:""; position:absolute; right:-11px; top:-10px; bottom:-10px; border-right:3px dashed var(--ink); }
+
+/* badges */
+.badge { display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:19px; border-radius:6px; padding:2px 10px; border:2px solid var(--ink2); }
+.badge.bypass { border-style:dashed; background:var(--wash); }
+.badge.ok { border-color:var(--good); color:var(--good); }
+.badge.flip { border-color:var(--flip); color:var(--flip); }
+.badge.x { border-color:var(--ink2); color:var(--ink2); text-decoration:none; }
+
+/* stage panel body */
+#stagebody { position:absolute; left:16px; right:16px; top:84px; bottom:80px; }
+#narr { position:absolute; left:16px; right:16px; bottom:12px; height:58px; display:flex; align-items:center; gap:12px; padding:0 14px;
+  background:var(--wash); border-left:6px solid var(--s1); border-radius:6px; font-size:21px; line-height:1.2; }
+#narr .m { font-weight:700; white-space:nowrap; color:var(--ink2); }
+#legend { position:absolute; left:24px; top:722px; width:800px; height:26px; display:flex; justify-content:space-between; font-size:19px; color:var(--ink2); align-items:center; }
+#legend b { color:var(--ink); }
+.chip { flex:1; border:2px solid var(--ink2); border-radius:8px; padding:4px 10px; text-align:center; font-size:20px; white-space:nowrap; }
+.chip.cur { border-width:4px; background:color-mix(in srgb, var(--s1) 14%, transparent); font-weight:700; }
+.chip.future { border-style:dashed; color:var(--ink2); }
+
+.note { font-size:20px; color:var(--ink2); }
+.card { border:2px solid var(--ink2); border-radius:8px; padding:8px 12px; background:var(--surface); }
+.row { display:flex; align-items:center; gap:14px; }
+.flow { display:flex; align-items:stretch; gap:34px; height:100%; }
+.col { flex:1; display:flex; flex-direction:column; gap:8px; min-width:0; }
+.col h3 { margin:0 0 4px; font-size:21px; color:var(--ink2); font-weight:700; }
+.arrow { align-self:center; font-size:40px; color:var(--ink2); }
+
+/* plots */
+svg text { font-family: system-ui,"Segoe UI",sans-serif; fill:var(--ink2); font-size:18px; }
+svg text.ink { fill:var(--ink); }
+svg .ax { stroke:var(--axis); stroke-width:1; }
+svg .gr { stroke:var(--grid); stroke-width:1; }
+
+/* drawer + dialog */
+#drawer { position:absolute; right:0; top:156px; bottom:0; width:640px; background:var(--surface); border-left:2px solid var(--ink2);
+  box-shadow:-12px 0 30px rgba(0,0,0,.25); overflow:hidden; z-index:20; }
+#drawer .dh { height:56px; display:flex; justify-content:space-between; align-items:center; padding:0 18px; border-bottom:1px solid var(--hair); font-size:24px; font-weight:700; }
+#drawer { overflow-y:auto; }
+#drawer .sec { padding:6px 18px 4px; border-bottom:1px solid var(--grid); }
+#drawer .sec h4 { margin:0 0 2px; font-size:20px; }
+#drawer .ctl { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:19px; line-height:1.15; }
+#drawer .help { font-size:17px; color:var(--ink2); margin:0 0 2px; line-height:1.2; }
+.field { border:2px solid var(--ink2); border-radius:6px; padding:0 10px; font-weight:600; min-width:90px; text-align:center; background:var(--surface); }
+.switch { display:inline-flex; align-items:center; gap:8px; font-weight:700; }
+.switch i { width:46px; height:24px; border-radius:12px; background:var(--s1); position:relative; display:inline-block; }
+.switch i::after { content:""; position:absolute; right:3px; top:3px; width:18px; height:18px; border-radius:50%; background:#fff; }
+.tag { font-size:16px; font-weight:700; border-radius:4px; padding:0 6px; border:2px solid var(--ink2); }
+.tag.reset { border-style:dashed; }
+.tag.pend { border-color:var(--flip); color:var(--flip); }
+#dim { position:absolute; inset:0; background:rgba(0,0,0,.5); z-index:30; }
+#dialog { position:absolute; left:230px; top:300px; width:800px; z-index:40; background:var(--surface); border:3px solid var(--ink); border-radius:12px; padding:24px 28px; }
+#dialog h3 { margin:0 0 10px; font-size:28px; }
+#dialog p { margin:0 0 18px; font-size:22px; }
+#dialog .acts { display:flex; justify-content:flex-end; gap:14px; }
+
+/* =====================================================================
+   STUDIO — the chosen direction. Light by default, with a dark theme from the same tokens.
+   Data colours (--s1 --s2 --s3 --s7) are the validated plot palette in both themes and are
+   never used for chrome; chrome uses --acc (violet), which is deliberately unlike the plot blue.
+   ===================================================================== */
+#tier .labels { margin-top:12px !important; }
+#brand { display:flex; align-items:center; gap:14px; }
+.mono { font-variant-ligatures:none; }
+
+:root, :root[data-theme="light"] {
+  color-scheme:light;
+  --page:#f1f2f9; --page2:#e9ecf8; --surface:#ffffff; --ink:#141a33; --ink2:#586081; --axis:#ccd1e6; --grid:#eceef7; --hair:rgba(20,26,51,.09); --wash:#f4f5fb;
+  --line:#dadff0; --line-soft:#eef0f8; --chip:#eef0f9; --th:#6f7799; --knob:#ffffff;
+  --elev:0 1px 2px rgba(20,26,51,.05), 0 14px 34px rgba(20,26,51,.07); --bar-shadow:0 1px 0 rgba(20,26,51,.06), 0 12px 32px rgba(20,26,51,.05);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s7:#4a3aa7;
+  --acc:#7040ec; --acc-ink:#4a24b8; --acc-tint:#efe9ff; --on-acc:#ffffff; --acc-glow:rgba(112,64,236,.38); --logo:linear-gradient(135deg,#8b5cf6,#6d4aea);
+  --bit-bg:#ffffff; --bit-line:#c9cee5; --bit-ink:#7a82a6; --one-bg:#ddd3ff; --one-line:#8a68f0; --one-ink:#36199e; --hatch:rgba(112,64,236,.34);
+  --ok-bg:#dcf4e6; --ok-ink:#0b6b36; --flip:#d6470e; --flip-bg:#ffe9dc; --flip-ink:#b3400a; --good:#0b6b36;
+  --seq1:#ece6ff; --seq2:#cbbdff; --seq3:#a590fa; --seq4:#7c5df0;
+  --veil:rgba(20,26,51,.5); --drawer-shadow:-18px 0 50px rgba(20,26,51,.22);
+}
+:root[data-theme="dark"] {
+  color-scheme:dark;
+  --page:#0c1022; --page2:#10152c; --surface:#171c36; --ink:#eef0ff; --ink2:#a9b1d4; --axis:#323a66; --grid:#222a50; --hair:rgba(150,160,255,.16); --wash:#1d2342;
+  --line:#2d3562; --line-soft:#232a4f; --chip:#1d2342; --th:#8a93bd; --knob:#eef0ff;
+  --elev:0 1px 2px rgba(0,0,0,.3), 0 14px 34px rgba(0,0,0,.38); --bar-shadow:0 1px 0 rgba(150,160,255,.12), 0 12px 32px rgba(0,0,0,.3);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s7:#9085e9;
+  --acc:#a78bfa; --acc-ink:#dcd1ff; --acc-tint:rgba(167,139,250,.17); --on-acc:#160d3a; --acc-glow:rgba(167,139,250,.35); --logo:linear-gradient(135deg,#c4b5fd,#8b5cf6);
+  --bit-bg:#0f1430; --bit-line:#323a66; --bit-ink:#8a93bd; --one-bg:rgba(167,139,250,.24); --one-line:#a78bfa; --one-ink:#efe9ff; --hatch:rgba(196,181,253,.5);
+  --ok-bg:rgba(74,222,128,.14); --ok-ink:#86efac; --flip:#fb923c; --flip-bg:rgba(251,146,60,.16); --flip-ink:#fdba74; --good:#4ade80;
+  --seq1:#4a3a9c; --seq2:#5d49bd; --seq3:#7058d6; --seq4:#8a6ff0;
+  --veil:rgba(2,4,14,.6); --drawer-shadow:-18px 0 50px rgba(0,0,0,.55);
+}
+
+.canvas { background:linear-gradient(180deg,var(--page) 0%,var(--page2) 100%); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+#top { background:var(--surface); border-bottom:none; box-shadow:var(--bar-shadow); z-index:2; }
+#transport { background:transparent; border-bottom:none; }
+.logo { display:inline-flex; flex:none; width:52px; height:52px; border-radius:16px; align-items:center; justify-content:center; background:var(--logo); color:var(--on-acc); font:800 24px system-ui; box-shadow:0 8px 18px var(--acc-glow); }
+:root[data-theme="dark"] .logo { color:#160d3a; }
+#brand .t { font-size:25px; letter-spacing:-.01em; }
+#brand .s { font-size:19px; }
+
+/* stage tracker */
+#ribbon { background:var(--chip); border-radius:999px; padding:5px; gap:4px; }
+.stage, .stage:first-child { clip-path:none; margin-left:0; border-radius:999px; background:transparent; height:50px; font-size:21px; font-weight:650; color:var(--ink2); padding:0 12px; gap:10px; }
+.stage .n { width:30px; height:30px; border-radius:50%; background:var(--surface); color:var(--ink2); display:inline-flex; align-items:center; justify-content:center; font-size:17px; box-shadow:0 1px 3px rgba(20,26,51,.16); }
+.stage.done { color:var(--ink); }
+.stage.done .n { background:var(--ok-bg); color:var(--ok-ink); box-shadow:none; }
+.stage.cur { background:var(--acc); color:var(--on-acc); box-shadow:0 8px 22px var(--acc-glow); }
+.stage.cur .n { background:rgba(255,255,255,.26); color:inherit; box-shadow:none; }
+#gen .g { color:var(--acc); font-weight:800; font-size:32px; letter-spacing:-.02em; }
+
+/* controls */
+.btn { border:1.5px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(20,26,51,.05); }
+.btn.primary { background:var(--acc); border-color:var(--acc); color:var(--on-acc); box-shadow:0 8px 18px var(--acc-glow); }
+.btn.quiet { background:transparent; box-shadow:none; border-color:transparent; color:var(--ink2); }
+.btn kbd { border-radius:6px; background:var(--wash); border-color:var(--line); color:var(--ink2); }
+.btn.primary kbd { background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.42); color:inherit; }
+.vsep { background:var(--line); width:1.5px; }
+#tier .track { height:8px; background:var(--line); }
+#tier .stop { border-color:var(--axis); background:var(--surface); }
+#tier .stop.cur { background:var(--acc); border-color:var(--acc); box-shadow:0 0 0 4px var(--acc-tint); }
+.field { border:1.5px solid var(--line); border-radius:10px; background:var(--surface); }
+.switch i { background:var(--acc); }
+
+/* panels */
+.panel { background:var(--surface); border:none; border-radius:22px; box-shadow:var(--elev); }
+.ph { border-bottom:none; }
+.ph:not([style]) { padding:14px 22px 6px; }
+.ph h2 { font-weight:700; letter-spacing:-.01em; }
+.ph h2::before { content:""; display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--acc); margin-right:10px; vertical-align:1px; }
+th { border-bottom:none; font-size:18px; text-transform:uppercase; letter-spacing:.05em; font-weight:700; color:var(--th); padding:6px 12px; }
+td { border-bottom:1px solid var(--line-soft); padding:0 12px; }
+tbody tr:last-child td { border-bottom:none; }
+tr.hl td { background:var(--acc-tint); }
+tr.hl td:first-child { border-radius:14px 0 0 14px; }
+tr.hl td:last-child { border-radius:0 14px 14px 0; }
+
+/* chromosomes: a 1 must stand out from a 0 by weight, fill AND border, never by tint alone */
+.bit { border:1.5px solid var(--bit-line); border-radius:11px; background-color:var(--bit-bg); color:var(--bit-ink); font-weight:600; }
+.bit.one { background-color:var(--one-bg); border:2px solid var(--one-line); color:var(--one-ink); font-weight:800; }
+.bit.hatch { background-image:repeating-linear-gradient(135deg, transparent 0 5px, var(--hatch) 5px 7px); }
+.bit.flip { border-color:var(--flip); background-color:var(--flip-bg); color:var(--flip); box-shadow:0 5px 0 -1px var(--flip); }
+.bit.cutafter::before { border-right:3px dashed var(--acc); }
+
+.badge { border:none; border-radius:999px; padding:3px 13px; background:var(--chip); color:var(--ink2); }
+.badge.ok { background:var(--ok-bg); color:var(--ok-ink); }
+.badge.flip { background:var(--flip-bg); color:var(--flip-ink); }
+.badge.bypass { background:var(--wash); border:1.5px dashed var(--axis); }
+.card { background:var(--surface); border:1.5px solid var(--line); border-radius:18px; box-shadow:0 1px 2px rgba(20,26,51,.04); }
+.chip { background:var(--surface); border:1.5px solid var(--line); border-radius:999px; }
+.chip.cur { border-width:1.5px; border-color:var(--acc); background:var(--acc-tint); color:var(--acc-ink); }
+#narr { background:var(--acc-tint); border-left:none; border-radius:18px; color:var(--ink); }
+#narr .m { color:var(--acc-ink); }
+.tag { border-color:var(--ink2); }
+.tag.pend { border-color:var(--flip); color:var(--flip-ink); }
+
+/* drawer and dialog */
+#drawer { background:var(--surface); border-left:none; border-radius:22px 0 0 22px; box-shadow:var(--drawer-shadow); }
+#drawer .sec { border-bottom-color:var(--line-soft); }
+#dim { background:var(--veil); }
+#dialog { background:var(--surface); border:none; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.4); }
+
+/* plots and scrub bar */
+svg text { fill:var(--ink2); }
+svg text.ink { fill:var(--ink); }
+svg .gr { stroke:var(--grid); }
+
+/* ---- app-only additions ---- */
+.viewport { position:fixed; inset:0; background:var(--page); overflow:hidden; }
+.canvas { position:absolute; left:50%; top:50%; width:1920px; height:1080px; transform-origin:0 0; overflow:hidden; background-clip:padding-box; }
+.sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+button:focus-visible, input:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+.btn { cursor:pointer; }
+.btn:disabled { cursor:not-allowed; }
+.tablewrap { position:absolute; left:0; right:0; top:50px; bottom:0; overflow:auto; }
+.tablewrap thead th { position:sticky; top:0; background:var(--surface); z-index:1; }
+#stagebody ol.events { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+#stagebody ol.events li { padding:8px 14px; border-radius:12px; font-size:20px; line-height:1.3; }
+#stagebody ol.events li.latest { background:var(--acc-tint); font-weight:650; }
+#stagebody ol.events li.older { color:var(--ink2); }
+.empty { color:var(--ink2); font-style:italic; }
+.statrow { display:flex; gap:14px; padding:6px 22px 0; }
+.stat { flex:1; background:var(--wash); border-radius:16px; padding:10px 16px; }
+.stat b { display:block; font-size:34px; letter-spacing:-.02em; line-height:1.1; }
+.stat span { color:var(--ink2); font-size:19px; }
+#statusline { margin-left:10px; font-size:20px; color:var(--ink2); display:block; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+#statusline.err { color:var(--flip-ink); }
+input[type=range].speed { width:200px; accent-color:var(--acc); }
+
+/* ---- selection and pairing views ---- */
+.expl { margin:0 0 8px; font-size:20px; color:var(--ink2); }
+.roulette { display:flex; gap:22px; height:calc(100% - 36px); }
+.wheelbox { width:350px; flex:none; margin:0; text-align:center; }
+.wheelbox figcaption { font-size:18px; color:var(--ink2); margin-top:-8px; }
+.sidecol { flex:1; min-width:0; display:flex; flex-direction:column; gap:10px; }
+.formula { font-size:19px; color:var(--ink2); }
+.formula b { color:var(--ink); }
+.notice { background:var(--flip-bg); color:var(--flip-ink); border-radius:14px; padding:8px 14px; font-size:19px; line-height:1.25; }
+.notice b::before { content:"⚠ "; }
+.weights { flex:1; min-height:0; overflow:auto; }
+.weights table { font-size:20px; }
+.weights td { height:36px; }
+.weights th small { display:block; text-transform:none; letter-spacing:0; font-weight:500; font-size:16px; }
+.chips { list-style:none; margin:0; padding:0; display:flex; gap:8px; }
+.chips .chip { flex:1; padding:4px 8px; text-align:center; font-size:19px; white-space:nowrap; }
+.poolbox { display:flex; align-items:center; gap:12px; }
+.poollabel { font-weight:700; font-size:19px; color:var(--ink2); white-space:nowrap; }
+.poolstrip { list-style:none; margin:0; padding:0; display:flex; gap:8px; flex-wrap:wrap; }
+.poolstrip li { min-width:68px; text-align:center; padding:3px 10px; border-radius:12px; border:1.5px dashed var(--axis); font-weight:800; font-size:22px; color:var(--ink2); }
+.poolstrip li.filled { border-style:solid; border-color:var(--one-line); background:var(--one-bg); color:var(--one-ink); }
+.poolstrip .slotno { display:block; font-size:16px; font-weight:600; line-height:1.1; }
+.tournament, .pairing { display:flex; flex-direction:column; gap:10px; height:100%; }
+.tournament .expl { margin:0; }
+.tgrid { flex:1; min-height:0; overflow:auto; display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; align-content:start; }
+.tcard, .pcard { padding:8px 14px; }
+.tcard.current, .pcard.current { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-tint); }
+.tcard.pending, .pcard.pending { border-style:dashed; background:transparent; box-shadow:none; }
+.thead { display:flex; align-items:center; gap:10px; font-size:20px; }
+.contestants { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:4px; }
+.contestants li { display:flex; align-items:center; gap:12px; font-size:19px; padding:2px 6px; border-radius:10px; }
+.contestants li.win { background:var(--ok-bg); }
+.pgrid { display:flex; gap:12px; flex-wrap:wrap; }
+.pcard { flex:1; min-width:380px; }
+.parents { display:flex; gap:18px; margin-top:6px; flex-wrap:wrap; }
+.parent { display:flex; flex-direction:column; gap:4px; font-size:19px; }
+.notes { margin:0; padding:0 0 0 22px; font-size:19px; color:var(--ink2); }
+
+/* ---- layout fixes found by looking at the real screens ---- */
+.chips { flex-wrap:wrap; }
+.chips .chip { flex:0 0 auto; padding:3px 12px; }
+.poolstrip { max-height:84px; overflow:auto; }
+.pairing { overflow:hidden; height:calc(100% - 36px); }
+.pgrid { flex:1; min-height:0; overflow:auto; display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; align-content:start; }
+.pcard { min-width:0; flex:none; }
+.parents { display:flex; flex-direction:column; gap:2px; margin-top:4px; }
+.parent { display:flex; flex-direction:row; align-items:center; gap:12px; font-size:19px; }
+.notes { flex:none; margin:0; padding:0 0 0 22px; font-size:18px; max-height:84px; overflow:auto; }
+
+/* ---- crossover and mutation views ---- */
+.crossover, .mutation { display:flex; flex-direction:column; gap:8px; height:100%; }
+.crossover .expl, .mutation .expl { margin:0; }
+.cgrid { flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:10px; }
+.ccard { padding:8px 14px; flex:none; }
+.ccard.current { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-tint); }
+.ccard.pending { border-style:dashed; background:transparent; box-shadow:none; }
+.cbody { display:flex; flex-wrap:wrap; gap:8px 40px; margin-top:6px; }
+.cside { display:flex; flex-direction:column; gap:4px; }
+.chead { font-size:17px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--th); }
+.crow { display:flex; align-items:center; gap:14px; }
+.crow .who { width:200px; font-size:18px; color:var(--ink2); flex:none; }
+.crow.dropped { opacity:.55; }
+.key { margin:0; font-size:18px; color:var(--ink2); }
+.mwrap { flex:1; min-height:0; overflow:auto; }
+.mtable { font-size:20px; white-space:nowrap; }
+.mtable td { height:46px; }
+.mtable .who { font-weight:700; margin-right:8px; }
+.mtable .draw { font-variant-numeric:tabular-nums; }
+.mtable td.flipcell { outline:3px solid var(--flip); outline-offset:-3px; border-radius:8px; font-weight:700; color:var(--flip-ink); }
+.mtable td.result .bits { margin-right:10px; }
+.mtable tr.hl td { background:var(--acc-tint); }
+.mtable th.num, .mtable td.draw { padding-left:6px; padding-right:6px; }
+.mtable td.result { white-space:normal; }
+.mtable td.result .badge { font-size:17px; padding:2px 10px; }
+
+/* evaluation and replacement */
+.evaluation, .replacement { display:flex; flex-direction:column; height:calc(100% - 36px); min-height:0; }
+.etable td.strong { font-weight:700; }
+.rgrid { flex:1; min-height:0; display:grid; grid-template-columns:280px 1fr 320px; gap:14px; overflow:auto; align-content:start; }
+.rcol { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.rrow { display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; padding:4px 6px; border-bottom:1px solid var(--grid); font-size:19px; }
+.rrow .who { font-weight:700; min-width:1.8em; }
+.rrow .fit { font-variant-numeric:tabular-nums; font-weight:700; min-width:2.2em; text-align:right; }
+.rrow.dim { opacity:.62; }
+.rrow .note { flex-basis:100%; font-size:16px; color:var(--ink2); padding-left:2.4em; }
+.rrow .badge { font-size:16px; padding:1px 9px; }
+.rrow { flex-wrap:nowrap; gap:4px 8px; padding:2px 4px; }
+.rrow .bit.sm { width:25px; height:29px; font-size:18px; }
+.rrow .bits { gap:2px; }
+.rrow .badge { white-space:nowrap; font-size:15px; padding:1px 8px; }
+.rrow .rank { font-size:15px; color:var(--ink2); white-space:nowrap; }
+.rrow .note { flex-basis:auto; font-size:14px; }
+.rrow:has(.note) { flex-wrap:wrap; }
+.cutnote { margin:0 0 4px; font-size:16px; color:var(--ink2); }
+
+/* plots */
+.plot svg { display:block; padding:0 6px; }
+.plot svg text { fill:var(--ink2); font-size:18px; font-family:inherit; }
+.plot svg text.ink { fill:var(--ink); }
+.plot svg .gr { stroke:var(--grid); stroke-width:1; }
+.plot .legend { font-size:17px; white-space:nowrap; }
+.plot .legend b { color:var(--ink); }
+.allele { display:flex; align-items:flex-end; gap:10px; height:112px; padding:6px 14px 0; box-sizing:border-box; }
+.allele .gene { flex:1; text-align:center; }
+.allele .bar { margin:0 8px; border:2px solid var(--ink2); background:var(--seq4); border-radius:4px 4px 0 0; }
+.allele .gene b { display:block; font-size:19px; }
+.allele .gene span { font-size:17px; color:var(--ink2); }
+.plot .summary { margin:6px 16px 0; font-size:18px; line-height:1.25; color:var(--ink2); }
+
+/* run history bar and the discard notice */
+.history { position:absolute; left:0; top:1014px; width:1920px; height:66px; display:flex; align-items:center; background:var(--surface); box-shadow:0 -1px 0 var(--hair); }
+.history .title { width:200px; padding-left:24px; box-sizing:border-box; line-height:1.15; }
+.history .title b { display:block; font-size:20px; }
+.history .title span { font-size:17px; }
+.history .scrub { width:1440px; height:66px; cursor:pointer; touch-action:none; border-radius:8px; }
+.history .scrub:focus-visible { outline:3px solid var(--acc); outline-offset:-3px; }
+.history .scrub svg { display:block; }
+.history .track { fill:var(--grid); }
+.history .fill { fill:var(--acc); }
+.history .cell-tick { stroke:var(--ink2); stroke-width:2; }
+.history .stage-tick { stroke:var(--axis); stroke-width:1.5; }
+.history .thumb { fill:var(--ink); }
+.history text { fill:var(--ink2); font-size:17px; font-family:inherit; }
+.history text.current { fill:var(--ink); font-weight:700; }
+.history .live { margin-left:auto; margin-right:24px; }
+.history .live:disabled { opacity:.45; cursor:default; }
+.scrim { position:absolute; inset:0; background:rgba(10,14,30,.45); display:flex; align-items:center; justify-content:center; z-index:20; }
+.dialog { width:760px; background:var(--surface); border:2px solid var(--ink); border-radius:16px; padding:28px 32px; box-shadow:0 20px 60px rgba(0,0,0,.35); }
+.dialog h2 { margin:0 0 12px; font-size:30px; }
+.dialog #dialog-text p { margin:0 0 12px; font-size:23px; }
+.dialog p { margin:0 0 12px; font-size:23px; }
+.dialog .actions { display:flex; gap:14px; justify-content:flex-end; margin-top:20px; }
+
+/* parameter drawer */
+#drawer { position:absolute; left:1282px; top:156px; width:638px; height:858px; overflow-y:auto; background:var(--surface); border-left:2px solid var(--ink); box-shadow:-12px 0 32px rgba(10,14,40,.22); z-index:10; font-size:20px; }
+#drawer:focus { outline:none; }
+#drawer .dh { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; position:sticky; top:0; background:var(--surface); border-bottom:1px solid var(--hair); z-index:2; }
+#drawer .dh h2 { margin:0; font-size:28px; }
+#drawer .sec { padding:12px 20px 14px; border-bottom:1px solid var(--hair); }
+#drawer h3 { margin:0 0 6px; font-size:22px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+#drawer h3 .note { font-size:16px; font-weight:400; color:var(--ink2); }
+#drawer .ctl { display:grid; grid-template-columns:1fr auto; align-items:center; column-gap:12px; padding:5px 0; }
+#drawer .ctl.wide { grid-template-columns:1fr; }
+#drawer .ctl label, #drawer .ctl .label { font-size:20px; }
+#drawer .ctl .field { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+#drawer .ctl.wide .field { justify-content:stretch; }
+#drawer .ctl .help { grid-column:1 / -1; margin:2px 0 0; font-size:16px; line-height:1.3; color:var(--ink2); }
+#drawer .ctl .err, #drawer .err { grid-column:1 / -1; margin:2px 0 0; font-size:17px; font-weight:600; color:var(--flip-ink); }
+#drawer input[type=text], #drawer select, #drawer textarea { font:inherit; font-size:20px; color:var(--ink); background:var(--surface); border:2px solid var(--ink2); border-radius:8px; padding:4px 10px; height:42px; box-sizing:border-box; }
+#drawer input[type=text] { width:130px; text-align:right; font-variant-numeric:tabular-nums; }
+#drawer input[type=text]:disabled { opacity:.45; }
+#drawer textarea { width:100%; height:auto; font-family:ui-monospace,Consolas,monospace; letter-spacing:.08em; }
+#drawer .ctl.bad input, #drawer .ctl.bad select, #drawer .ctl.bad textarea, #drawer input[aria-invalid=true] { border-color:var(--flip); background:var(--flip-bg); }
+#drawer .switch { display:inline-flex; align-items:center; gap:8px; font-weight:700; font-size:18px; }
+#drawer .switch input { width:26px; height:26px; accent-color:var(--acc); }
+#drawer .tag { font-size:14px; font-weight:700; border-radius:6px; padding:1px 8px; border:1.5px solid currentColor; white-space:nowrap; }
+#drawer .tag.pend { color:var(--flip-ink); }
+#drawer .tag.reset { color:var(--ink2); border-style:dashed; }
+#drawer .warn { margin:10px 20px 0; padding:8px 12px; border:2px solid var(--flip); background:var(--flip-bg); border-radius:8px; color:var(--flip-ink); font-size:17px; }
+#drawer .warn p { margin:0; }
+#drawer .applyreset { display:flex; align-items:center; gap:12px; padding-top:8px; }
+#drawer .applyreset .help { font-size:16px; color:var(--ink2); }
+#drawer .btn.tiny { height:34px; min-width:34px; padding:0 8px; font-size:16px; }
+#drawer .btn:disabled { opacity:.45; cursor:default; }
+#drawer .chain ol { list-style:none; margin:6px 0; padding:0; display:flex; flex-direction:column; gap:8px; }
+#drawer .chain li { border:2px solid var(--axis); border-radius:10px; padding:6px 10px; }
+#drawer .chain li.bad { border-color:var(--flip); background:var(--flip-bg); }
+#drawer .chain .stephead { display:flex; align-items:center; justify-content:space-between; }
+#drawer .chain .steptools { display:flex; gap:6px; }
+#drawer .chain .help { margin:2px 0 4px; font-size:16px; color:var(--ink2); }
+#drawer .chain .param { display:grid; grid-template-columns:auto auto 1fr; align-items:center; gap:8px; font-size:18px; }
+#drawer .chain .param small { color:var(--ink2); font-size:14px; line-height:1.2; }
+#drawer .chain .addstep { display:flex; align-items:center; gap:8px; }
+#drawer .handpop table { margin-top:8px; font-size:19px; }
+#drawer .handpop td { height:40px; }
+#drawer .handpop tr.bad td { color:var(--flip-ink); font-weight:600; }
+.pendingchip { font-size:16px; font-weight:700; color:var(--flip-ink); background:var(--flip-bg); border-radius:999px; padding:3px 12px; white-space:nowrap; }
+
+#drawer .lesson { margin:4px 0; font-size:19px; font-weight:600; }
+#drawer [data-section=presets] .help { margin:2px 0 4px; font-size:16px; line-height:1.3; color:var(--ink2); }
+
+#brand .trow { display:flex; align-items:center; gap:10px; }
+#brand .presetchip { font-size:15px; font-weight:700; color:var(--acc-ink); background:var(--acc-tint); border-radius:999px; padding:1px 10px; white-space:nowrap; }
+
+/* keyboard focus must always be visible */
+:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+.btn:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+
+/* projector mode: larger text and heavier lines, same layout */
+.canvas.projector { font-size:22px; }
+.projector .btn { border-width:3px; }
+.projector .btn kbd { font-size:15px; }
+.projector #brand .s, .projector #gen .l { font-size:21px; }
+.projector td, .projector table { font-size:23px; }
+.projector th { font-size:20px; }
+.projector .bit { border-width:3px; }
+.projector .bit.sm { font-size:24px; }
+.projector .expl, .projector .note, .projector .key, .projector .cutnote { font-size:21px; }
+.projector #narr { font-size:23px; }
+.projector #legend { font-size:21px; }
+.projector .badge { font-size:20px; border-width:2.5px; }
+.projector .plot svg text { font-size:20px; }
+.projector .plot svg path[data-series], .projector .plot svg line[data-now-line] { stroke-width:3.5; }
+.projector .plot svg .gr { stroke-width:2; }
+.projector .plot .legend { font-size:19px; }
+.projector .plot .summary { font-size:20px; }
+.projector .allele .gene b { font-size:21px; }
+.projector .allele .gene span { font-size:19px; }
+.projector .history text { font-size:19px; }
+.projector .history .track { height:14px; }
+.projector .history .thumb { width:10px; }
+.projector #drawer { font-size:22px; }
+.projector #drawer .ctl .help, .projector #drawer .help { font-size:18px; }
+.projector .rrow, .projector .rrow .badge { font-size:21px; }
+.projector .rrow .rank, .projector .rrow .note { font-size:17px; }
+.projector tr.hl td { border-bottom-width:2px; }
+
+/* the current micro-step is marked by a symbol and a heavier outline as well as a tint */
+tr.hl td:first-child::before { content:"\25B8\00a0"; font-weight:700; }
+.tcard.current .thead::before, .pcard.current .thead::before, .ccard.current .thead::before { content:"\25B8\00a0"; font-weight:700; }
+.chip.cur { text-decoration:underline; text-underline-offset:4px; }
+
+/* the playback speed: four stops, a thick track and a large thumb */
+input[type=range].speed { height:28px; cursor:pointer; }
+input[type=range].speed::-webkit-slider-runnable-track { height:10px; border-radius:5px; background:var(--grid); border:1px solid var(--axis); }
+input[type=range].speed::-webkit-slider-thumb { -webkit-appearance:none; width:24px; height:24px; margin-top:-4px; border-radius:50%; background:var(--acc); border:3px solid var(--surface); box-shadow:0 0 0 2px var(--acc); }
+input[type=range].speed::-moz-range-track { height:10px; border-radius:5px; background:var(--grid); border:1px solid var(--axis); }
+input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:var(--acc); border:3px solid var(--surface); box-shadow:0 0 0 2px var(--acc); }
+
+/* a user who asks for less motion gets none, whatever else is styled */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition:none !important; animation:none !important; scroll-behavior:auto !important; }
+}
+#brand .trow .t { white-space:nowrap; flex:none; }
+#brand .presetchip { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+
+/* switching the bottom-right plots */
+.plot .legend .btn.tiny { height:30px; padding:0 8px; font-size:16px; margin-left:10px; vertical-align:middle; }
+
+
+/* ---------- mock chrome (not part of the design) ---------- */
+html, body { background:#2b2b2b; overflow:auto; }
+body { height:auto; }
+#mockbar { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:6px 10px; background:#111; color:#eee; font:13px system-ui,sans-serif; }
+#mockbar b { color:#ffb300; margin-right:6px; }
+#mockbar button { background:#333; color:#eee; border:1px solid #555; border-radius:4px; padding:3px 8px; font:13px system-ui; cursor:pointer; }
+#mockbar button.on { background:#7040ec; border-color:#7040ec; }
+#mockbar .sep { width:1px; height:18px; background:#555; margin:0 4px; }
+#stagewrap { margin-top:40px; }
+#screen { position:relative; width:1920px; height:1080px; overflow:hidden; background:var(--page); color:var(--ink); font-size:20px; line-height:1.3; transform-origin:0 0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+#screen .abs { position:absolute; }
+#screen.projector { font-size:22px; }
+
+/* ---------- new for letters ---------- */
+.gcell { display:inline-flex; flex-direction:column; align-items:center; gap:2px; vertical-align:top; }
+.gcell .under { font-size:15px; height:18px; line-height:18px; color:var(--ink2); font-weight:700; }
+.gcell .under.ok { color:var(--good); }
+.bit.letter { font-family:ui-monospace,Consolas,monospace; font-weight:600; }
+.bit.letter.one { font-weight:800; }
+.bit.sm.letter { width:26px; height:34px; font-size:21px; }
+.bits.tight { gap:3px; }
+.tgtrow { display:inline-flex; gap:3px; color:var(--ink2); font-family:ui-monospace,Consolas,monospace; font-weight:700; }
+.tgtrow span { width:26px; text-align:center; font-size:19px; }
+.tgtlabel { font-size:15px; color:var(--ink2); margin-right:6px; }
+/* variant B: matches are marked by a heavy baseline instead of a ✓ */
+.varB .bit.letter.one { box-shadow:0 5px 0 -1px var(--acc-ink); }
+.varB .bit.letter:not(.one) { border-style:dashed; }
+.varB .gcell .under { display:none; }
+.varA .tgtheader { display:none; }
+.cap { font-size:15px; color:var(--ink2); margin:4px 0 0; }
+.note2 { font-size:17px; color:var(--ink2); }
+.mockdrawer { position:absolute; left:1282px; top:156px; width:638px; height:858px; background:var(--surface); border-left:2px solid var(--ink); box-shadow:-12px 0 32px rgba(10,14,40,.22); overflow:hidden; z-index:10; font-size:20px; }
+.matchbar { display:flex; align-items:flex-end; gap:6px; height:112px; padding:6px 14px 0; }
+.matchbar .gene { flex:1; text-align:center; }
+.matchbar .bar { margin:0 2px; border:2px solid var(--ink2); background:var(--seq4); border-radius:4px 4px 0 0; }
+.matchbar .gene b { display:block; font-size:17px; }
+.matchbar .gene span { font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; }
+
+/* ---------- new for the knapsack ---------- */
+.presetchip { margin-left:14px; font-size:17px; background:var(--chip); color:var(--ink2); border-radius:999px; padding:2px 12px; vertical-align:middle; font-weight:600; }
+.menulist { list-style:none; margin:0; padding:6px; min-width:260px; background:var(--surface); border:2px solid var(--ink); border-radius:10px; box-shadow:0 12px 30px rgba(0,0,0,.25); font-size:22px; font-weight:600; }
+.menulist li { padding:8px 12px; border-radius:8px; display:flex; gap:10px; }
+.menulist li.cur { font-weight:800; background:var(--acc-tint); }
+.menulist li span { width:1.2em; }
+.ktable td { height:38px; padding-top:1px; padding-bottom:1px; }
+.ktable .bit.sm { width:26px; height:32px; font-size:19px; border-radius:8px; }
+.ktable .num.strong { font-weight:800; }
+.ktable tr.pend td { opacity:.6; }
+.ktable .colnote { display:block; font-size:13px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--ink2); }
+.itemhdr { display:flex; align-items:flex-end; margin-top:2px; text-transform:none; letter-spacing:0; font-weight:400; }
+.itemhdr .lbl { display:flex; flex-direction:column; align-items:flex-end; margin-right:6px; font-size:12px; color:var(--ink2); }
+.itemhdr .lbl i { display:block; height:17px; line-height:17px; font-style:normal; }
+.itemrow { display:inline-flex; gap:3px; }
+.itemrow span { display:inline-flex; flex-direction:column; align-items:center; width:26px; }
+.itemrow b { height:17px; line-height:17px; font-size:16px; color:var(--ink); font-family:ui-monospace,Consolas,monospace; }
+.itemrow u, .itemrow s { height:17px; line-height:17px; font-size:14px; text-decoration:none; color:var(--ink2); font-variant-numeric:tabular-nums; }
+.itemrow s { font-style:italic; }
+.bits.tight { gap:3px; }
+.compact .bit.sm { width:23px; height:30px; font-size:17px; border-radius:7px; }
+.compact .bits.tight, .compact .itemrow { gap:2px; }
+.compact .itemrow span { width:23px; }
+.compact .itemrow b { font-size:15px; } .compact .itemrow u, .compact .itemrow s { font-size:13px; }
+/* a gene that is 1 but not in the bag: two proposals */
+.varA .bit.skip { border-style:dashed; background-color:color-mix(in srgb, var(--one-bg) 50%, transparent); border-color:var(--one-line); color:var(--one-ink); }
+.varA .bit.skip .sx { display:none; }
+.varA .bit.skip .sk { font-style:normal; text-decoration:line-through; text-decoration-thickness:2px; }
+.varB .bit.skip { border-style:dashed; background:transparent; border-color:var(--ink2); }
+.varB .bit.skip .sk { display:none; }
+.varB .bit.skip .sx { font-style:normal; font-size:17px; color:var(--flip-ink); }
+/* a gene dropped by Lamarckian repair (now 0) */
+.bit.cut { border-style:dotted; border-color:var(--flip); border-width:3px; position:relative; }
+.bit.cut::after { content:"✂"; position:absolute; top:-17px; left:50%; transform:translateX(-50%); color:var(--flip); font-size:17px; }
+/* capacity bars */
+.capbar { position:relative; display:inline-block; width:60px; height:14px; border:2px solid var(--ink2); border-radius:3px; vertical-align:middle; background:var(--surface); }
+.capbar i { position:absolute; top:0; bottom:0; }
+.capbar .fill { left:0; background:var(--seq4); }
+.capbar .over { background:repeating-linear-gradient(135deg, var(--flip) 0 3px, transparent 3px 6px); }
+.capbar .cap { width:2px; background:var(--ink); top:-5px; bottom:-5px; }
+.wcell { display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+.wnum { font-variant-numeric:tabular-nums; min-width:44px; font-size:16px; }
+.okm { color:var(--good); } .overm { color:var(--flip-ink); font-size:18px; }
+.bigwrap { display:flex; align-items:center; gap:14px; margin-top:36px; }
+.bigwrap .lbl { font-weight:700; white-space:nowrap; }
+.bigwrap .legend2 { white-space:nowrap; font-size:18px; color:var(--ink2); }
+.bigbar { position:relative; flex:1; height:34px; border:2px solid var(--ink2); border-radius:6px; background:var(--surface); }
+.bigbar .seg { position:absolute; top:0; bottom:0; background:var(--seq3); border-right:2px solid var(--surface); display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; overflow:hidden; }
+.bigbar .seg.ov { background:repeating-linear-gradient(135deg, var(--flip) 0 4px, var(--surface) 4px 8px); color:var(--ink); }
+.bigbar .capline { position:absolute; top:-9px; bottom:-9px; width:3px; background:var(--ink); }
+.bigbar .captxt { position:absolute; top:-32px; transform:translateX(-50%); font-size:15px; color:var(--ink2); white-space:nowrap; }
+.ktable td.why { font-size:15px; line-height:1.15; color:var(--ink2); white-space:nowrap; }
+.matchbar.k12 { gap:3px; padding:6px 10px 0; }
+.matchbar.k12 .gene b { font-size:13px; }
+.matchbar.k12 .gene span { font-size:17px; }
+.ktable th, .ktable td { padding-left:5px; padding-right:5px; }
+.ktable .num { width:62px; }
+.ktable .wcell { gap:5px; }
+.rt .capbar { width:40px; }
+.ktable th { font-size:16px; }
+.ktable td.why { font-size:14px; }
+.beforeafter { margin-top:6px; padding:6px 10px; border:2px solid var(--acc); border-radius:12px; }
+.beforeafter .crow { display:flex; align-items:center; gap:12px; min-height:46px; }
+.beforeafter .who { width:150px; font-size:16px; color:var(--ink2); }
+.itemtable table { font-size:16px; border-collapse:collapse; width:auto; } .itemtable td, .itemtable th { padding:0 14px 0 0; height:30px; border:none; text-align:left; } .itemtable tr { border:none; } .itemtable thead th { font-size:14px; }
+.itemgrid { display:flex; gap:26px; } #drawer .itemtable input[type=text] { width:62px; height:28px; padding:0 8px; font-size:17px; }
+.itemtable input { width:66px; height:28px; text-align:right; font:inherit; border:2px solid var(--ink2); border-radius:6px; background:var(--surface); color:var(--ink); }
+.itemtable input.bad { border-color:var(--flip); background:var(--flip-bg); }
+.mockdrawer .err { color:var(--flip-ink); font-weight:600; margin:4px 0 0; font-size:17px; }
+
+</style>
+</head>
+<body>
+<div id="mockbar">
+  <b>Knapsack mock</b>
+  <button data-s="eval">Evaluation + population</button>
+  <button data-s="menu">Problem menu</button>
+  <button data-s="drawer">Drawer: setup</button>
+  <span class="sep"></span>
+  <button data-m="decoder">First-fit decoder</button>
+  <button data-m="penalty">Penalty</button>
+  <button data-m="lamarck">Repair: Lamarckian</button>
+  <button data-m="baldwin">Repair: Baldwinian</button>
+  <span class="sep"></span>
+  <button data-v="A">Not-packed mark A: struck 1</button>
+  <button data-v="B">Not-packed mark B: ✕ in a dashed cell</button>
+  <span class="sep"></span>
+  <button data-plot="ok">Plot: ρ sensible</button>
+  <button data-plot="small">Plot: ρ too small</button>
+  <button data-bad="0">Drawer ok</button><button data-bad="1">Drawer error</button>
+  <span class="sep"></span>
+  <button data-t="light">Light</button><button data-t="dark">Dark</button>
+  <span class="sep"></span>
+  <button data-z="fit">Fit</button><button data-z="1">100%</button>
+  <button data-p="0">Normal</button><button data-p="1">Projector</button>
+</div>
+<div id="stagewrap"><div id="screen" class="varA"></div></div>
+<script>
+/* ===== Knapsack mock: hand-made data, thrown away after review. The instance below is illustrative (ticket 04 chooses the real one). ===== */
+const NAMES = 'ABCDEFGHIJKL'.split('');
+const WT = [9, 12, 3, 3, 10, 14, 4, 5, 11, 7, 6, 13];
+const VAL = [4, 20, 21, 17, 5, 23, 7, 14, 8, 12, 21, 19];
+const N = 12, CAP = 48, RHO = 4, OPT = 123;
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const sum = (a, f) => a.reduce((t, x) => t + f(x), 0);
+
+const METHODS = {
+  decoder: { name: 'First-fit decoder', short: 'decoder' },
+  penalty: { name: 'Penalty', short: 'penalty' },
+  lamarck: { name: 'Repair (Lamarckian)', short: 'Lamarckian repair' },
+  baldwin: { name: 'Repair (Baldwinian)', short: 'Baldwinian repair' },
+};
+
+/* ---------- evaluation of one chromosome under a method ---------- */
+function evaluate(bits, method) {
+  const g = bits.split('').map(Number);
+  let packed = g.map(() => false), notes = [], dropped = [], skipped = [];
+  const weightOf = (p) => sum(p.map((x, i) => (x ? WT[i] : 0)), (x) => x);
+  if (method === 'decoder') {
+    let w = 0;
+    g.forEach((b, i) => {
+      if (!b) return;
+      if (w + WT[i] <= CAP) { packed[i] = true; w += WT[i]; } else { skipped.push(i); notes.push(`skipped ${NAMES[i]}: ${WT[i]} > ${CAP - w} left`); }
+    });
+  } else {
+    packed = g.map((b) => !!b);
+    if (method !== 'penalty') {
+      while (weightOf(packed) > CAP) {
+        let worst = -1, wr = Infinity;
+        packed.forEach((p, i) => { if (p && VAL[i] / WT[i] <= wr) { wr = VAL[i] / WT[i]; worst = i; } }); // ties go to the later item
+        packed[worst] = false; dropped.push(worst);
+        notes.push(`dropped ${NAMES[worst]}: ${VAL[worst]}/${WT[worst]} = ${(VAL[worst] / WT[worst]).toFixed(2)} per weight`);
+      }
+    }
+  }
+  const weight = weightOf(packed), value = sum(packed.map((p, i) => (p ? VAL[i] : 0)), (x) => x);
+  const over = Math.max(0, weight - CAP), penalty = method === 'penalty' ? RHO * over : 0;
+  const genes = method === 'lamarck' ? packed.map((p) => (p ? 1 : 0)) : g;
+  return { bits, g, genes, packed, weight, value, over, penalty, fitness: value - penalty, feasible: over === 0, notes, dropped, skipped };
+}
+const POPBITS = ['110100100101', '011010110000', '101101010110', '010011101001', '111010011010', '001110100101'];
+const OFFBITS = ['110110100101', '011010111000', '101101011110', '010111101001', '111010011110', '001110100111'];
+const pop = (m) => POPBITS.map((b) => evaluate(b, m));
+const off = (m) => OFFBITS.map((b) => evaluate(b, m));
+
+/* ---------- marks for genes (two proposals for the "1 that is not packed") ---------- */
+function geneCell(i, r, o = {}) {
+  const one = r.genes[i] === 1;
+  const notPacked = one && !r.packed[i];
+  const wasDropped = o.before && o.before[i] === 1 && r.genes[i] === 0; // Lamarckian: the gene itself was rewritten
+  const cls = ['bit', 'sm', one && !notPacked ? 'one' : '', notPacked ? 'skip' : '', wasDropped ? 'cut' : ''].join(' ');
+  const title = notPacked ? `item ${NAMES[i]}: gene is 1 but it is not in the bag` : wasDropped ? `item ${NAMES[i]}: dropped by repair, gene rewritten to 0` : one ? `item ${NAMES[i]} is in the bag` : `item ${NAMES[i]} is left out`;
+  return `<span class="${cls}" title="${title}">${notPacked ? '<i class="sk">1</i><i class="sx">✕</i>' : r.genes[i]}</span>`;
+}
+const cellsOf = (r, o) => `<span class="bits tight" style="display:inline-flex">${NAMES.map((_, i) => geneCell(i, r, o)).join('')}</span>`;
+const itemRow = () => `<div class="itemhdr"><span class="lbl"><i>item</i><i>weight</i><i>value</i></span><span class="itemrow">${NAMES.map((n, i) => `<span><b>${n}</b><u>${WT[i]}</u><s>${VAL[i]}</s></span>`).join('')}</span></div>`;
+
+/* ---------- capacity bars ---------- */
+const SCALE = CAP * 1.5;
+function barSmall(r) {
+  const w = Math.min(r.weight, SCALE), fillW = Math.min(w, CAP) / SCALE * 100, overW = Math.max(0, w - CAP) / SCALE * 100;
+  return `<span class="capbar" role="img" aria-label="weight ${r.weight} of ${CAP}"><i class="fill" style="width:${fillW}%"></i><i class="over" style="left:${CAP / SCALE * 100}%;width:${overW}%"></i><i class="cap" style="left:${CAP / SCALE * 100}%"></i></span>`;
+}
+function weightCell(r) {
+  const mark = r.feasible ? '<b class="okm">✓</b>' : `<b class="overm">✗ +${r.over}</b>`;
+  return `<span class="wcell">${barSmall(r)}<span class="wnum">${r.weight}/${CAP}</span>${mark}</span>`;
+}
+function barBig(r) {
+  // stacked by item: the packed items in order, then whatever goes over the capacity is hatched
+  const sc = 100 / (CAP * 1.5); let x = 0, out = '';
+  r.packed.forEach((p, i) => {
+    if (!p) return;
+    const startW = x, endW = x + WT[i];
+    const inW = Math.max(0, Math.min(endW, CAP) - startW), outW = Math.max(0, endW - Math.max(startW, CAP));
+    if (inW > 0) out += `<i class="seg" style="left:${startW * sc}%;width:${inW * sc}%"><b>${NAMES[i]}</b></i>`;
+    if (outW > 0) out += `<i class="seg ov" style="left:${Math.max(startW, CAP) * sc}%;width:${outW * sc}%"><b>${NAMES[i]}</b></i>`;
+    x = endW;
+  });
+  return `<div class="bigbar">${out}<i class="capline" style="left:${CAP * sc}%"></i><span class="captxt" style="left:${CAP * sc}%">capacity ${CAP}</span></div>`;
+}
+
+/* ---------- chrome (copied from the milestone 2 mock, kept generic) ---------- */
+function topbar(cur, done, gen, line, menuOpen) {
+  const stages = ['Selection', 'Pairing', 'Crossover', 'Mutation', 'Evaluation', 'Replacement'];
+  const menu = menuOpen ? `<ul class="menulist" style="position:absolute;left:68px;top:62px;z-index:60"><li><span>&nbsp;</span> Goldberg x²</li><li><span>&nbsp;</span> Target string</li><li class="cur"><span>✓</span> Knapsack</li></ul>` : '';
+  return `<div id="top"><div id="brand" style="position:relative"><span class="logo" aria-hidden="true">Kn</span><div><div class="trow"><h1 class="t" style="margin:0">Knapsack ▾</h1><span class="presetchip">${METHODS[state.method].name}</span></div><div class="s">12 items · capacity ${CAP} · optimum ${OPT}</div></div>${menu}</div>
+  <ol id="ribbon" style="list-style:none;margin:0">${stages.map((s, k) => `<li class="stage ${k < done ? 'done' : ''} ${k === cur ? 'cur' : ''}"><span class="n">${k < done ? '✓' : k + 1}</span><span>${s}</span></li>`).join('')}</ol>
+  <div id="gen"><div class="g">Generation ${gen}</div><div class="l">${line}</div></div></div>`;
+}
+function transport() {
+  return `<div id="transport"><button class="btn quiet">↺</button><button class="btn quiet">◂ Back <kbd>←</kbd></button><button class="btn primary">Micro-step ▸ <kbd>→</kbd></button><button class="btn quiet">◂◂</button><button class="btn">Stage ▸▸ <kbd>⇧→</kbd></button><button class="btn">Generation ⏭ <kbd>G</kbd></button><span class="vsep"></span><button class="btn">▶ Run <kbd>Space</kbd></button><button class="btn quiet">Run to stop</button><span class="vsep"></span>
+  <div id="tier"><div><input class="speed" type="range" min="0" max="3" value="0"><div class="labels" style="width:200px;margin-left:0"><span>Slow</span><span>Medium</span><span>Fast</span><span>Max</span></div></div></div><span class="vsep"></span>
+  <div id="seedbox">Seed <b>42</b> <button class="btn quiet" style="height:40px;padding:0 10px">↻ New</button></div><div id="statusline">Paused</div><span style="flex:1"></span><button class="btn quiet">◐</button><button class="btn quiet">⚙ Parameters</button><button class="btn quiet">A⁺</button></div>`;
+}
+const history = `<footer class="history"><div class="title"><b>Run history</b><span class="muted">recorded gens 0–5</span></div><div class="scrub"><svg viewBox="0 0 1440 66" width="1440" height="66"><rect x="0" y="14" width="1440" height="12" rx="6" class="track"/><rect x="0" y="14" width="1000" height="12" rx="6" class="fill"/><rect x="996" y="6" width="8" height="28" rx="3" class="thumb"/>${[0, 1, 2, 3, 4, 5].map((g) => `<text x="${(g + 0.5) * 240}" y="54" text-anchor="middle" class="${g === 4 ? 'current' : ''}">gen ${g}</text>`).join('')}</svg></div><button class="btn live" disabled>Return to live</button></footer>`;
+
+/* ---------- right-hand population table ---------- */
+function popPanel(title) {
+  const m = state.method, rs = pop(m);
+  const head = `<tr><th>#</th><th>Chromosome${itemRow()}</th><th>Weight<span class="colnote">of ${CAP}</span></th><th class="num">Value</th>${m === 'penalty' ? `<th class="num">Penalty<span class="colnote">ρ = ${RHO}</span></th>` : ''}<th class="num">Fitness</th></tr>`;
+  const rows = rs.map((r, i) => `<tr><td>${i + 1}</td><td>${cellsOf(r)}</td><td>${weightCell(r)}</td><td class="num">${r.value}</td>${m === 'penalty' ? `<td class="num">${r.penalty ? '−' + r.penalty : '0'}</td>` : ''}<td class="num strong">${r.fitness}</td></tr>`).join('');
+  const feas = rs.filter((r) => r.feasible).length;
+  return `<section class="panel abs" style="left:1136px;top:172px;width:760px;height:542px"><div class="ph"><h2>${title}</h2><span class="r">${feas} of ${rs.length} feasible · best ${Math.max(...rs.filter((r) => r.feasible).map((r) => r.fitness))}</span></div>
+  <div class="tablewrap" style="top:50px;padding:0 6px"><table class="ktable compact rt"><thead>${head}</thead><tbody>${rows}</tbody></table></div></section>
+  <div id="legend" style="left:1136px;top:722px;width:760px"><span><b>★</b> elite</span><span><b>◆</b> parent</span><span><b>◇</b> offspring</span><span><b>✱</b> mutated gene</span><span><b>${state.v === 'A' ? '1̶' : '✕'}</b> not in the bag</span><span><b>✂</b> dropped</span></div>`;
+}
+
+/* ---------- bottom strip ---------- */
+function strip() {
+  const m = state.method;
+  const gens = [0, 1, 2, 3, 4, 5];
+  const small = state.plot === 'small';
+  const best = small ? [84, 96, 112, 131, 139, 152] : [70, 88, 99, 104, 113, 113];
+  const avg = small ? [41, 55, 71, 90, 104, 118] : [38, 49, 58, 66, 74, 80];
+  const so = best.map((v, k) => Math.max(...best.slice(0, k + 1)));
+  const feasSo = small ? [70, 88, 95, 95, 99, 99] : [70, 88, 99, 104, 113, 113];
+  const showFeas = m === 'penalty';
+  const X = (g) => 66 + (780 - 66) * g / 15, Y = (v) => 138 - (138 - 28) * v / 160;
+  const path = (a) => a.map((v, k) => `${k ? 'L' : 'M'}${X(k)},${Y(v)}`).join(' ');
+  const ticks = [0, 40, 80, 123, 160].map((v) => `<line class="gr" x1="66" x2="780" y1="${Y(v)}" y2="${Y(v)}"/><text x="58" y="${Y(v) + 6}" text-anchor="end">${v}</text>`).join('');
+  const xt = [0, 3, 6, 9, 12, 15].map((g) => `<text x="${X(g)}" y="160" text-anchor="middle">${g}</text>`).join('');
+  const fit = `<svg viewBox="0 0 800 188" width="100%"><g>${ticks}${xt}<line x1="66" x2="780" y1="${Y(OPT)}" y2="${Y(OPT)}" stroke="var(--ink2)" stroke-dasharray="2 5"/><text x="780" y="${Y(OPT) - 6}" text-anchor="end" style="font-size:16px">optimum ${OPT}</text>
+   <path d="${path(avg)}" fill="none" stroke="var(--s1)" stroke-width="2.5"/><path d="${path(so)}" fill="none" stroke="var(--s3)" stroke-width="2.5" stroke-dasharray="7 4"/><path d="${path(best)}" fill="none" stroke="var(--s2)" stroke-width="2.5"/>
+   ${showFeas ? `<path d="${path(feasSo)}" fill="none" stroke="var(--ink)" stroke-width="3" stroke-dasharray="2 4"/>${gens.map((g) => `<path d="M${X(g)},${Y(feasSo[g]) - 8} l7,8 l-7,8 l-7,-8 z" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.5"/>`).join('')}` : ''}
+   ${gens.map((g) => `<circle cx="${X(g)}" cy="${Y(avg[g])}" r="5" fill="var(--s1)"/><rect x="${X(g) - 5}" y="${Y(best[g]) - 5}" width="10" height="10" fill="var(--s2)"/>`).join('')}
+   <line x1="${X(5)}" x2="${X(5)}" y1="28" y2="138" stroke="var(--ink)" stroke-width="2"/><text class="ink" x="${X(5)}" y="20" text-anchor="middle" style="font-weight:700;font-size:16px">now</text></g></svg>`;
+  const div = [0.52, 0.5, 0.46, 0.43, 0.38, 0.35];
+  const X2 = (g) => 56 + (500 - 56) * g / 15, Y2 = (v) => 138 - 110 * v;
+  const dv = `<svg viewBox="0 0 520 188" width="100%">${[0, 0.5, 1].map((v) => `<line class="gr" x1="56" x2="500" y1="${Y2(v)}" y2="${Y2(v)}"/><text x="48" y="${Y2(v) + 6}" text-anchor="end">${v}</text>`).join('')}${[0, 3, 6, 9, 12, 15].map((g) => `<text x="${X2(g)}" y="160" text-anchor="middle">${g}</text>`).join('')}
+   <path d="${div.map((v, k) => `${k ? 'L' : 'M'}${X2(k)},${Y2(v)}`).join(' ')}" fill="none" stroke="var(--s7)" stroke-width="2.5"/>${div.map((v, k) => `<circle cx="${X2(k)}" cy="${Y2(v)}" r="5" fill="var(--s7)"/>`).join('')}<line x1="${X2(5)}" x2="${X2(5)}" y1="28" y2="138" stroke="var(--ink)" stroke-width="2"/></svg>`;
+  const rs = pop(m);
+  const rate = NAMES.map((_, i) => rs.filter((r) => r.genes[i] === 1).length / rs.length);
+  const bars = `<div class="matchbar k12">${NAMES.map((n, i) => `<div class="gene"><div class="bar" style="height:${Math.round(rate[i] * 60) + 4}px"></div><b>${Math.round(rate[i] * 100)}%</b><span>${n}</span></div>`).join('')}</div>`;
+  const feas = rs.filter((r) => r.feasible).length;
+  return `<section class="panel plot abs" style="left:24px;top:758px;width:820px;height:244px"><div class="ph"><h2>Fitness</h2><span class="r legend"><b>●</b> average &nbsp;<b>■</b> best of gen. &nbsp;<b>▲</b> best so far${showFeas ? ' &nbsp;<b>◇</b> best <u>feasible</u> so far' : ''}</span></div>${fit}</section>
+  <section class="panel plot abs" style="left:860px;top:758px;width:540px;height:244px"><div class="ph"><h2>Diversity</h2><span class="r legend">mean pairwise Hamming, 0–1</span></div>${dv}</section>
+  <section class="panel plot abs" style="left:1416px;top:758px;width:480px;height:244px"><div class="ph"><h2>Chosen per item</h2><span class="r legend">${feas} of ${rs.length} feasible</span></div>${bars}<p class="summary" style="margin:6px 16px 0;font-size:17px;color:var(--ink2)">generation 5 · share of the population with the item's gene set to 1</p></section>
+  ${history}`;
+}
+
+/* ---------- stage views ---------- */
+function evaluationScreen(menuOpen) {
+  const m = state.method, rs = off(m), cur = 3;
+  const rows = rs.map((r, i) => {
+    const before = evaluate(OFFBITS[i], 'penalty').g; // the genes as mutation left them
+    const reveal = i <= cur;
+    if (!reveal) return `<tr class="pend"><td><span class="who">O${i + 1}</span></td><td>${cellsOf(evaluate(OFFBITS[i], 'penalty'))}</td><td colspan="4" class="muted">not scored yet</td></tr>`;
+    const why = r.notes.length ? r.notes.map((n) => `<div>${esc(n)}</div>`).join('') : m === 'penalty' ? (r.over ? `<div>over by ${r.over}: ${RHO} × ${r.over}</div>` : '<div class="muted">fits: no penalty</div>') : '<div class="muted">everything fits</div>';
+    return `<tr class="${i === cur ? 'hl' : ''}"><td><span class="who">${i === cur ? '▸ ' : ''}O${i + 1}</span></td><td>${cellsOf(r, { before })}</td><td class="why">${why}</td><td>${weightCell(r)}</td><td class="num">${r.value}</td>${m === 'penalty' ? `<td class="num">${r.penalty ? '−' + r.penalty : '0'}</td>` : ''}<td class="num strong">${r.fitness}</td></tr>`;
+  }).join('');
+  const c = rs[cur];
+  const expl = {
+    decoder: 'First-fit decoder: walk the items A, B, C, … and pack an item if its gene is 1 and it still fits; otherwise skip it and carry on. The chromosome is not changed, and every bag is feasible.',
+    penalty: `Penalty: the bag is exactly the genes set to 1. Overweight bags are allowed but pay ρ = ${RHO} per unit of excess weight: fitness = value − penalty.`,
+    lamarck: 'Lamarckian repair: while the bag is too heavy, drop the item with the lowest value per weight (ties: the later item). The repaired genes replace the chromosome.',
+    baldwin: 'Baldwinian repair: while the bag is too heavy, drop the item with the lowest value per weight (ties: the later item). The chromosome keeps its genes; only the bag and the score use the repaired set.',
+  }[m];
+  const narr = m === 'penalty'
+    ? `Offspring ${cur + 1}: packs ${NAMES.filter((_, i) => c.packed[i]).join(', ')}: weight ${c.weight} of ${CAP}, value ${c.value}${c.over ? `, over by ${c.over} → penalty ${c.penalty}` : ''} → fitness ${c.fitness}`
+    : `Offspring ${cur + 1}: ${c.notes.length ? c.notes.join('; ') + '; ' : ''}packs ${NAMES.filter((_, i) => c.packed[i]).join(', ')}: weight ${c.weight} of ${CAP}, value ${c.value} → fitness ${c.fitness}`;
+  return `${topbar(4, 4, 5, 'being made · micro-step 4 of 6', menuOpen)}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 5 · Evaluation of offspring</h2></div><div id="stagebody" style="top:56px"><div class="evaluation"><p class="expl">${expl}</p>
+  <div class="mwrap"><table class="mtable etable ktable compact"><thead><tr><th>Offspring</th><th>Chromosome${itemRow()}</th><th>What happened</th><th>Weight</th><th class="num">Value</th>${m === 'penalty' ? '<th class="num">Penalty</th>' : ''}<th class="num">Fitness</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="bigwrap"><span class="lbl">Offspring ${cur + 1}</span>${barBig(c)}<span class="legend2">${NAMES.filter((_, i) => c.packed[i]).length} items · weight ${c.weight} of ${CAP}${c.over ? ` · <b>${c.over} over (hatched)</b>` : ''}${c.dropped.length ? ` · repaired from ${evaluate(c.bits, 'penalty').weight}` : ''}</span></div></div></div>
+  <div id="narr"><span class="m">Micro-step ${cur + 1} of 6</span><span>${esc(narr)}</span></div></section>
+  ${popPanel('Parents · generation 4')}${strip()}`;
+}
+function repairBefore() {
+  // Lamarckian: show the chromosome as mutation left it, and after repair, for one individual
+  const bits = OFFBITS[3], before = evaluate(bits, 'penalty'), after = evaluate(bits, 'lamarck');
+  return { before, after };
+}
+function repairScreen() {
+  const { before, after } = repairBefore();
+  const lam = state.method === 'lamarck';
+  return `<div class="beforeafter"><div class="crow"><span class="who">as mutation left it</span>${cellsOf(before)}<span class="muted">weight ${before.weight} of ${CAP}</span></div><div class="crow"><span class="who">after repair</span>${cellsOf(after, { before: before.g })}<span class="muted">weight ${after.weight} of ${CAP} · ${after.notes.join('; ')}</span></div></div>`;
+}
+
+/* ---------- drawer ---------- */
+function drawer() {
+  const m = state.method;
+  const row = (i) => `<tr><td><b>${NAMES[i]}</b></td><td><input type="text" value="${i === 5 && state.bad ? 0 : WT[i]}" ${i === 5 && state.bad ? 'class="bad"' : ''}></td><td><input type="text" value="${VAL[i]}"></td><td><button class="btn quiet" style="height:28px;padding:0 6px" aria-label="Remove item ${NAMES[i]}">✕</button></td></tr>`;
+  const tbl = (from) => `<table><thead><tr><th></th><th>Weight</th><th>Value</th><th></th></tr></thead><tbody>${[0, 1, 2, 3, 4, 5].map((k) => row(from + k)).join('')}</tbody></table>`;
+  const items = `<div class="itemgrid">${tbl(0)}${tbl(6)}</div>`;
+  return `<aside class="mockdrawer" id="drawer"><div class="dh"><h2>Parameters</h2><button class="btn quiet">✕ close</button></div>
+  <div class="sec" style="padding-top:4px"><h3>Run setup <span class="tag reset">↺ needs reset</span></h3>
+   <div class="ctl"><label>Constraint handling</label><span class="field"><select><option>${METHODS[m].name}</option></select></span><p class="help">${{ decoder: 'Walks the items in order and packs each one that still fits. Always feasible, chromosome unchanged.', penalty: 'Overweight bags are allowed but lose ρ per unit of excess weight.', lamarck: 'Drops the worst value-per-weight items until the bag fits, and writes that back into the chromosome.', baldwin: 'Drops the same items, but the chromosome keeps its genes: only the bag and the score are repaired.' }[m]}</p></div>
+   ${m === 'penalty' ? `<div class="ctl"><label>Penalty ρ</label><span class="field"><input type="text" value="${RHO}"></span><p class="help">Fitness lost per unit of weight above the capacity. Too small and an overweight bag can beat the optimum; too large and the search avoids the boundary.</p></div>` : ''}
+   <div class="ctl"><label>Capacity</label><span class="field"><input type="text" value="${CAP}"></span><p class="help">At most the total weight (97).</p></div>
+   <div class="itemtable"><div class="chead">Items (2 to 20)</div>${items}<button class="btn" style="margin-top:6px;height:36px">+ Add item</button></div>
+   ${state.bad ? '<p class="err">Item F: the weight must be a whole number from 1 to 99 (it is 0).</p>' : ''}
+   <div class="applyreset"><button class="btn primary" ${state.bad ? 'disabled' : ''}>Apply and restart</button><span class="help">${state.bad ? 'Fix the highlighted fields first.' : 'No setup changes.'}</span></div></div></aside>`;
+}
+
+/* ---------- screens ---------- */
+const screens = {
+  eval() {
+    let html = evaluationScreen();
+    return html;
+  },
+  repair() {
+    // the same evaluation view, with the before/after pair for the current offspring in the foreground
+    return screens.eval();
+  },
+  menu() {
+    return evaluationScreen(true);
+  },
+  drawer() {
+    return `${topbar(4, 4, 5, 'complete · limit 100')}${transport()}<section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 6 · Replacement</h2></div><div id="stagebody" style="top:56px"><p class="expl">(stage view as before)</p></div></section>${popPanel('Population · generation 5')}${strip()}${drawer()}`;
+  },
+};
+
+/* ---------- mock controls ---------- */
+let state = { s: 'eval', method: 'decoder', v: 'A', plot: 'ok', bad: false, t: 'light', z: 'fit', p: '0' };
+function render() {
+  const el = document.getElementById('screen');
+  el.className = 'var' + state.v + (state.p === '1' ? ' projector' : '');
+  el.innerHTML = screens[state.s]();
+  document.documentElement.dataset.theme = state.t;
+  const sc = state.z === 'fit' ? Math.min(innerWidth / 1920, (innerHeight - 40) / 1080) : 1;
+  el.style.transform = `scale(${sc})`;
+  document.getElementById('stagewrap').style.height = 1080 * sc + 'px';
+  document.getElementById('stagewrap').style.width = 1920 * sc + 'px';
+  document.querySelectorAll('#mockbar button').forEach((b) => {
+    const d = b.dataset;
+    b.classList.toggle('on', d.s === state.s || d.m === state.method || d.v === state.v || d.t === state.t || d.z === state.z || d.p === state.p || (d.plot && d.plot === state.plot) || (d.bad && (d.bad === '1') === state.bad));
+  });
+}
+document.getElementById('mockbar').addEventListener('click', (e) => {
+  const d = e.target.dataset; if (!d) return;
+  if (d.s) state.s = d.s; if (d.m) state.method = d.m; if (d.v) state.v = d.v; if (d.t) state.t = d.t; if (d.z) state.z = d.z; if (d.p) state.p = d.p; if (d.plot) state.plot = d.plot; if (d.bad) state.bad = d.bad === '1';
+  render();
+});
+addEventListener('resize', render);
+const q = new URLSearchParams(location.search);
+for (const k of ['s', 'm', 'v', 't', 'z', 'p', 'plot']) if (q.get(k)) state[k === 'm' ? 'method' : k] = q.get(k);
+if (q.get('bad')) state.bad = q.get('bad') === '1';
+render();
+
+</script>
+</body>
+</html>
