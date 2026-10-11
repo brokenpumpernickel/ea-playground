@@ -1,6 +1,6 @@
 # Milestone 3: the knapsack
 
-Status: ready-for-breakdown (awaiting the instructor's go-ahead to break it into tickets)
+Status: broken into tickets (17), see `issues/`
 
 Vocabulary follows `CONTEXT.md` (including **Penalty**, **Repair** and **First-fit decoder**, and the new **Feasible** and **Packed set**). Architecture follows ADRs 0001–0004 in `docs/adr/`. Where this spec and those disagree, the ADRs and glossary win and this spec is wrong. Milestones 1 and 2 are complete and published; this milestone builds on the problem registry, the problem-declared columns and the share-link configuration they introduced.
 
