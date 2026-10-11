@@ -1,5 +1,7 @@
 <script lang="ts">
   import { getContext } from 'svelte';
+  import { itemName } from '../engine';
+  import { bagContextKey, type BagGetter } from './bag-context';
   import { geneList } from './format';
   import { targetContextKey, type TargetGetter } from './target-context';
 
@@ -14,6 +16,9 @@
    *   say which genes, for example the ones that match a target.
    * - With a target string in the screen's context, each gene is compared with it: matching genes are filled with a
    *   heavy baseline, the others have a dashed outline (shape, not colour), and the description says how many match.
+   * - With a knapsack in the screen's context, the cells are narrower, and a gene that is 1 but whose item is not in the
+   *   bag (the first-fit decoder skipped it, or Baldwinian repair dropped it) is drawn as a ✕ in a dashed plain cell, with
+   *   the description saying which items are packed, which are not, and the weight against the capacity.
    * - `unders`: a short text under each gene (the mutation view's draws), with the genes it flags marked.
    * A space is drawn as `␣` so it is visible.
    */
@@ -42,6 +47,14 @@
   const matched = $derived(!marks && target ? [...chromosome].map((c, k) => c === target[k]) : undefined);
   const matchCount = $derived(matched ? matched.filter(Boolean).length : undefined);
 
+  const getBag = getContext<BagGetter | undefined>(bagContextKey);
+  const bag = $derived(getBag?.());
+  const knap = $derived(bag !== undefined && /^[01]+$/.test(chromosome) && chromosome.length === bag.items.length);
+  const outcome = $derived(knap ? bag!.outcomeOf([...chromosome].map(Number)) : undefined);
+  /** Which genes are 1 although the item is not in the bag. */
+  const skippedAt = $derived(outcome ? [...chromosome].flatMap((c, k) => (c === '1' && !outcome.packed[k] ? [k] : [])) : []);
+  const packedLetters = $derived(outcome ? outcome.packed.flatMap((p, k) => (p ? [itemName(k)] : [])) : []);
+
   const fromB = $derived(sources ? [...sources].flatMap((s, k) => (s === 'B' ? [k + 1] : [])) : []);
   /** A screen reader should say each letter, so letters are spelled out one by one and a space is named. */
   const spelled = $derived(letters ? [...chromosome].map((c) => (c === ' ' ? 'space' : c)).join(', ') : chromosome);
@@ -51,6 +64,8 @@
     [
       // the letters end with a full stop so that the next fact is not read as one more letter
       `Chromosome ${spelled}${letters ? '.' : ''}`,
+      outcome ? `${packedLetters.length > 0 ? `bag: ${packedLetters.join(', ')}` : 'nothing in the bag'}, weight ${outcome.weight} of ${bag!.capacity}` : '',
+      skippedAt.length > 0 ? `not in the bag although the gene is 1: ${skippedAt.map(itemName).join(', ')}` : '',
       matchCount !== undefined ? `${matchCount} of ${chromosome.length} positions match the target${matchedAt.length > 0 && matchedAt.length < chromosome.length ? ` (${positions(matchedAt)})` : ''}` : '',
       fromB.length > 0 ? `${geneList(fromB)} from parent B` : '',
       cuts.length > 0 ? `cut after ${geneList(cuts)}` : '',
@@ -62,7 +77,7 @@
   );
 </script>
 
-{#snippet cell(bit: string, k: number)}<b class="bit" class:one={marks ? marks[k] : matched ? matched[k] : bit === '1'} class:match={matched?.[k] === true} class:miss={matched?.[k] === false} class:letter={letters} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{bit === ' ' ? '␣' : bit}</b>{/snippet}
+{#snippet cell(bit: string, k: number)}<b class="bit" class:knap={knap} class:skip={skippedAt.includes(k)} class:one={marks ? marks[k] : matched ? matched[k] : bit === '1' && !skippedAt.includes(k)} class:match={matched?.[k] === true} class:miss={matched?.[k] === false} class:letter={letters} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{skippedAt.includes(k) ? '✕' : bit === ' ' ? '␣' : bit}</b>{/snippet}
 
 <span
   class="bits"

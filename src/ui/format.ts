@@ -12,6 +12,8 @@ export interface Display {
   readonly show: (chromosome: Chromosome) => string;
   /** How many symbols a gene can take. */
   readonly alphabetSize: number;
+  /** How many genes a chromosome has. */
+  readonly chromosomeLength: number;
   readonly columns: readonly ProblemColumn[];
   readonly evaluationColumns: readonly ProblemColumn[];
   /** How a score reads in a sentence; absent when sentences use the decoded value. */
@@ -22,6 +24,7 @@ export interface Display {
 export const displayOf = (problem: Problem): Display => ({
   show: (chromosome) => formatGenes(chromosome, problem.alphabet),
   alphabetSize: problem.alphabet.length,
+  chromosomeLength: problem.chromosomeLength,
   columns: problem.columns,
   evaluationColumns: problem.evaluationColumns ?? problem.columns,
   ...(problem.scoreText ? { scoreText: problem.scoreText } : {}),

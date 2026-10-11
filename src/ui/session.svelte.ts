@@ -1,6 +1,7 @@
-import { gaAlgorithm, metricsOf, type Problem, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
+import { gaAlgorithm, metricsOf, type KnapsackProblem, type Problem, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
 import { createPlayback, createRun, type AnimationFlags, type Playback, type PlaybackStatus, type Position, type Run, type Scheduler, type Tier, type View } from '../run';
 import { defaultParams, defaultSeed, defaultSetup } from './config';
+import type { BagInfo } from './bag-context';
 import { changes, draftOf } from './drawer-model';
 import { displayOf, type Display } from './format';
 import { entryOf, type ProblemEntry, type ProblemOptions } from './problems';
@@ -198,6 +199,12 @@ export function createSession(options: SessionOptions) {
     get problem(): Problem {
       void version;
       return run.setup.problem;
+    },
+    /** The running knapsack, as the views need it (items, capacity, how a chromosome is packed); absent for other problems. */
+    get bag(): BagInfo | undefined {
+      void version;
+      const p = run.setup.problem as Partial<KnapsackProblem>;
+      return p.outcomeOf && p.options ? { items: p.options.items, capacity: p.options.capacity, outcomeOf: p.outcomeOf.bind(p) } : undefined;
     },
     get problemEntry(): ProblemEntry {
       return entryOf(problemId)!;

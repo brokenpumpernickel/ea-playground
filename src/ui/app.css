@@ -576,3 +576,19 @@ input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radi
 /* "being made · micro-step 11 of 11" must not wrap: with a population of 12 the counts have two digits */
 #gen { width:auto; min-width:300px; flex:none; }
 #gen .l { white-space:nowrap; }
+
+/* ---------- the knapsack: item row, narrower cells, a gene that is 1 but not in the bag ---------- */
+.itemhdr { display:flex; align-items:flex-end; margin-top:2px; text-transform:none; letter-spacing:0; font-weight:400; position:relative; }
+.itemhdr .lbl { position:absolute; right:100%; margin-right:6px; display:flex; flex-direction:column; align-items:flex-end; font-size:12px; color:var(--ink2); }
+.itemhdr .lbl i { display:block; height:17px; line-height:17px; font-style:normal; white-space:nowrap; }
+.itemrow { display:inline-flex; gap:2px; }
+.itemrow span { display:inline-flex; flex-direction:column; align-items:center; width:23px; }
+.itemrow b { height:17px; line-height:17px; font-size:15px; color:var(--ink); font-family:ui-monospace,Consolas,monospace; }
+.itemrow u, .itemrow s { height:17px; line-height:17px; font-size:13px; text-decoration:none; color:var(--ink2); font-variant-numeric:tabular-nums; }
+.itemrow s { font-style:italic; }
+.bit.sm.knap { width:23px; height:30px; font-size:17px; border-radius:7px; }
+.bits:has(.bit.knap) { gap:2px; }
+.bit.skip { border-style:dashed; background:transparent; border-color:var(--ink2); color:var(--flip-ink); font-weight:700; }
+.projector .itemrow b { font-size:17px; }
+.projector .itemrow u, .projector .itemrow s { font-size:15px; }
+.parentmark { margin-left:6px; font-size:15px; color:var(--ink2); white-space:nowrap; }

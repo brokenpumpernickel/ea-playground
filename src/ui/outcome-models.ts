@@ -171,8 +171,8 @@ export function replacementModel(view: GaView, params: GaParams, display: Displa
     ? `Offspring truncation: λ = ${lambda} offspring were made and scored; only the best N − e = ${room} survive.`
     : `All ${room} offspring survive and take the remaining places.`;
   const cutNote = ranking ? `Ranked by fitness (1 = best): the best ${room} are kept, ${lambda - room} discarded.` : undefined;
-  // a problem with strings has no room for a third column of long strings: the old population is the table beside the stage
-  const showOld = display.alphabetSize <= 2;
+  // a problem with long chromosomes (strings, a dozen items) has no room for a third column: the old population is the table beside the stage
+  const showOld = display.alphabetSize <= 2 && display.chromosomeLength <= 8;
   const where = showOld ? '' : ' The old population is in the table on the right.';
   const kept = !showOld && event && event.elites.length > 0 ? ` Elite${event.elites.length === 1 ? '' : 's'}: ${event.elites.map((id) => `#${id}`).join(', ')}.` : '';
   return { revealed: event !== undefined, showOld, explanation: `${elitism}${kept} ${fill}${where}`, ...(cutNote ? { cutNote } : {}), old, offspring, next };

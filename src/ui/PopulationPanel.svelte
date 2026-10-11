@@ -1,5 +1,6 @@
 <script lang="ts">
   import Bits from './Bits.svelte';
+  import ItemRow from './ItemRow.svelte';
   import TargetRow from './TargetRow.svelte';
   import type { Session } from './session.svelte';
 
@@ -10,6 +11,13 @@
   const total = $derived(table.rows.reduce((sum, r) => sum + r.fitness, 0));
   const best = $derived(Math.max(...table.rows.map((r) => r.fitness)));
   const average = $derived(Math.round((total / table.rows.length) * 100) / 100);
+  /**
+   * The knapsack's table has no room for three columns about selection beside its own: Weight and Prob. appear only
+   * while there are selection weights to show (roulette), and the parent count moves into the first column. Other
+   * problems always show all three columns.
+   */
+  const knapsack = $derived(session.bag !== undefined);
+  const showSelection = $derived(!knapsack || table.rows.some((r) => r.weight !== undefined || r.probability !== undefined));
 </script>
 
 <section class="panel" style="left:1136px;top:172px;width:760px;height:542px" aria-labelledby="pop-heading">
@@ -22,26 +30,30 @@
       <thead>
         <tr>
           <th scope="col">#</th>
-          <th scope="col">Chromosome<TargetRow /></th>
+          <th scope="col">Chromosome<TargetRow /><ItemRow /></th>
           {#each display.columns as column (column.header)}
             <th scope="col" class="num">{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>
           {/each}
-          <th scope="col" class="num">Weight</th>
-          <th scope="col" class="num">Prob.</th>
-          <th scope="col">Parent</th>
+          {#if showSelection}
+            <th scope="col" class="num">Weight</th>
+            <th scope="col" class="num">Prob.</th>
+            {#if !knapsack}<th scope="col">Parent</th>{/if}
+          {/if}
         </tr>
       </thead>
       <tbody>
         {#each table.rows as row (row.id)}
           <tr>
-            <td data-col="id"><span class="sym" title={row.elite ? 'Elite: carried over unchanged' : undefined}>{row.elite ? '★' : ''}</span>{row.id}</td>
+            <td data-col="id"><span class="sym" title={row.elite ? 'Elite: carried over unchanged' : undefined}>{row.elite ? '★' : ''}</span>{row.id}{#if knapsack && row.parentCount}<span class="parentmark" title="selected as a parent {row.parentCount} {row.parentCount === 1 ? 'time' : 'times'}" data-col="parent"><span class="sym" aria-hidden="true">◆</span>×{row.parentCount}</span>{/if}</td>
             <td><Bits chromosome={row.chromosome} small /></td>
             {#each display.columns as column, c (column.header)}
               <td class="num" data-col={column.header.toLowerCase()}>{row.cells[c]}</td>
             {/each}
-            <td class="num" data-col="weight">{row.weight ?? '—'}</td>
-            <td class="num" data-col="prob">{row.probability === undefined ? '—' : row.probability.toFixed(3)}</td>
-            <td data-col="parent">{#if row.parentCount}<span class="sym" aria-hidden="true">◆</span>×{row.parentCount}{:else}<span class="muted">—</span>{/if}</td>
+            {#if showSelection}
+              <td class="num" data-col="weight">{row.weight ?? '—'}</td>
+              <td class="num" data-col="prob">{row.probability === undefined ? '—' : row.probability.toFixed(3)}</td>
+              {#if !knapsack}<td data-col="parent">{#if row.parentCount}<span class="sym" aria-hidden="true">◆</span>×{row.parentCount}{:else}<span class="muted">—</span>{/if}</td>{/if}
+            {/if}
           </tr>
         {/each}
       </tbody>

@@ -80,7 +80,7 @@ export function knapsackProblem(options: KnapsackOptions): KnapsackProblem {
   const weightOf = (scores: Scores) => [...String(scores.decoded)].reduce((total, letter) => total + instance.items[letter.charCodeAt(0) - 65]!.weight, 0);
   const columns: ProblemColumn[] = [
     {
-      header: 'Weight',
+      header: 'Bag weight',
       note: `of ${instance.capacity}`,
       show: (scores) => {
         const weight = weightOf(scores);

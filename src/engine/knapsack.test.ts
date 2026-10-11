@@ -38,22 +38,22 @@ describe('the problem', () => {
 
 describe('the columns', () => {
   test('the penalty method has Weight, Value, Penalty and Fitness; the other three have no Penalty column', () => {
-    expect(knapsackProblem(options('penalty')).columns.map((c) => c.header)).toEqual(['Weight', 'Value', 'Penalty', 'Fitness']);
+    expect(knapsackProblem(options('penalty')).columns.map((c) => c.header)).toEqual(['Bag weight', 'Value', 'Penalty', 'Fitness']);
     for (const h of ['decoder', 'repair-lamarckian', 'repair-baldwinian'] as const) {
-      expect(knapsackProblem(options(h)).columns.map((c) => c.header)).toEqual(['Weight', 'Value', 'Fitness']);
+      expect(knapsackProblem(options(h)).columns.map((c) => c.header)).toEqual(['Bag weight', 'Value', 'Fitness']);
     }
   });
 
   test('a bag that fits shows weight of capacity with a ✓, an overweight one ✗ and by how much, and a penalty shows as a loss', () => {
     const p = knapsackProblem(options('penalty'));
-    expect(shown(p, 'ABCEF')).toEqual(['Weight=48/48 ✓', 'Value=73', 'Penalty=0', 'Fitness=73']);
-    expect(shown(p, 'ABEFG')).toEqual(['Weight=49/48 ✗ +1', 'Value=59', 'Penalty=−4', 'Fitness=55']);
-    expect(shown(p, 'ABCDEFGHIJKL')).toEqual(['Weight=97/48 ✗ +49', 'Value=171', 'Penalty=−196', 'Fitness=−25']);
+    expect(shown(p, 'ABCEF')).toEqual(['Bag weight=48/48 ✓', 'Value=73', 'Penalty=0', 'Fitness=73']);
+    expect(shown(p, 'ABEFG')).toEqual(['Bag weight=49/48 ✗ +1', 'Value=59', 'Penalty=−4', 'Fitness=55']);
+    expect(shown(p, 'ABCDEFGHIJKL')).toEqual(['Bag weight=97/48 ✗ +49', 'Value=171', 'Penalty=−196', 'Fitness=−25']);
   });
 
   test('the decoder and repairs always show ✓ and the weight of the bag that was packed', () => {
-    expect(shown(knapsackProblem(options('decoder')), 'ABCDEFGHIJKL')).toEqual(['Weight=46/48 ✓', 'Value=88', 'Fitness=88']);
-    expect(shown(knapsackProblem(options('repair-baldwinian')), 'ABCDEFGHIJKL')).toEqual(['Weight=40/48 ✓', 'Value=112', 'Fitness=112']);
+    expect(shown(knapsackProblem(options('decoder')), 'ABCDEFGHIJKL')).toEqual(['Bag weight=46/48 ✓', 'Value=88', 'Fitness=88']);
+    expect(shown(knapsackProblem(options('repair-baldwinian')), 'ABCDEFGHIJKL')).toEqual(['Bag weight=40/48 ✓', 'Value=112', 'Fitness=112']);
   });
 
   test('the weight column says what it is measured against, and the evaluation view uses the same columns', () => {

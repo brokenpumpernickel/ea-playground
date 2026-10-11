@@ -1,5 +1,6 @@
 <script lang="ts">
   import Bits from './Bits.svelte';
+  import ItemRow from './ItemRow.svelte';
   import TargetRow from './TargetRow.svelte';
   import { revealWhenCurrent } from './reveal';
   import type { EvaluationModel } from './outcome-models';
@@ -14,7 +15,7 @@
       <thead>
         <tr>
           <th scope="col">Offspring</th>
-          <th scope="col">Chromosome<TargetRow /></th>
+          <th scope="col">Chromosome<TargetRow /><ItemRow /></th>
           {#each model.columns as column (column.header)}
             <th scope="col" class="num">{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>
           {/each}

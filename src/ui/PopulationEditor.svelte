@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Problem } from '../engine';
   import Bits from './Bits.svelte';
+  import ItemRow from './ItemRow.svelte';
   import { parseChromosomes } from './drawer-model';
 
   let { text = $bindable(), problem, error }: { text: string; problem: Problem; error?: string } = $props();
@@ -18,7 +19,7 @@
     bind:value={text}
   ></textarea>
   <table aria-label="Hand-edited population">
-    <thead><tr><th scope="col">#</th><th scope="col">Chromosome</th>{#each problem.columns as column (column.header)}<th scope="col" class="num">{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>{/each}</tr></thead>
+    <thead><tr><th scope="col">#</th><th scope="col">Chromosome<ItemRow /></th>{#each problem.columns as column (column.header)}<th scope="col" class="num">{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>{/each}</tr></thead>
     <tbody>
       {#each rows as row, k (k)}
         <tr class:bad={row.error !== undefined} data-row={k + 1}>

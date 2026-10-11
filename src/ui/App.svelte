@@ -11,6 +11,7 @@
   import { setupOf } from './run-config';
   import { createSession } from './session.svelte';
   import { startupOf } from './share-link';
+  import { bagContextKey, type BagGetter } from './bag-context';
   import { targetContextKey, type TargetGetter } from './target-context';
   import { shortcutFor } from './shortcuts';
   import StagePanel from './StagePanel.svelte';
@@ -38,6 +39,8 @@
 
   // views that draw chromosomes compare them with the running problem's target, when it has one
   setContext<TargetGetter>(targetContextKey, () => targetOf(session.problemOptions));
+  // and the knapsack's item row and skipped-gene marks need the running problem's bag, when it is one
+  setContext<BagGetter>(bagContextKey, () => session.bag);
 
   // The screen is designed once, at 1920×1080, and scaled to fit the window.
   let scale = $state(1);
