@@ -1,4 +1,6 @@
 {
+  "v": 1,
+  "problem": "goldberg",
   "name": "Textbook population",
   "lesson": "Goldberg's four-individual example, small enough to follow a whole generation by hand and check against the book.",
   "lookFor": "Fitness 169, 576, 64 and 361 (total 1170, average 292.5) and selection probabilities of about 0.144, 0.492, 0.055 and 0.309. With pc = 1 every pair recombines, and pm = 0.001 is so small that this seed shows exactly one mutation in generation 1 (gene 3).",

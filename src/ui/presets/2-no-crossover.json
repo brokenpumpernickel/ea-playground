@@ -1,4 +1,6 @@
 {
+  "v": 1,
+  "problem": "goldberg",
   "name": "No crossover",
   "lesson": "With crossover switched off, selection still runs but every child is a copy of its parent, so only mutation can change a chromosome.",
   "lookFor": "Every pair is a bypass and no gene is inherited from a second parent. Progress comes only from the occasional ✱ flip, so it is slow: with this seed the best fitness is still 900 (11110, one gene short of the optimum 961) after 50 generations.",

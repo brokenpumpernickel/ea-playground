@@ -1,4 +1,5 @@
 import { goldberg, type GaParams, type GaSetup } from '../engine';
+import { problemIds } from './run-config';
 
 /**
  * A preset is a plain data file in `presets/`: a whole configuration plus the seed that shows its lesson. Adding one
@@ -7,6 +8,8 @@ import { goldberg, type GaParams, type GaSetup } from '../engine';
 export interface Preset {
   /** The file's name without the extension. */
   readonly id: string;
+  /** The problem the preset belongs to. */
+  readonly problem: string;
   readonly name: string;
   /** One sentence: what the preset is for. */
   readonly lesson: string;
@@ -25,6 +28,8 @@ const fail = (id: string, problem: string): never => {
 export function presetFromData(id: string, data: unknown): Preset {
   if (typeof data !== 'object' || data === null) return fail(id, 'the file must hold one JSON object.');
   const d = data as Record<string, unknown>;
+  if (d.v !== 1) fail(id, '"v" must be 1, the version of the configuration format.');
+  if (typeof d.problem !== 'string' || !problemIds().includes(d.problem)) fail(id, `"problem" must be one of ${problemIds().map((p) => `"${p}"`).join(', ')}.`);
   for (const key of ['name', 'lesson', 'lookFor'] as const) {
     if (typeof d[key] !== 'string' || (d[key] as string).trim() === '') fail(id, `"${key}" must be a non-empty text.`);
   }
@@ -43,6 +48,7 @@ export function presetFromData(id: string, data: unknown): Preset {
   if (typeof params?.elites !== 'number') fail(id, '"params.elites" must be a number.');
   return {
     id,
+    problem: d.problem as string,
     name: d.name as string,
     lesson: d.lesson as string,
     lookFor: d.lookFor as string,
