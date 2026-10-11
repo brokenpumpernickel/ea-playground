@@ -1,4 +1,4 @@
-import type { ProblemEntry, ProblemOptions } from './problems';
+import { isStringOptions, type ProblemEntry, type ProblemOptions } from './problems';
 import { describeAlphabet, minimumGenes, operatorName, parseGenes, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
 
 /**
@@ -72,7 +72,7 @@ export function draftOf(params: GaParams, setup: GaSetup, seed: number, options?
     size: setup.init.kind === 'random' ? String(setup.init.size) : String(setup.init.chromosomes.length),
     chromosomes: setup.init.kind === 'explicit' ? setup.init.chromosomes.join('\n') : '',
     seed: String(seed),
-    ...(options ? { options: { alphabet: options.alphabet, target: options.target } } : {}),
+    ...(options && isStringOptions(options) ? { options: { alphabet: options.alphabet, target: options.target } } : {}),
     method: selection.method,
     tournamentSize: selection.method === 'tournament' ? String(selection.size) : '2',
     chain:
@@ -314,7 +314,7 @@ export function changes(draft: Draft, current: { params: GaParams; setup: GaSetu
   if (setup.init.kind !== was.kind) reset.push('Initialization');
   else if (setup.init.kind === 'random' && was.kind === 'random' && setup.init.size !== was.size) reset.push('Population size');
   else if (setup.init.kind === 'explicit' && !same(setup.init, was)) reset.push('Hand-edited population');
-  if (draft.options && current.options) {
+  if (draft.options && current.options && isStringOptions(current.options)) {
     if (draft.options.alphabet !== current.options.alphabet) reset.push('Alphabet');
     if (draft.options.target !== current.options.target) reset.push('Target');
   }

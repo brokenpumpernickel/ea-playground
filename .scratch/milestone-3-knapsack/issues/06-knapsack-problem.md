@@ -1,6 +1,6 @@
 # 06 The knapsack problem in the engine and registry
 
-Status: open
+Status: resolved
 Type: task (test-first)
 Blocked by: 03, 05
 Spec: ../spec.md
@@ -19,3 +19,15 @@ Spec: ../spec.md
 - The problem menu lists Knapsack and switching to it runs (views are the generic ones until ticket 08).
 
 ## Comments
+
+## Answer
+
+**Engine** (`src/engine/knapsack.ts`): `KnapsackOptions { items, capacity, handling, rho }`, `knapsackProblem(options)` (throws the first message for invalid options) returning a `KnapsackProblem`: 12 binary genes (one per item), `knownOptimumFitness` = the DP value (123 for the built-in instance), no landscape, `evaluate` = `handleBag(...).scores`, and `outcomeOf(chromosome)` which gives the views the full `BagOutcome` (skipped and dropped items, penalty). `validateKnapsack` and `validateKnapsackFields` (messages under `items`, `capacity`, `handling`, `rho`), `knapsackRhoLimits` (ρ from 0 to 1000), `knapsackDefaults`, all exported from the engine index.
+
+**Columns and sentences** (declared by the problem, as the string problem does): Weight (note "of 48"; "48/48 ✓" or "49/48 ✗ +1"; recomputed from the packed letters in `decoded`, so the columns need nothing but the scores), Value, Penalty (penalty method only; "0" or "−4"), Fitness (a real minus sign). Score text: "packs B, C, D: weight 18 of 48, value 58", "packs nothing: …", and for an overweight bag "…, over by 1 → penalty 4". Each method has its own evaluation explanation (the mock's wording; the penalty one names ρ).
+
+**Registry and link** (`src/ui/problems.ts`): `ProblemOptions` is now `TargetStringOptions | KnapsackOptions` with `isStringOptions`, `isKnapsackOptions` and `targetOf` helpers (the views and the drawer model that assumed string options use them; their behaviour is unchanged). The knapsack entry: id `knapsack`, name "Knapsack", logo `Kn`, subtitle "12 items · capacity 48 · optimum 123", default options (a copy of the built-in instance, decoder, ρ = 4), structural validation in words ("options.items[2].weight" must be a number, unknown or missing keys, …) followed by the instance and handling rules, `validateOptionFields` for the drawer, and placeholder defaults (population 12, tournament 3, pc 0.8, pm 0.08, limit 60, target 123, stagnation 30) that ticket 13 replaces by measurement. The share-link format needed no change (v1, options validated through the entry); the problem menu lists Knapsack as the third entry. Until ticket 08 the knapsack uses the generic views (gene-share panel "ones", the problem's own columns).
+
+**Tests:** `knapsack.test.ts` (16: problem facts, scores for each method, the columns and sentences hand-worked, validation per field, defaults), `problems-knapsack.test.ts` (5: defaults are a copy, subtitle, every structural message, grouping by field), `run-config-knapsack.test.ts` (10: each handling method and a hand-edited population on another instance round-trip and open as the same run, populations, events and metrics; the bad-link cases — item weight and value, too few and too many items, capacity out of range, unknown handling, ρ, wrong shape, strings of the wrong length or alphabet, a crossover that does not fit 2 items, several problems together). Four older tests and one e2e that used "knapsack" as an unknown problem now use "tsp"; the menu test lists three problems.
+
+State: 1108 unit tests, `npm run check` clean, 160 Playwright tests passing.

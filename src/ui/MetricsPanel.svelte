@@ -6,6 +6,7 @@
   import { landscapeModel } from './landscape-model';
   import MatchRateStrip from './MatchRateStrip.svelte';
   import { matchRates } from './match-rate-model';
+  import { targetOf } from './problems';
   import { num } from './format';
   import type { Session } from './session.svelte';
 
@@ -15,7 +16,7 @@
   const plots = $derived(session.plots);
   const size = $derived(session.table.rows.length);
   const entry = $derived(session.problemEntry);
-  const rates = $derived(entry.genePanel === 'match-rate' && session.problemOptions ? matchRates(m, session.problemOptions.target, session.problem.alphabet) : undefined);
+  const rates = $derived(entry.genePanel === 'match-rate' && targetOf(session.problemOptions) !== undefined ? matchRates(m, targetOf(session.problemOptions)!, session.problem.alphabet) : undefined);
   const landscape = $derived(session.problem.landscape);
   const curve = $derived(landscape ? landscapeModel(landscape, session.table.rows) : undefined);
 </script>

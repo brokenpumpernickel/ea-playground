@@ -53,4 +53,28 @@ export {
 export { gaAlgorithm, populationFromEvents, supportedLimits, type GaEvent, type GaParams, type GaSetup } from './algorithm';
 export { metricsOf, type GenerationMetrics } from './metrics';
 export { tournamentSelect, type TournamentContestant, type TournamentEvent, type TournamentSetupEvent } from './tournament';
+export {
+  knapsackDefaults,
+  knapsackProblem,
+  knapsackRhoLimits,
+  validateKnapsack,
+  validateKnapsackFields,
+  type KnapsackOptions,
+  type KnapsackProblem,
+} from './knapsack';
+export { handleBag, handlings, type BagOutcome, type Handling } from './knapsack-handling';
+export {
+  bagValue,
+  bagWeight,
+  builtInKnapsack,
+  greedyByRatio,
+  itemName,
+  knapsackLimits,
+  optimalBag,
+  validateKnapsackInstance,
+  validateKnapsackInstanceFields,
+  valuePerWeight,
+  type KnapsackInstance,
+  type KnapsackItem,
+} from './knapsack-instance';
 export { targetStringDefaults, targetStringLimits, targetStringProblem, validateTargetString, validateTargetStringFields, type TargetStringOptions, type TargetStringProblem } from './target-string';

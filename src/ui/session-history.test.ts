@@ -340,7 +340,7 @@ describe('switching problem', () => {
     session.cancelReset();
     expect(session.problemEntry.id).toBe('goldberg');
     expect(session.run.lastCycle).toBe(2);
-    session.requestProblemSwitch('knapsack');
+    session.requestProblemSwitch('tsp');
     expect(session.resetNotice).toBeUndefined();
   });
 

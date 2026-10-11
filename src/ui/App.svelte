@@ -7,6 +7,7 @@
   import MetricsPanel from './MetricsPanel.svelte';
   import PopulationPanel from './PopulationPanel.svelte';
   import ResetNotice from './ResetNotice.svelte';
+  import { targetOf } from './problems';
   import { setupOf } from './run-config';
   import { createSession } from './session.svelte';
   import { startupOf } from './share-link';
@@ -36,7 +37,7 @@
   });
 
   // views that draw chromosomes compare them with the running problem's target, when it has one
-  setContext<TargetGetter>(targetContextKey, () => session.problemOptions?.target);
+  setContext<TargetGetter>(targetContextKey, () => targetOf(session.problemOptions));
 
   // The screen is designed once, at 1920×1080, and scaled to fit the window.
   let scale = $state(1);

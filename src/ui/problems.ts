@@ -1,11 +1,19 @@
 import {
   goldberg,
+  knapsackDefaults,
+  knapsackProblem,
+  optimalBag,
+  validateKnapsack,
+  validateKnapsackFields,
+  handlings,
   targetStringDefaults,
   targetStringProblem,
   validateTargetString,
   validateTargetStringFields,
   type GaParams,
+  type Handling,
   type Initialization,
+  type KnapsackOptions,
   type Problem,
   type TargetStringOptions,
 } from '../engine';
@@ -16,7 +24,11 @@ import { defaultParams, defaultSeed } from './config';
  * reset), how to build the engine problem from the options, and the configuration each one opens with. The problem
  * menu, share links and presets all read this list; adding a problem is adding an entry.
  */
-export type ProblemOptions = TargetStringOptions;
+export type ProblemOptions = TargetStringOptions | KnapsackOptions;
+export const isStringOptions = (options: ProblemOptions): options is TargetStringOptions => 'target' in options;
+/** The target string of a string problem's options, for views that compare chromosomes with it. */
+export const targetOf = (options: ProblemOptions | undefined): string | undefined => (options && isStringOptions(options) ? options.target : undefined);
+export const isKnapsackOptions = (options: ProblemOptions): options is KnapsackOptions => 'items' in options;
 
 export interface ProblemEntry {
   readonly id: string;
@@ -67,7 +79,7 @@ const targetStringEntry: ProblemEntry = {
   logo: 'Aa',
   genePanel: 'match-rate',
   diversityNote: 'mean pairwise mismatch, 0–1',
-  subtitle: (options) => (options ? `Match “${options.target}” · ${[...options.alphabet].length} symbols` : 'Match a target string'),
+  subtitle: (options) => (options && isStringOptions(options) ? `Match “${options.target}” · ${[...options.alphabet].length} symbols` : 'Match a target string'),
   hasOptions: true,
   defaultOptions: () => ({ ...targetStringDefaults.options }),
   validateOptions(options) {
@@ -81,12 +93,56 @@ const targetStringEntry: ProblemEntry = {
     if (problems.length > 0) return problems;
     return validateTargetString(options as unknown as TargetStringOptions);
   },
-  validateOptionFields: (options) => validateTargetStringFields(options),
-  create: (options) => targetStringProblem(options ?? targetStringDefaults.options),
+  validateOptionFields: (options) => validateTargetStringFields(options as TargetStringOptions),
+  create: (options) => targetStringProblem((options as TargetStringOptions | undefined) ?? targetStringDefaults.options),
   defaults: { init: { kind: 'random', size: targetStringDefaults.populationSize }, params: targetStringDefaults.params, seed: defaultSeed },
 };
 
-export const problemEntries: readonly ProblemEntry[] = [goldbergEntry, targetStringEntry];
+const knapsackEntry: ProblemEntry = {
+  id: 'knapsack',
+  name: 'Knapsack',
+  logo: 'Kn',
+  genePanel: 'ones',
+  diversityNote: 'mean pairwise Hamming, 0–1',
+  subtitle(options) {
+    if (!options || !isKnapsackOptions(options)) return 'Pack a bag';
+    const instance = { items: options.items, capacity: options.capacity };
+    return `${options.items.length} items · capacity ${options.capacity} · optimum ${optimalBag(instance).value}`;
+  },
+  hasOptions: true,
+  defaultOptions: () => ({ ...knapsackDefaults.options, items: knapsackDefaults.options.items.map((item) => ({ ...item })) }),
+  validateOptions(options) {
+    if (!isObject(options)) return ['"options" must be an object with "items", "capacity", "handling" and "rho".'];
+    const problems: string[] = [];
+    const keys = ['items', 'capacity', 'handling', 'rho'];
+    for (const key of Object.keys(options)) if (!keys.includes(key)) problems.push(`"options" has an unknown key "${key}".`);
+    for (const key of keys) if (!(key in options)) problems.push(`"options" is missing "${key}".`);
+    if ('items' in options) {
+      if (!Array.isArray(options.items)) problems.push('"options.items" must be a list of items.');
+      else {
+        options.items.forEach((item, i) => {
+          const at = `"options.items[${i}]"`;
+          if (!isObject(item)) return void problems.push(`${at} must be an object with a "weight" and a "value".`);
+          for (const key of Object.keys(item)) if (key !== 'weight' && key !== 'value') problems.push(`${at} has an unknown key "${key}".`);
+          for (const key of ['weight', 'value'] as const) {
+            if (!(key in item)) problems.push(`${at} is missing "${key}".`);
+            else if (typeof item[key] !== 'number') problems.push(`"options.items[${i}].${key}" must be a number.`);
+          }
+        });
+      }
+    }
+    if ('capacity' in options && typeof options.capacity !== 'number') problems.push('"options.capacity" must be a number.');
+    if ('handling' in options && typeof options.handling !== 'string') problems.push('"options.handling" must be text.');
+    if ('rho' in options && typeof options.rho !== 'number') problems.push('"options.rho" must be a number.');
+    if (problems.length > 0) return problems;
+    return validateKnapsack(options as unknown as KnapsackOptions);
+  },
+  validateOptionFields: (options) => validateKnapsackFields(options as KnapsackOptions),
+  create: (options) => knapsackProblem((options as KnapsackOptions | undefined) ?? knapsackDefaults.options),
+  defaults: { init: { kind: 'random', size: knapsackDefaults.populationSize }, params: knapsackDefaults.params, seed: defaultSeed },
+};
+
+export const problemEntries: readonly ProblemEntry[] = [goldbergEntry, targetStringEntry, knapsackEntry];
 
 export const problemIds = (): string[] => problemEntries.map((p) => p.id);
 export const entryOf = (id: string): ProblemEntry | undefined => problemEntries.find((p) => p.id === id);

@@ -6,12 +6,13 @@ import { entryOf, problemEntries, problemIds } from './problems';
 import { configOf, decodeConfig, encodeConfig, setupOf } from './run-config';
 
 describe('the problem registry', () => {
-  test('lists Goldberg and the target string, in that order, with distinct ids and names', () => {
-    expect(problemIds()).toEqual(['goldberg', 'target-string']);
-    expect(new Set(problemEntries.map((p) => p.name)).size).toBe(2);
+  test('lists Goldberg, the target string and the knapsack, in that order, with distinct ids and names', () => {
+    expect(problemIds()).toEqual(['goldberg', 'target-string', 'knapsack']);
+    expect(new Set(problemEntries.map((p) => p.name)).size).toBe(3);
+    expect(entryOf('knapsack')!.name).toBe('Knapsack');
     expect(entryOf('goldberg')!.name).toBe('Goldberg x²');
     expect(entryOf('target-string')!.name).toBe('Target string');
-    expect(entryOf('knapsack')).toBeUndefined();
+    expect(entryOf('tsp')).toBeUndefined();
   });
 
   test.each(problemEntries.map((p) => [p.name, p] as const))('%s: its defaults make a valid configuration that runs', (_name, entry) => {
@@ -40,7 +41,7 @@ describe('the problem registry', () => {
     const t = entryOf('target-string')!;
     const a = t.defaultOptions()!;
     (a as { target: string }).target = 'CHANGED';
-    expect(t.defaultOptions()!.target).toBe('HELLO');
+    expect((t.defaultOptions() as { target: string }).target).toBe('HELLO');
   });
 
   test('options are validated in words, whatever they are', () => {
