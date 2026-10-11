@@ -95,8 +95,7 @@ Chosen in the drawer's run setup; **the default is the first-fit decoder** (inst
 
 - The exact built-in instance (weights, values, capacity) satisfying the three design conditions.
 - The defaults (population size, tournament size, operator settings, ρ, stagnation window) and the preset seeds, by measurement.
-- The mark for a gene dropped by repair (✂ is the starting proposal) and for a skipped gene, settled by the mock.
-- Whether the capacity bar belongs in the population table rows, the stage views, or both (the mock decides).
+- ~~The mark for a gene dropped by repair and for a skipped gene; where the capacity bar goes.~~ **Decided (ticket 01, instructor):** a gene that is 1 but not in the bag (decoder, Baldwinian repair) is a ✕ in a dashed, plain cell; a gene Lamarckian repair rewrote to 0 has a dotted orange outline with ✂ above it; there is no separate before/after box (the ✂ marks and the "what happened" column carry it); the capacity bar is small in each table row and stacked per item in the evaluation view; there is no Packed column (the filled cells are the packed items); cells are 23 px wide in the knapsack tables.
 - Whether penalty-too-large is demonstrable with a real seed; if not, the preset is dropped or its text reduced to what holds.
 
 ## Comments

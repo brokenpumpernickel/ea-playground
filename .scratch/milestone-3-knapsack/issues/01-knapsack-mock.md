@@ -1,6 +1,6 @@
 # 01 Throwaway mock of the knapsack screens
 
-Status: claimed
+Status: resolved
 Type: mock, review (needs instructor)
 Blocked by: none
 Spec: ../spec.md
@@ -37,3 +37,7 @@ The instance in the mock is illustrative only (12 items, capacity 48, total weig
 9. **Menu.** Knapsack is the third entry (logo `Kn`); the brand area shows the method as a chip next to the name and "12 items · capacity 48 · optimum 123" under it.
 
 Nothing is built yet beyond the mock. Waiting for the decisions above (especially 2, 3, 4 and 5) before tickets 08–12.
+
+## Decisions (instructor)
+
+All nine points accepted as proposed: item row (letter, weight, value); **mark B** for a gene that is 1 but not in the bag (✕ in a dashed, plain cell); ✂ with a dotted orange outline for a gene rewritten to 0 by Lamarckian repair; no separate before/after box; capacity bar small in the rows and stacked in the evaluation view, no Packed column; 23 px cells in the knapsack tables; the bottom strip, drawer and menu as mocked.

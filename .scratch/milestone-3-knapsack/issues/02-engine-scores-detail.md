@@ -1,6 +1,6 @@
 # 02 Engine: feasibility and repaired chromosomes in the scores and events (ADR 0005)
 
-Status: open
+Status: claimed
 Type: task (test-first)
 Blocked by: none
 Spec: ../spec.md
