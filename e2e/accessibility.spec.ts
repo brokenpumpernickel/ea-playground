@@ -49,6 +49,8 @@ test('Space runs and pauses, and the keys are written on the buttons', async ({ 
 
 test('Tab reaches every control in a sensible order, shows where the focus is, and Enter operates it', async ({ page }) => {
   await page.keyboard.press('Tab');
+  expect(await page.evaluate(() => document.activeElement?.getAttribute('data-testid'))).toBe('problem-button'); // the brand area comes first
+  await page.keyboard.press('Tab');
   const first = await page.evaluate(() => document.activeElement?.getAttribute('aria-label'));
   expect(first).toBe('Reset');
   const outline = await page.evaluate(() => getComputedStyle(document.activeElement!).outlineStyle);
