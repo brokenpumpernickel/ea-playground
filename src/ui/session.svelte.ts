@@ -1,7 +1,8 @@
-import { gaAlgorithm, metricsOf, type KnapsackProblem, type Problem, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
+import { gaAlgorithm, metricsOf, type KnapsackProblem, type TrapProblem, type Problem, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
 import { createPlayback, createRun, type AnimationFlags, type Playback, type PlaybackStatus, type Position, type Run, type Scheduler, type Tier, type View } from '../run';
 import { defaultParams, defaultSeed, defaultSetup } from './config';
 import type { BagInfo } from './bag-context';
+import type { BlockInfo } from './block-context';
 import { changes, draftOf } from './drawer-model';
 import { displayOf, type Display } from './format';
 import { entryOf, type ProblemEntry, type ProblemOptions } from './problems';
@@ -204,7 +205,15 @@ export function createSession(options: SessionOptions) {
     get bag(): BagInfo | undefined {
       void version;
       const p = run.setup.problem as Partial<KnapsackProblem>;
-      return p.outcomeOf && p.options ? { items: p.options.items, capacity: p.options.capacity, mayExceed: p.mayBeInfeasible === true, outcomeOf: p.outcomeOf.bind(p) } : undefined;
+      return p.outcomeOf && p.options && 'items' in p.options ? { items: p.options.items, capacity: p.options.capacity, mayExceed: p.mayBeInfeasible === true, outcomeOf: p.outcomeOf.bind(p) } : undefined;
+    },
+    /** The running trap, as the views need it (its blocks and how a chromosome scores in each); absent for other problems. */
+    get blocks(): BlockInfo | undefined {
+      void version;
+      const p = run.setup.problem as Partial<TrapProblem>;
+      return p.blockGenes && p.options && p.outcomeOf
+        ? { blockSize: p.options.blockSize, blocks: p.options.blocks, linkage: p.options.linkage, blockGenes: p.blockGenes, optimum: p.knownOptimumFitness!, attractor: p.attractorFitness!, outcomeOf: p.outcomeOf.bind(p) }
+        : undefined;
     },
     get problemEntry(): ProblemEntry {
       return entryOf(problemId)!;

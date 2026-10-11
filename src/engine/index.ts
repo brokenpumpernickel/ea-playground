@@ -82,6 +82,7 @@ export {
   linkages,
   trapContribution,
   trapDefaultOptions,
+  trapDefaults,
   trapLimits,
   trapProblem,
   validateTrap,

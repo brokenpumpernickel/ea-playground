@@ -1,6 +1,6 @@
 # 04 Trap in the registry, the menu and share links
 
-Status: open
+Status: resolved
 Type: task (test-first)
 Blocked by: 02
 Spec: ../spec.md
@@ -18,3 +18,11 @@ The trap as a fourth entry of the problem registry (logo `Tr`, name, defaults pr
 ## Comments
 
 ## Answer
+
+Trap is the fourth problem of the registry and works end to end through the menu and share links.
+
+- **Registry** (`src/ui/problems.ts`): entry `trap` (name Trap, logo `Tr`, gene panel `blocks`), `ProblemOptions` gains `TrapOptions`, `isTrapOptions`; default options 5 blocks of 4, tight (a fresh copy each time); subtitle "5 blocks of 4 · tight · optimum 20"; `validateOptions` gives the shape messages ("options.blockSize must be a number", unknown and missing keys) and then the engine's field messages; `validateOptionFields` groups them for the drawer. **Provisional defaults** (`trapDefaults` in `src/engine/trap.ts`: population 12, tournament 2, one-point 0.8, per-gene 0.05, no elites, limit 100, target 20, stagnation window 50) until ticket 10 measures them and the instructor approves.
+- **Block context** (`src/ui/block-context.ts`, set in `App.svelte`, `session.blocks`): blocks, their genes, optimum, all-zeros score and `outcomeOf`; absent for the other problems. `session.bag` previously recognised a knapsack by having `outcomeOf` and `options`, which the trap also has, so it now requires the options to have `items`.
+- `optimumOf` in the drawer model knows the trap's optimum. The drawer has no trap section yet (ticket 05); applying anything else in the drawer keeps the running trap and its options (tested).
+- Tests: `problems-trap.test.ts` (7), `run-config-trap.test.ts` (round trip per linkage, a hand-edited population, readable link text, ten bad-option cases with the engine's messages, 200 generated configurations round trip and every tenth opens as the same run), `session-trap.test.ts` (3), and Playwright `e2e/trap-link.spec.ts` (11: menu with Trap fourth and the restart notice, a switched run equal to the engine's after 3 generations, a configured link per linkage opening as the same run with a hand-edited population, seven bad links each with its message and the address cleared, a restart from the drawer that keeps the trap's options). The registry, run-config and problem-menu tests that listed three problems now list four.
+- `npm run check` clean; 1315 unit tests and 299 Playwright tests pass (the previous milestone's two load-dependent tests did not flake this run).

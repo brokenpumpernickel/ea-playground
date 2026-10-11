@@ -1,5 +1,5 @@
-import { isKnapsackOptions, isStringOptions, type ProblemEntry, type ProblemOptions } from './problems';
-import { describeAlphabet, handlings, minimumGenes, operatorName, optimalBag, parseGenes, validateKnapsack, type Handling, type KnapsackOptions, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
+import { isKnapsackOptions, isStringOptions, isTrapOptions, type ProblemEntry, type ProblemOptions } from './problems';
+import { describeAlphabet, handlings, minimumGenes, operatorName, optimalBag, parseGenes, validateKnapsack, validateTrap, type Handling, type KnapsackOptions, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
 
 /**
  * What the parameter drawer edits. Numbers are kept as the text the user typed, so a half-typed or wrong entry can be
@@ -194,6 +194,7 @@ export function optimumOf(draft: Draft): number | undefined {
   const options = optionsOf(draft);
   if (!options) return undefined;
   if (isStringOptions(options)) return [...options.target].length;
+  if (isTrapOptions(options)) return validateTrap(options).length > 0 ? undefined : options.blockSize * options.blocks;
   if (validateKnapsack(options).length > 0) return undefined;
   return optimalBag({ items: options.items, capacity: options.capacity }).value;
 }

@@ -20,7 +20,7 @@ test('the brand area names the running problem and opens a menu of the problems'
   await button(page).click();
   await expect(button(page)).toHaveAttribute('aria-expanded', 'true');
   const items = page.getByRole('menuitemradio');
-  await expect(items).toHaveText([/Goldberg x²/, /Target string/, /Knapsack/]);
+  await expect(items).toHaveText([/Goldberg x²/, /Target string/, /Knapsack/, /Trap/]);
   await expect(items.nth(0)).toHaveAttribute('aria-checked', 'true');
   await expect(items.nth(1)).toHaveAttribute('aria-checked', 'false');
   await expect(items.nth(0)).toBeFocused();

@@ -1,3 +1,4 @@
+import type { GaParams } from './algorithm';
 import { binaryAlphabet, type Chromosome } from './chromosome';
 import { fitnessColumn, type Problem, type ProblemColumn, type Scores } from './problem';
 
@@ -126,3 +127,24 @@ export function trapProblem(options: TrapOptions): TrapProblem {
     outcomeOf,
   };
 }
+
+/**
+ * The setup the trap opens with, as plain data. PROVISIONAL: these are placeholders until ticket 10 measures them and
+ * the instructor approves (the tournament, one-point crossover and per-gene mutation of 1/20 are the usual textbook
+ * settings; the population and the stop settings are guesses). The target is the known optimum, k × m.
+ */
+export const trapDefaults: {
+  readonly options: TrapOptions;
+  readonly populationSize: number;
+  readonly params: GaParams;
+} = {
+  options: trapDefaultOptions,
+  populationSize: 12,
+  params: {
+    selection: { method: 'tournament', size: 2 },
+    crossover: { enabled: true, operator: 'one-point', probability: 0.8 },
+    mutation: { enabled: true, mode: 'per-gene', probability: 0.05 },
+    elites: 0,
+    stop: { generationLimit: 100, targetFitness: trapDefaultOptions.blockSize * trapDefaultOptions.blocks, stagnationWindow: 50 },
+  },
+};

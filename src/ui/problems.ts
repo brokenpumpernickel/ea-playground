@@ -8,6 +8,10 @@ import {
   handlings,
   targetStringDefaults,
   targetStringProblem,
+  trapDefaults,
+  trapProblem,
+  validateTrap,
+  validateTrapFields,
   validateTargetString,
   validateTargetStringFields,
   type GaParams,
@@ -16,6 +20,7 @@ import {
   type KnapsackOptions,
   type Problem,
   type TargetStringOptions,
+  type TrapOptions,
 } from '../engine';
 import { defaultParams, defaultSeed } from './config';
 
@@ -24,11 +29,12 @@ import { defaultParams, defaultSeed } from './config';
  * reset), how to build the engine problem from the options, and the configuration each one opens with. The problem
  * menu, share links and presets all read this list; adding a problem is adding an entry.
  */
-export type ProblemOptions = TargetStringOptions | KnapsackOptions;
+export type ProblemOptions = TargetStringOptions | KnapsackOptions | TrapOptions;
 export const isStringOptions = (options: ProblemOptions): options is TargetStringOptions => 'target' in options;
 /** The target string of a string problem's options, for views that compare chromosomes with it. */
 export const targetOf = (options: ProblemOptions | undefined): string | undefined => (options && isStringOptions(options) ? options.target : undefined);
 export const isKnapsackOptions = (options: ProblemOptions): options is KnapsackOptions => 'items' in options;
+export const isTrapOptions = (options: ProblemOptions): options is TrapOptions => 'blockSize' in options;
 
 export interface ProblemEntry {
   readonly id: string;
@@ -37,7 +43,7 @@ export interface ProblemEntry {
   /** The two or three characters in the logo tile. */
   readonly logo: string;
   /** Which panel sits beside the diversity plot: Goldberg's share of 1s per gene, or the string problem's match rate. */
-  readonly genePanel: 'ones' | 'match-rate' | 'chosen';
+  readonly genePanel: 'ones' | 'match-rate' | 'chosen' | 'blocks';
   /** What the diversity plot says it measures. */
   readonly diversityNote: string;
   /** The line under the name in the brand area. */
@@ -142,7 +148,36 @@ const knapsackEntry: ProblemEntry = {
   defaults: { init: { kind: 'random', size: knapsackDefaults.populationSize }, params: knapsackDefaults.params, seed: defaultSeed },
 };
 
-export const problemEntries: readonly ProblemEntry[] = [goldbergEntry, targetStringEntry, knapsackEntry];
+const trapEntry: ProblemEntry = {
+  id: 'trap',
+  name: 'Trap',
+  logo: 'Tr',
+  genePanel: 'blocks',
+  diversityNote: 'mean pairwise Hamming, 0–1',
+  subtitle(options) {
+    if (!options || !isTrapOptions(options)) return 'Deceptive trap functions';
+    return `${options.blocks} ${options.blocks === 1 ? 'block' : 'blocks'} of ${options.blockSize} · ${options.linkage} · optimum ${options.blockSize * options.blocks}`;
+  },
+  hasOptions: true,
+  defaultOptions: () => ({ ...trapDefaults.options }),
+  validateOptions(options) {
+    if (!isObject(options)) return ['"options" must be an object with "blockSize", "blocks" and "linkage".'];
+    const problems: string[] = [];
+    const keys = ['blockSize', 'blocks', 'linkage'];
+    for (const key of Object.keys(options)) if (!keys.includes(key)) problems.push(`"options" has an unknown key "${key}".`);
+    for (const key of keys) if (!(key in options)) problems.push(`"options" is missing "${key}".`);
+    if ('blockSize' in options && typeof options.blockSize !== 'number') problems.push('"options.blockSize" must be a number.');
+    if ('blocks' in options && typeof options.blocks !== 'number') problems.push('"options.blocks" must be a number.');
+    if ('linkage' in options && typeof options.linkage !== 'string') problems.push('"options.linkage" must be text.');
+    if (problems.length > 0) return problems;
+    return validateTrap(options as unknown as TrapOptions);
+  },
+  validateOptionFields: (options) => validateTrapFields(options as TrapOptions),
+  create: (options) => trapProblem((options as TrapOptions | undefined) ?? trapDefaults.options),
+  defaults: { init: { kind: 'random', size: trapDefaults.populationSize }, params: trapDefaults.params, seed: defaultSeed },
+};
+
+export const problemEntries: readonly ProblemEntry[] = [goldbergEntry, targetStringEntry, knapsackEntry, trapEntry];
 
 export const problemIds = (): string[] => problemEntries.map((p) => p.id);
 export const entryOf = (id: string): ProblemEntry | undefined => problemEntries.find((p) => p.id === id);

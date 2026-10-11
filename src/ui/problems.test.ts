@@ -6,9 +6,10 @@ import { entryOf, problemEntries, problemIds } from './problems';
 import { configOf, decodeConfig, encodeConfig, setupOf } from './run-config';
 
 describe('the problem registry', () => {
-  test('lists Goldberg, the target string and the knapsack, in that order, with distinct ids and names', () => {
-    expect(problemIds()).toEqual(['goldberg', 'target-string', 'knapsack']);
-    expect(new Set(problemEntries.map((p) => p.name)).size).toBe(3);
+  test('lists Goldberg, the target string, the knapsack and the trap, in that order, with distinct ids and names', () => {
+    expect(problemIds()).toEqual(['goldberg', 'target-string', 'knapsack', 'trap']);
+    expect(new Set(problemEntries.map((p) => p.name)).size).toBe(4);
+    expect(entryOf('trap')!.name).toBe('Trap');
     expect(entryOf('knapsack')!.name).toBe('Knapsack');
     expect(entryOf('goldberg')!.name).toBe('Goldberg x²');
     expect(entryOf('target-string')!.name).toBe('Target string');
