@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Target string – design mock (throwaway)</title>
+<style>
+/*APPCSS*/
+
+/* ---------- mock chrome (not part of the design) ---------- */
+html, body { background:#2b2b2b; overflow:auto; }
+body { height:auto; }
+#mockbar { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:6px 10px; background:#111; color:#eee; font:13px system-ui,sans-serif; }
+#mockbar b { color:#ffb300; margin-right:6px; }
+#mockbar button { background:#333; color:#eee; border:1px solid #555; border-radius:4px; padding:3px 8px; font:13px system-ui; cursor:pointer; }
+#mockbar button.on { background:#7040ec; border-color:#7040ec; }
+#mockbar .sep { width:1px; height:18px; background:#555; margin:0 4px; }
+#stagewrap { margin-top:40px; }
+#screen { position:relative; width:1920px; height:1080px; overflow:hidden; background:var(--page); color:var(--ink); font-size:20px; line-height:1.3; transform-origin:0 0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+#screen .abs { position:absolute; }
+#screen.projector { font-size:22px; }
+
+/* ---------- new for letters ---------- */
+.gcell { display:inline-flex; flex-direction:column; align-items:center; gap:2px; vertical-align:top; }
+.gcell .under { font-size:15px; height:18px; line-height:18px; color:var(--ink2); font-weight:700; }
+.gcell .under.ok { color:var(--good); }
+.bit.letter { font-family:ui-monospace,Consolas,monospace; font-weight:600; }
+.bit.letter.one { font-weight:800; }
+.bit.sm.letter { width:26px; height:34px; font-size:21px; }
+.bits.tight { gap:3px; }
+.tgtrow { display:inline-flex; gap:3px; color:var(--ink2); font-family:ui-monospace,Consolas,monospace; font-weight:700; }
+.tgtrow span { width:26px; text-align:center; font-size:19px; }
+.tgtlabel { font-size:15px; color:var(--ink2); margin-right:6px; }
+/* variant B: matches are marked by a heavy baseline instead of a ✓ */
+.varB .bit.letter.one { box-shadow:0 5px 0 -1px var(--acc-ink); }
+.varB .bit.letter:not(.one) { border-style:dashed; }
+.varB .gcell .under { display:none; }
+.varA .tgtheader { display:none; }
+.cap { font-size:15px; color:var(--ink2); margin:4px 0 0; }
+.note2 { font-size:17px; color:var(--ink2); }
+.mockdrawer { position:absolute; left:1282px; top:156px; width:638px; height:858px; background:var(--surface); border-left:2px solid var(--ink); box-shadow:-12px 0 32px rgba(10,14,40,.22); overflow:hidden; z-index:10; font-size:20px; }
+.matchbar { display:flex; align-items:flex-end; gap:6px; height:112px; padding:6px 14px 0; }
+.matchbar .gene { flex:1; text-align:center; }
+.matchbar .bar { margin:0 2px; border:2px solid var(--ink2); background:var(--seq4); border-radius:4px 4px 0 0; }
+.matchbar .gene b { display:block; font-size:17px; }
+.matchbar .gene span { font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; }
+</style>
+</head>
+<body>
+<div id="mockbar">
+  <b>Target string mock</b>
+  <button data-s="overview">Selection + population</button>
+  <button data-s="crossover">Crossover</button>
+  <button data-s="mutation">Mutation</button>
+  <button data-s="evaluation">Evaluation</button>
+  <button data-s="replacement">Replacement</button>
+  <button data-s="setup">Drawer: setup</button>
+  <span class="sep"></span>
+  <button data-v="A">Marks A: ✓ and target letter under cells</button>
+  <button data-v="B">Marks B: target row above, heavy baseline</button>
+  <span class="sep"></span>
+  <button data-t="light">Light</button><button data-t="dark">Dark</button>
+  <span class="sep"></span>
+  <button data-z="fit">Fit</button><button data-z="1">100%</button>
+  <button data-p="0">Normal</button><button data-p="1">Projector</button>
+</div>
+<div id="stagewrap"><div id="screen" class="varA"></div></div>
+
+<script>
+const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ '.split('');
+const TARGET = 'HELLO WORLD'.split('');
+const L = TARGET.length;
+const sym = (c) => (c === ' ' ? '␣' : c);
+const matches = (s) => s.split('').filter((c, k) => c === TARGET[k]).length;
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+/* ---------- components ---------- */
+function cell(c, k, o = {}) {
+  const match = c === TARGET[k];
+  const cls = ['bit', 'letter', o.sm ? 'sm' : '', match && !o.plain ? 'one' : '', o.hatch ? 'hatch' : '', o.flip ? 'flip' : '', o.cut ? 'cutafter' : ''].join(' ');
+  const under = o.noUnder ? '' : `<span class="under ${match ? 'ok' : ''}" aria-hidden="true">${match ? '✓' : sym(TARGET[k])}</span>`;
+  return `<span class="gcell"><span class="${cls}" title="${match ? 'matches the target' : 'target has ' + sym(TARGET[k])}">${sym(c)}</span>${o.under === false ? '' : under}</span>`;
+}
+function cells(s, o = {}) {
+  const sources = o.sources || [];
+  const cuts = o.cuts || [];
+  return `<span class="bits ${o.tight ? 'tight' : ''}" style="display:inline-flex;align-items:flex-start">${s.split('').map((c, k) => cell(c, k, { ...o, hatch: sources[k] === 'B', cut: cuts.includes(k + 1), flip: (o.flipped || []).includes(k + 1) })).join('')}</span>`;
+}
+const targetRow = () => `<div class="tgtheader" style="margin:0 0 4px 0"><span class="tgtlabel">target</span><span class="tgtrow">${TARGET.map((c) => `<span>${sym(c)}</span>`).join('')}</span></div>`;
+
+/* ---------- data ---------- */
+const POP = ['HQLXO WMRLZ', 'JELLA WOCLD', 'HELNO QORTD', 'ZELLO WORKD', 'KXLQO BPRLD', 'HELLO TORLD', 'MUVLB WORLX', 'HELPO WIRLD', 'QWLLO ZORLD', 'HZLLE WORLP', 'SELLO WCRLD', 'XYZLF GHJLD'];
+const FIT = POP.map(matches);
+const SUM = FIT.reduce((a, b) => a + b, 0);
+const PROB = FIT.map((f) => f / SUM);
+function screen(inner) { return inner; }
+
+function topbar(cur, done, gen, line) {
+  const stages = ['Selection', 'Pairing', 'Crossover', 'Mutation', 'Evaluation', 'Replacement'];
+  return `<div id="top"><div id="brand"><span class="logo" aria-hidden="true">Aa</span><div><div class="trow"><h1 class="t" style="margin:0">Target string ▾</h1></div><div class="s">Match “HELLO WORLD” · 27 symbols</div></div></div>
+  <ol id="ribbon" style="list-style:none;margin:0">${stages.map((s, k) => `<li class="stage ${k < done ? 'done' : ''} ${k === cur ? 'cur' : ''}"><span class="n">${k < done ? '✓' : k + 1}</span><span>${s}</span></li>`).join('')}</ol>
+  <div id="gen"><div class="g">Generation ${gen}</div><div class="l">${line}</div></div></div>`;
+}
+function transport() {
+  return `<div id="transport"><button class="btn quiet">↺</button><button class="btn quiet">◂ Back <kbd>←</kbd></button><button class="btn primary">Micro-step ▸ <kbd>→</kbd></button><button class="btn quiet">◂◂</button><button class="btn">Stage ▸▸ <kbd>⇧→</kbd></button><button class="btn">Generation ⏭ <kbd>G</kbd></button><span class="vsep"></span><button class="btn">▶ Run <kbd>Space</kbd></button><button class="btn quiet">Run to stop</button><span class="vsep"></span>
+  <div id="tier"><div><input class="speed" type="range" min="0" max="3" value="0"><div class="labels" style="width:200px;margin-left:0"><span>Slow</span><span>Medium</span><span>Fast</span><span>Max</span></div></div></div><span class="vsep"></span>
+  <div id="seedbox">Seed <b>42</b> <button class="btn quiet" style="height:40px;padding:0 10px">↻ New</button></div><div id="statusline">Paused</div><span style="flex:1"></span><button class="btn quiet">◐</button><button class="btn quiet">⚙ Parameters</button><button class="btn quiet">A⁺</button></div>`;
+}
+function popPanel(title, withSel) {
+  const rows = POP.map((s, i) => `<tr><td>${i + 1}</td><td>${cells(s, { sm: true, tight: true, under: false })}</td><td class="num">${FIT[i]} of ${L}</td><td class="num">${withSel ? FIT[i] : '—'}</td><td class="num">${withSel ? PROB[i].toFixed(3) : '—'}</td><td>${withSel && [1, 5, 5, 9].includes(i) ? '◆ ×' + (i === 5 ? 2 : 1) : '<span class="muted">—</span>'}</td></tr>`).join('');
+  return `<section class="panel abs" style="left:1136px;top:172px;width:760px;height:542px"><div class="ph"><h2>${title}</h2><span class="r">Σ fitness ${SUM} · avg ${(SUM / 12).toFixed(2)} · best ${Math.max(...FIT)}</span></div>
+  <div class="tablewrap" style="top:50px;padding:0 6px"><table><thead><tr><th>#</th><th>Chromosome<div class="tgtheader" style="margin-top:2px"><span class="tgtrow">${TARGET.map((c) => `<span>${sym(c)}</span>`).join('')}</span></div></th><th class="num">Fitness<div class="cap" style="margin:2px 0 0;text-transform:none;letter-spacing:0">= matches</div></th><th class="num">Weight</th><th class="num">Prob.</th><th>Parent</th></tr></thead><tbody>${rows}</tbody></table></div></section>
+  <div id="legend" style="left:1136px;top:722px;width:760px"><span><b>★</b> elite</span><span><b>◆</b> parent</span><span><b>◇</b> offspring</span><span><b>✱</b> mutated gene</span><span><b>⤼</b> bypass</span><span><b>✕</b> discarded</span></div>`;
+}
+function strip() {
+  const gens = [0, 1, 2, 3, 4, 5];
+  const best = [6, 7, 7, 8, 9, 9], avg = [3.1, 4.2, 4.9, 5.8, 6.4, 7.1], worst = [1, 2, 2, 3, 3, 4], so = [6, 7, 7, 8, 9, 9];
+  const X = (g) => 66 + (780 - 66) * g / 15, Y = (v) => 138 - (138 - 28) * v / 11;
+  const path = (a) => a.map((v, k) => `${k ? 'L' : 'M'}${X(k)},${Y(v)}`).join(' ');
+  const ticks = [0, 3, 6, 9, 11].map((v) => `<line class="gr" x1="66" x2="780" y1="${Y(v)}" y2="${Y(v)}"/><text x="58" y="${Y(v) + 6}" text-anchor="end">${v}</text>`).join('');
+  const xt = [0, 3, 6, 9, 12, 15].map((g) => `<text x="${X(g)}" y="160" text-anchor="middle">${g}</text>`).join('');
+  const fit = `<svg viewBox="0 0 800 188" width="100%"><g>${ticks}${xt}<line x1="66" x2="780" y1="${Y(11)}" y2="${Y(11)}" stroke="var(--ink2)" stroke-dasharray="2 5"/><text x="780" y="${Y(11) - 6}" text-anchor="end" style="font-size:16px">optimum 11</text>
+   <path d="${path(avg)}" fill="none" stroke="var(--s1)" stroke-width="2.5"/><path d="${path(so)}" fill="none" stroke="var(--s3)" stroke-width="2.5" stroke-dasharray="7 4"/><path d="${path(best)}" fill="none" stroke="var(--s2)" stroke-width="2.5"/>
+   ${gens.map((g) => `<circle cx="${X(g)}" cy="${Y(avg[g])}" r="5" fill="var(--s1)"/><rect x="${X(g) - 5}" y="${Y(best[g]) - 5}" width="10" height="10" fill="var(--s2)"/>`).join('')}
+   <line x1="${X(5)}" x2="${X(5)}" y1="28" y2="138" stroke="var(--ink)" stroke-width="2"/><text class="ink" x="${X(5)}" y="20" text-anchor="middle" style="font-weight:700;font-size:16px">now</text></g></svg>`;
+  const div = [0.62, 0.58, 0.53, 0.49, 0.44, 0.40];
+  const X2 = (g) => 56 + (500 - 56) * g / 15, Y2 = (v) => 138 - 110 * v;
+  const dv = `<svg viewBox="0 0 520 188" width="100%">${[0, 0.5, 1].map((v) => `<line class="gr" x1="56" x2="500" y1="${Y2(v)}" y2="${Y2(v)}"/><text x="48" y="${Y2(v) + 6}" text-anchor="end">${v}</text>`).join('')}${[0, 3, 6, 9, 12, 15].map((g) => `<text x="${X2(g)}" y="160" text-anchor="middle">${g}</text>`).join('')}
+   <path d="${div.map((v, k) => `${k ? 'L' : 'M'}${X2(k)},${Y2(v)}`).join(' ')}" fill="none" stroke="var(--s7)" stroke-width="2.5"/>${div.map((v, k) => `<circle cx="${X2(k)}" cy="${Y2(v)}" r="5" fill="var(--s7)"/>`).join('')}<line x1="${X2(5)}" x2="${X2(5)}" y1="28" y2="138" stroke="var(--ink)" stroke-width="2"/></svg>`;
+  const rate = TARGET.map((c, k) => POP.filter((s) => s[k] === c).length / POP.length);
+  const bars = `<div class="matchbar">${TARGET.map((c, k) => `<div class="gene"><div class="bar" style="height:${Math.round(rate[k] * 60) + 4}px"></div><b>${Math.round(rate[k] * 100)}%</b><span>${sym(c)}</span></div>`).join('')}</div>`;
+  return `<section class="panel plot abs" style="left:24px;top:758px;width:820px;height:244px"><div class="ph"><h2>Fitness</h2><span class="r legend"><b>●</b> average &nbsp;<b>■</b> best of gen. &nbsp;<b>▲</b> best so far</span></div>${fit}</section>
+  <section class="panel plot abs" style="left:860px;top:758px;width:540px;height:244px"><div class="ph"><h2>Diversity</h2><span class="r legend">mean pairwise mismatch, 0–1</span></div>${dv}</section>
+  <section class="panel plot abs" style="left:1416px;top:758px;width:480px;height:244px"><div class="ph"><h2>Match rate per position</h2><span class="r legend">${new Set(POP).size} of 12 distinct</span></div>${bars}<p class="summary" style="margin:6px 16px 0;font-size:18px;color:var(--ink2)">generation 5 · best now 9 of 11 · average 7.1 · worst 4</p></section>
+  <footer class="history"><div class="title"><b>Run history</b><span class="muted">recorded gens 0–5</span></div><div class="scrub"><svg viewBox="0 0 1440 66" width="1440" height="66"><rect x="0" y="14" width="1440" height="12" rx="6" class="track"/><rect x="0" y="14" width="1000" height="12" rx="6" class="fill"/><rect x="996" y="6" width="8" height="28" rx="3" class="thumb"/>${[0, 1, 2, 3, 4, 5].map((g) => `<text x="${(g + 0.5) * 240}" y="54" text-anchor="middle" class="${g === 4 ? 'current' : ''}">gen ${g}</text>`).join('')}</svg></div><button class="btn live" disabled>Return to live</button></footer>`;
+}
+
+/* ---------- screens ---------- */
+function overview() {
+  const wheel = `<svg viewBox="0 0 340 340" width="300" height="300"><circle cx="170" cy="170" r="140" fill="var(--seq2)" stroke="var(--surface)" stroke-width="3"/><text x="170" y="170" text-anchor="middle" class="ink" style="font-size:20px;font-weight:700">12 slices</text><text x="170" y="196" text-anchor="middle" style="font-size:16px">probability = matches ÷ ${SUM}</text></svg>`;
+  const rows = POP.slice(0, 6).map((s, i) => `<tr><td>${i + 1}</td><td class="num">${FIT[i]}</td><td class="num">${FIT[i]}</td><td class="num">${PROB[i].toFixed(3)}</td></tr>`).join('');
+  return `${topbar(0, 0, 5, 'being made · stage entered')}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 1 · Selection</h2></div><div style="position:absolute;left:16px;right:16px;top:54px;display:flex;gap:24px">${wheel}<div style="flex:1"><p class="expl" style="margin:0 0 6px">raw fitness → <b>Identity</b> → weight → probability (weight ÷ ${SUM})</p><table class="mtable"><thead><tr><th>Ind.</th><th class="num">Matches</th><th class="num">Weight</th><th class="num">Prob.</th></tr></thead><tbody>${rows}<tr><td colspan="4" class="muted">… 6 more rows (scroll)</td></tr></tbody></table></div></div>
+  <div id="narr"><span class="m">12 micro-steps</span><span>Stage entered. Step to see the first result.</span></div></section>
+  ${popPanel('Parents · generation 4', true)}${strip()}`;
+}
+function crossover() {
+  const A = POP[1], B = POP[7];
+  const cut = 4;
+  const c1 = A.slice(0, cut) + B.slice(cut), c2 = B.slice(0, cut) + A.slice(cut);
+  const src1 = L => Array.from({ length: L }, (_, k) => (k < cut ? 'A' : 'B')), src2 = L => Array.from({ length: L }, (_, k) => (k < cut ? 'B' : 'A'));
+  const card = (n, a, b, x, y, ai, bi, hdr, cur) => `<section class="card ccard ${cur ? 'current' : ''}"><div class="thead"><b>Pair ${n}</b> ${hdr}</div><div class="cbody"><div class="cside"><div class="chead">Parents</div><div class="crow"><span class="who">A · individual ${ai}</span>${cells(a, { cuts: [cut] })}</div><div class="crow"><span class="who">B · individual ${bi}</span>${cells(b, { cuts: [cut], sources: Array(L).fill('B') })}</div></div>
+   <div class="cside"><div class="chead">Children</div><div class="crow"><span class="who">O${2 * n - 1} · recombined</span>${cells(x, { cuts: [cut], sources: src1(L) })}</div><div class="crow"><span class="who">O${2 * n} · recombined</span>${cells(y, { cuts: [cut], sources: src2(L) })}</div></div></div></section>`;
+  return `${topbar(2, 2, 5, 'being made · micro-step 2 of 6')}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 3 · Crossover</h2></div><div id="stagebody" style="top:56px"><div class="crossover"><p class="expl">One draw u per pair: recombine (one-point) if u &lt; pc (0.8), otherwise the pair is a bypass and its children are copies of the parents.</p>
+  <div class="cgrid" style="height:360px">${card(2, A, B, c1, c2, 2, 8, `<span class="badge ok"><span aria-hidden="true">✓</span> recombined</span><span class="muted">u = 0.41 &lt; pc 0.8 → cut after gene ${cut}</span>`, true)}</div>
+  <p class="key">plain gene = inherited from parent A · <b>hatched</b> = inherited from parent B · <b>dashed line</b> = cut point · <b>✓</b> = matches the target, otherwise the target letter</p></div></div>
+  <div id="narr"><span class="m">Micro-step 2 of 6</span><span>Pair 2: u = 0.41 &lt; pc 0.8 → recombined (cut after gene ${cut}): children ${esc(c1)} and ${esc(c2)}</span></div></section>
+  ${popPanel('Parents · generation 4', true)}${strip()}`;
+}
+function mutation() {
+  const kids = ['JELLO WORLD', 'HXLLA WOCLD', 'HELNO QORTD', 'ZELLO WORKD'];
+  const draws = [[0.62, 0.31, 0.88, 0.54, 0.77, 0.43, 0.95, 0.12, 0.64, 0.58, 0.39], [0.5, 0.071, 0.9, 0.3, 0.6, 0.2, 0.8, 0.4, 0.7, 0.1, 0.55], [0.7, 0.4, 0.2, 0.065, 0.3, 0.5, 0.8, 0.1, 0.9, 0.35, 0.6], [0.3, 0.6, 0.5, 0.7, 0.4, 0.9, 0.2, 0.8, 0.45, 0.75, 0.05]];
+  const block = (s, i) => {
+    const d = draws[i];
+    const flips = d.map((u, k) => (u < 0.09 ? k + 1 : null)).filter(Boolean);
+    const after = s.split('');
+    const info = flips.map((g) => { const old = after[g - 1]; const others = ALPHA.filter((a) => a !== old); const r = 0.12 + g * 0.07; const nw = others[Math.floor(r * others.length)]; after[g - 1] = nw; return { g, old, nw, r }; });
+    const drawRow = `<span class="bits tight" style="display:inline-flex;align-items:flex-start">${s.split('').map((c, k) => `<span class="gcell"><span class="bit sm letter ${c === TARGET[k] ? 'one' : ''} ${d[k] < 0.09 ? 'flip' : ''}">${sym(c)}</span><span class="under ${d[k] < 0.09 ? '' : ''}" style="font-size:14px;width:44px;text-align:center;${d[k] < 0.09 ? 'color:var(--flip-ink);outline:2px solid var(--flip);border-radius:6px' : ''}">${d[k].toFixed(2)}${d[k] < 0.09 ? '✱' : ''}</span></span>`).join('')}</span>`;
+    const res = `<span class="bits tight" style="display:inline-flex;align-items:flex-start">${after.map((c, k) => `<span class="gcell"><span class="bit sm letter ${c === TARGET[k] ? 'one' : ''} ${flips.includes(k + 1) ? 'flip' : ''}">${sym(c)}</span></span>`).join('')}</span>`;
+    return `<div class="card" style="margin:0 0 8px;padding:6px 12px;${i === 3 ? 'border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-tint)' : ''}"><div class="crow"><span class="who" style="width:60px"><b>O${i + 1}</b></span>${drawRow}</div>
+      <div class="crow" style="margin-top:2px"><span class="who" style="width:60px;font-size:15px">result</span>${res}${info.length ? `<span class="badge flip">${info.map((x) => `✱ gene ${x.g}: ${sym(x.old)} → ${sym(x.nw)} <small>(r = ${x.r.toFixed(2)})</small>`).join(' · ')}</span>` : '<span class="muted">unchanged</span>'}</div></div>`;
+  };
+  return `${topbar(3, 3, 5, 'being made · micro-step 4 of 12')}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 4 · Mutation</h2></div><div id="stagebody" style="top:56px"><div class="mutation"><p class="expl">Under each gene: its own draw u. The gene flips if u &lt; pm (0.09), and becomes a different symbol picked by one more draw r.</p>
+  <div class="mwrap" style="overflow:auto">${kids.map(block).join('')}</div></div></div>
+  <div id="narr"><span class="m">Micro-step 4 of 12</span><span>Offspring 4: no gene drew below pm 0.09 → unchanged</span></div></section>
+  ${popPanel('Parents · generation 4', true)}${strip()}`;
+}
+function evaluation() {
+  const kids = ['JELLO WORLD', 'HXLLA WOCLD', 'HELNO QORTD', 'ZELLO WORKD', 'HELLO WORLX', 'HELLP WORLD'];
+  const rows = kids.map((s, i) => `<tr class="${i === 3 ? 'hl' : ''}"><td><span class="who">O${i + 1}</span></td><td>${cells(s, { sm: true, tight: true, under: false })}</td>${i <= 3 ? `<td class="num">${matches(s)} of ${L}</td><td class="num">${matches(s)}</td><td class="num strong">${matches(s)}</td><td>individual ${25 + i}</td>` : '<td class="muted" colspan="4">not scored yet</td>'}</tr>`).join('');
+  return `${topbar(4, 4, 5, 'being made · micro-step 4 of 6')}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 5 · Evaluation of offspring</h2></div><div id="stagebody" style="top:56px"><div class="evaluation"><p class="expl">Each finished offspring is compared with the target position by position: the objective is how many positions match, and fitness is the same number.</p><div class="mwrap"><table class="mtable etable"><thead><tr><th>Offspring</th><th>Chromosome</th><th class="num">Matches</th><th class="num">Objective</th><th class="num">Fitness</th><th>Becomes</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>
+  <div id="narr"><span class="m">Micro-step 4 of 6</span><span>Offspring 4: ZELLO WORKD → 8 of 11 positions match → fitness 8 (individual 28)</span></div></section>
+  ${popPanel('Parents · generation 4', true)}${strip()}`;
+}
+function replacement() {
+  const old = POP.slice(0, 6), kids = ['JELLO WORLD', 'HXLLA WOCLD', 'HELNO QORTD', 'ZELLO WORKD', 'HELLO WORLX', 'HELLP WORLD'];
+  const row = (n, s, badge, dim) => `<div class="rrow ${dim ? 'dim' : ''}"><span class="who">${n}</span>${cells(s, { sm: true, tight: true, under: false })}<span class="fit">${matches(s)}</span>${badge}</div>`;
+  return `${topbar(5, 5, 5, 'being made · micro-step 1 of 1')}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 6 · Replacement</h2></div><div id="stagebody" style="top:56px"><div class="replacement"><p class="expl">Elitism: 1 elite, the best old individual (#6), copied over unchanged; the other 5 old individuals are replaced (the old population is in the table on the right). Offspring truncation: λ = 8 offspring were made and scored; only the best N − e = 5 survive.</p>
+  <div class="rgrid" style="grid-template-columns:1fr 1fr"><section class="rcol"><div class="chead">Offspring, best first</div>${kids.map((s, i) => row('O' + (i + 1), s, i < 4 ? '<span class="badge ok">✓ survives</span>' : '<span class="badge x">✕ discarded</span>', i >= 4)).join('')}</section>
+  <section class="rcol"><div class="chead">Next population</div>${row('1.', old[5], '<span class="badge ok">★ #6</span>')}${kids.slice(0, 4).map((s, i) => row(i + 2 + '.', s, `<span class="badge">◇ O${i + 1}</span>`)).join('')}</section></div></div></div>
+  <div id="narr"><span class="m">Micro-step 1 of 1</span><span>Next population: individuals 6 (elite), 25, 26, 27, 28. Discarded: 2 offspring (ranks 7–8)</span></div></section>
+  ${popPanel('Parents · generation 4', true)}${strip()}`;
+}
+function setup() {
+  return `${topbar(0, 0, 5, 'complete · limit 100')}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 6 · Replacement</h2></div><div id="stagebody" style="top:56px"><p class="expl">(stage view as before)</p></div></section>${popPanel('Population · generation 5', false)}${strip()}
+  <aside class="mockdrawer" id="drawer"><div class="dh"><h2>Parameters</h2><button class="btn quiet">✕ close</button></div>
+   <div class="sec"><h3>Presets</h3><div class="ctl"><label>Preset</label><span class="field"><select><option>Evolve a word</option></select></span></div></div>
+   <div class="sec"><h3>Run setup <span class="tag reset">↺ needs reset</span></h3>
+    <div class="ctl"><label>Problem</label><span class="field"><select><option>Target string</option></select></span></div>
+    <div class="ctl bad"><label>Target</label><span class="field"><input type="text" value="HELLO, WORLD" style="width:260px;text-align:left"></span><p class="err">The target contains “,”, which is not in the alphabet. Add it to the alphabet or remove it from the target.</p></div>
+    <div class="ctl"><label>Alphabet</label><span class="field"><input type="text" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ " style="width:300px;text-align:left"></span><p class="help">Every symbol a gene can take, in order. 27 symbols. A space is shown as ␣.</p></div>
+    <div class="ctl"><label>Population size N</label><span class="field"><input type="text" value="12"></span></div>
+    <div class="ctl"><label>Seed</label><span class="field"><input type="text" value="42"></span></div>
+    <div class="applyreset"><button class="btn primary" disabled>Apply and restart</button><span class="help">Fix the highlighted fields first.</span></div></div>
+   <div class="sec"><h3>Mutation</h3><div class="ctl"><label>Probability pm</label><span class="field"><input type="text" value="0.09"></span><p class="help">Per gene: every gene of every offspring draws u and flips if u &lt; pm; a flipped gene becomes one of the other 26 symbols, picked by one more draw.</p></div></div>
+   <div class="sec"><h3>Share</h3><div class="ctl"><label>Link to this configuration</label><span class="field"><button class="btn">Copy link</button></span><p class="help">Opens the same paused run at generation 0 for anyone.</p></div></div></aside>`;
+}
+
+/* ---------- mock controls ---------- */
+const screens = { overview, crossover, mutation, evaluation, replacement, setup };
+let state = { s: 'overview', v: 'A', t: 'light', z: 'fit', p: '0' };
+function render() {
+  const el = document.getElementById('screen');
+  el.className = (state.v === 'B' ? 'varB' : 'varA') + (state.p === '1' ? ' projector' : '');
+  el.innerHTML = screens[state.s]();
+  document.documentElement.dataset.theme = state.t;
+  const sc = state.z === 'fit' ? Math.min(innerWidth / 1920, (innerHeight - 40) / 1080) : 1;
+  el.style.transform = `scale(${sc})`;
+  document.getElementById('stagewrap').style.height = 1080 * sc + 'px';
+  document.getElementById('stagewrap').style.width = 1920 * sc + 'px';
+  document.querySelectorAll('#mockbar button').forEach((b) => b.classList.toggle('on', b.dataset.s === state.s || b.dataset.v === state.v || b.dataset.t === state.t || b.dataset.z === state.z || b.dataset.p === state.p));
+  // marks B shows the target above the columns of the population table and stage views
+  if (state.v === 'B') document.querySelectorAll('.cgrid, .mwrap, .rcol').forEach((e) => e.insertAdjacentHTML('afterbegin', ''));
+}
+document.getElementById('mockbar').addEventListener('click', (e) => {
+  const d = e.target.dataset; if (!d) return;
+  if (d.s) state.s = d.s; if (d.v) state.v = d.v; if (d.t) state.t = d.t; if (d.z) state.z = d.z; if (d.p) state.p = d.p;
+  render();
+});
+addEventListener('resize', render);
+const q = new URLSearchParams(location.search);
+for (const k of ['s', 'v', 't', 'z', 'p']) if (q.get(k)) state[k] = q.get(k);
+render();
+</script>
+</body>
+</html>

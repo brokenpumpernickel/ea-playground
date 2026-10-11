@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Target string – design mock (throwaway)</title>
+<style>
+* { box-sizing: border-box; }
+html, body { margin:0; height:100%; overflow:hidden; background:var(--page); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+.canvas { width:1920px; height:1080px; transform-origin:0 0; position:relative; overflow:hidden;
+  background:var(--page); color:var(--ink); font-size:20px; line-height:1.3; }
+/* ---------- top ribbon ---------- */
+#top { position:absolute; left:0; top:0; width:1920px; height:84px; display:flex; align-items:center; gap:24px; padding:0 24px;
+  background:var(--surface); border-bottom:1px solid var(--hair); }
+#brand { width:430px; }
+#brand .t { font-size:26px; font-weight:700; }
+#brand .s { font-size:20px; color:var(--ink2); }
+#ribbon { display:flex; flex:1; gap:0; }
+.stage { flex:1; height:56px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:22px; font-weight:600;
+  color:var(--ink2); background:var(--wash); clip-path:polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%, 22px 50%);
+  margin-left:-10px; padding:0 22px; }
+.stage:first-child { margin-left:0; clip-path:polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%); }
+.stage.done { color:var(--ink); }
+.stage.cur { background:var(--s1); color:var(--on-s1); }
+.stage .n { font-weight:700; }
+#gen { width:300px; text-align:right; }
+#gen .g { font-size:30px; font-weight:700; }
+#gen .l { font-size:20px; color:var(--ink2); }
+
+/* ---------- transport ---------- */
+#transport { position:absolute; left:0; top:84px; width:1920px; height:72px; display:flex; align-items:center; gap:6px; padding:0 24px;
+  background:var(--surface); border-bottom:1px solid var(--hair); }
+.btn { height:48px; padding:0 9px; border:2px solid var(--ink2); border-radius:8px; background:var(--surface); color:var(--ink);
+  font:600 20px system-ui,"Segoe UI",sans-serif; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+.btn kbd { font:600 14px ui-monospace,Consolas,monospace; color:var(--ink2); border:1px solid var(--axis); border-radius:4px; padding:0 4px; background:var(--wash); }
+.btn.primary { background:var(--s1); border-color:var(--s1); color:var(--on-s1); }
+.btn.primary kbd { color:#fff; background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.5); }
+.btn.quiet { border-color:var(--axis); }
+.vsep { width:2px; height:36px; background:var(--axis); margin:0 6px; }
+#tier { display:flex; align-items:center; gap:10px; }
+#tier .track { position:relative; width:240px; height:10px; background:var(--grid); border-radius:5px; }
+#tier .stop { position:absolute; top:-5px; width:20px; height:20px; border-radius:50%; background:var(--surface); border:2px solid var(--ink2); transform:translateX(-10px); }
+#tier .stop.cur { background:var(--s1); border-color:var(--s1); }
+#tier .labels { display:flex; justify-content:space-between; width:340px; font-size:18px; color:var(--ink2); margin-top:4px; }
+#seedbox { display:flex; align-items:center; gap:8px; color:var(--ink2); }
+#seedbox b { color:var(--ink); }
+
+/* ---------- panels ---------- */
+.panel { position:absolute; background:var(--surface); border:1px solid var(--hair); border-radius:10px; overflow:hidden; }
+.ph { display:flex; align-items:baseline; justify-content:space-between; padding:10px 16px 8px; border-bottom:1px solid var(--hair); }
+.ph h2 { margin:0; font-size:22px; font-weight:700; }
+.ph .r { font-size:20px; color:var(--ink2); }
+table { border-collapse:collapse; width:100%; font-size:21px; }
+th { text-align:left; font-weight:600; color:var(--ink2); font-size:19px; padding:6px 10px; border-bottom:2px solid var(--axis); white-space:nowrap; }
+td { padding:0 10px; height:44px; border-bottom:1px solid var(--grid); white-space:nowrap; }
+td.num, th.num { text-align:right; }
+.mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-weight:700; letter-spacing:.14em; font-size:25px; }
+tr.hl td { background:color-mix(in srgb, var(--s1) 14%, transparent); }
+tr.dim td { color:var(--ink2); }
+.sym { display:inline-block; min-width:1.3em; text-align:center; font-weight:700; }
+.muted { color:var(--ink2); }
+.pending { color:var(--ink2); font-style:italic; }
+
+/* bits */
+.bits { display:inline-flex; gap:4px; vertical-align:middle; }
+.bit { width:36px; height:44px; display:inline-flex; align-items:center; justify-content:center; border:2px solid var(--ink2); border-radius:6px;
+  font:700 27px ui-monospace,"Cascadia Mono",Consolas,monospace; background:var(--surface); position:relative; }
+.bit.sm { width:30px; height:38px; font-size:23px; }
+.bit.hatch { background-image:repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ink2) 55%, transparent) 5px 7px); }
+.bit.flip { border-color:var(--flip); border-width:3px; box-shadow:0 5px 0 -1px var(--flip); }
+.bit.flip::after { content:"✱"; position:absolute; top:-17px; left:50%; transform:translateX(-50%); color:var(--flip); font-size:18px; }
+.bit.cutafter { margin-right:10px; }
+.bit.cutafter::before { content:""; position:absolute; right:-11px; top:-10px; bottom:-10px; border-right:3px dashed var(--ink); }
+
+/* badges */
+.badge { display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:19px; border-radius:6px; padding:2px 10px; border:2px solid var(--ink2); }
+.badge.bypass { border-style:dashed; background:var(--wash); }
+.badge.ok { border-color:var(--good); color:var(--good); }
+.badge.flip { border-color:var(--flip); color:var(--flip); }
+.badge.x { border-color:var(--ink2); color:var(--ink2); text-decoration:none; }
+
+/* stage panel body */
+#stagebody { position:absolute; left:16px; right:16px; top:84px; bottom:80px; }
+#narr { position:absolute; left:16px; right:16px; bottom:12px; height:58px; display:flex; align-items:center; gap:12px; padding:0 14px;
+  background:var(--wash); border-left:6px solid var(--s1); border-radius:6px; font-size:21px; line-height:1.2; }
+#narr .m { font-weight:700; white-space:nowrap; color:var(--ink2); }
+#legend { position:absolute; left:24px; top:722px; width:800px; height:26px; display:flex; justify-content:space-between; font-size:19px; color:var(--ink2); align-items:center; }
+#legend b { color:var(--ink); }
+.chip { flex:1; border:2px solid var(--ink2); border-radius:8px; padding:4px 10px; text-align:center; font-size:20px; white-space:nowrap; }
+.chip.cur { border-width:4px; background:color-mix(in srgb, var(--s1) 14%, transparent); font-weight:700; }
+.chip.future { border-style:dashed; color:var(--ink2); }
+
+.note { font-size:20px; color:var(--ink2); }
+.card { border:2px solid var(--ink2); border-radius:8px; padding:8px 12px; background:var(--surface); }
+.row { display:flex; align-items:center; gap:14px; }
+.flow { display:flex; align-items:stretch; gap:34px; height:100%; }
+.col { flex:1; display:flex; flex-direction:column; gap:8px; min-width:0; }
+.col h3 { margin:0 0 4px; font-size:21px; color:var(--ink2); font-weight:700; }
+.arrow { align-self:center; font-size:40px; color:var(--ink2); }
+
+/* plots */
+svg text { font-family: system-ui,"Segoe UI",sans-serif; fill:var(--ink2); font-size:18px; }
+svg text.ink { fill:var(--ink); }
+svg .ax { stroke:var(--axis); stroke-width:1; }
+svg .gr { stroke:var(--grid); stroke-width:1; }
+
+/* drawer + dialog */
+#drawer { position:absolute; right:0; top:156px; bottom:0; width:640px; background:var(--surface); border-left:2px solid var(--ink2);
+  box-shadow:-12px 0 30px rgba(0,0,0,.25); overflow:hidden; z-index:20; }
+#drawer .dh { height:56px; display:flex; justify-content:space-between; align-items:center; padding:0 18px; border-bottom:1px solid var(--hair); font-size:24px; font-weight:700; }
+#drawer { overflow-y:auto; }
+#drawer .sec { padding:6px 18px 4px; border-bottom:1px solid var(--grid); }
+#drawer .sec h4 { margin:0 0 2px; font-size:20px; }
+#drawer .ctl { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:19px; line-height:1.15; }
+#drawer .help { font-size:17px; color:var(--ink2); margin:0 0 2px; line-height:1.2; }
+.field { border:2px solid var(--ink2); border-radius:6px; padding:0 10px; font-weight:600; min-width:90px; text-align:center; background:var(--surface); }
+.switch { display:inline-flex; align-items:center; gap:8px; font-weight:700; }
+.switch i { width:46px; height:24px; border-radius:12px; background:var(--s1); position:relative; display:inline-block; }
+.switch i::after { content:""; position:absolute; right:3px; top:3px; width:18px; height:18px; border-radius:50%; background:#fff; }
+.tag { font-size:16px; font-weight:700; border-radius:4px; padding:0 6px; border:2px solid var(--ink2); }
+.tag.reset { border-style:dashed; }
+.tag.pend { border-color:var(--flip); color:var(--flip); }
+#dim { position:absolute; inset:0; background:rgba(0,0,0,.5); z-index:30; }
+#dialog { position:absolute; left:230px; top:300px; width:800px; z-index:40; background:var(--surface); border:3px solid var(--ink); border-radius:12px; padding:24px 28px; }
+#dialog h3 { margin:0 0 10px; font-size:28px; }
+#dialog p { margin:0 0 18px; font-size:22px; }
+#dialog .acts { display:flex; justify-content:flex-end; gap:14px; }
+
+/* =====================================================================
+   STUDIO — the chosen direction. Light by default, with a dark theme from the same tokens.
+   Data colours (--s1 --s2 --s3 --s7) are the validated plot palette in both themes and are
+   never used for chrome; chrome uses --acc (violet), which is deliberately unlike the plot blue.
+   ===================================================================== */
+#tier .labels { margin-top:12px !important; }
+#brand { display:flex; align-items:center; gap:14px; }
+.mono { font-variant-ligatures:none; }
+
+:root, :root[data-theme="light"] {
+  color-scheme:light;
+  --page:#f1f2f9; --page2:#e9ecf8; --surface:#ffffff; --ink:#141a33; --ink2:#586081; --axis:#ccd1e6; --grid:#eceef7; --hair:rgba(20,26,51,.09); --wash:#f4f5fb;
+  --line:#dadff0; --line-soft:#eef0f8; --chip:#eef0f9; --th:#6f7799; --knob:#ffffff;
+  --elev:0 1px 2px rgba(20,26,51,.05), 0 14px 34px rgba(20,26,51,.07); --bar-shadow:0 1px 0 rgba(20,26,51,.06), 0 12px 32px rgba(20,26,51,.05);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s7:#4a3aa7;
+  --acc:#7040ec; --acc-ink:#4a24b8; --acc-tint:#efe9ff; --on-acc:#ffffff; --acc-glow:rgba(112,64,236,.38); --logo:linear-gradient(135deg,#8b5cf6,#6d4aea);
+  --bit-bg:#ffffff; --bit-line:#c9cee5; --bit-ink:#7a82a6; --one-bg:#ddd3ff; --one-line:#8a68f0; --one-ink:#36199e; --hatch:rgba(112,64,236,.34);
+  --ok-bg:#dcf4e6; --ok-ink:#0b6b36; --flip:#d6470e; --flip-bg:#ffe9dc; --flip-ink:#b3400a; --good:#0b6b36;
+  --seq1:#ece6ff; --seq2:#cbbdff; --seq3:#a590fa; --seq4:#7c5df0;
+  --veil:rgba(20,26,51,.5); --drawer-shadow:-18px 0 50px rgba(20,26,51,.22);
+}
+:root[data-theme="dark"] {
+  color-scheme:dark;
+  --page:#0c1022; --page2:#10152c; --surface:#171c36; --ink:#eef0ff; --ink2:#a9b1d4; --axis:#323a66; --grid:#222a50; --hair:rgba(150,160,255,.16); --wash:#1d2342;
+  --line:#2d3562; --line-soft:#232a4f; --chip:#1d2342; --th:#8a93bd; --knob:#eef0ff;
+  --elev:0 1px 2px rgba(0,0,0,.3), 0 14px 34px rgba(0,0,0,.38); --bar-shadow:0 1px 0 rgba(150,160,255,.12), 0 12px 32px rgba(0,0,0,.3);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s7:#9085e9;
+  --acc:#a78bfa; --acc-ink:#dcd1ff; --acc-tint:rgba(167,139,250,.17); --on-acc:#160d3a; --acc-glow:rgba(167,139,250,.35); --logo:linear-gradient(135deg,#c4b5fd,#8b5cf6);
+  --bit-bg:#0f1430; --bit-line:#323a66; --bit-ink:#8a93bd; --one-bg:rgba(167,139,250,.24); --one-line:#a78bfa; --one-ink:#efe9ff; --hatch:rgba(196,181,253,.5);
+  --ok-bg:rgba(74,222,128,.14); --ok-ink:#86efac; --flip:#fb923c; --flip-bg:rgba(251,146,60,.16); --flip-ink:#fdba74; --good:#4ade80;
+  --seq1:#4a3a9c; --seq2:#5d49bd; --seq3:#7058d6; --seq4:#8a6ff0;
+  --veil:rgba(2,4,14,.6); --drawer-shadow:-18px 0 50px rgba(0,0,0,.55);
+}
+
+.canvas { background:linear-gradient(180deg,var(--page) 0%,var(--page2) 100%); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+#top { background:var(--surface); border-bottom:none; box-shadow:var(--bar-shadow); z-index:2; }
+#transport { background:transparent; border-bottom:none; }
+.logo { display:inline-flex; flex:none; width:52px; height:52px; border-radius:16px; align-items:center; justify-content:center; background:var(--logo); color:var(--on-acc); font:800 24px system-ui; box-shadow:0 8px 18px var(--acc-glow); }
+:root[data-theme="dark"] .logo { color:#160d3a; }
+#brand .t { font-size:25px; letter-spacing:-.01em; }
+#brand .s { font-size:19px; }
+
+/* stage tracker */
+#ribbon { background:var(--chip); border-radius:999px; padding:5px; gap:4px; }
+.stage, .stage:first-child { clip-path:none; margin-left:0; border-radius:999px; background:transparent; height:50px; font-size:21px; font-weight:650; color:var(--ink2); padding:0 12px; gap:10px; }
+.stage .n { width:30px; height:30px; border-radius:50%; background:var(--surface); color:var(--ink2); display:inline-flex; align-items:center; justify-content:center; font-size:17px; box-shadow:0 1px 3px rgba(20,26,51,.16); }
+.stage.done { color:var(--ink); }
+.stage.done .n { background:var(--ok-bg); color:var(--ok-ink); box-shadow:none; }
+.stage.cur { background:var(--acc); color:var(--on-acc); box-shadow:0 8px 22px var(--acc-glow); }
+.stage.cur .n { background:rgba(255,255,255,.26); color:inherit; box-shadow:none; }
+#gen .g { color:var(--acc); font-weight:800; font-size:32px; letter-spacing:-.02em; }
+
+/* controls */
+.btn { border:1.5px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(20,26,51,.05); }
+.btn.primary { background:var(--acc); border-color:var(--acc); color:var(--on-acc); box-shadow:0 8px 18px var(--acc-glow); }
+.btn.quiet { background:transparent; box-shadow:none; border-color:transparent; color:var(--ink2); }
+.btn kbd { border-radius:6px; background:var(--wash); border-color:var(--line); color:var(--ink2); }
+.btn.primary kbd { background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.42); color:inherit; }
+.vsep { background:var(--line); width:1.5px; }
+#tier .track { height:8px; background:var(--line); }
+#tier .stop { border-color:var(--axis); background:var(--surface); }
+#tier .stop.cur { background:var(--acc); border-color:var(--acc); box-shadow:0 0 0 4px var(--acc-tint); }
+.field { border:1.5px solid var(--line); border-radius:10px; background:var(--surface); }
+.switch i { background:var(--acc); }
+
+/* panels */
+.panel { background:var(--surface); border:none; border-radius:22px; box-shadow:var(--elev); }
+.ph { border-bottom:none; }
+.ph:not([style]) { padding:14px 22px 6px; }
+.ph h2 { font-weight:700; letter-spacing:-.01em; }
+.ph h2::before { content:""; display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--acc); margin-right:10px; vertical-align:1px; }
+th { border-bottom:none; font-size:18px; text-transform:uppercase; letter-spacing:.05em; font-weight:700; color:var(--th); padding:6px 12px; }
+td { border-bottom:1px solid var(--line-soft); padding:0 12px; }
+tbody tr:last-child td { border-bottom:none; }
+tr.hl td { background:var(--acc-tint); }
+tr.hl td:first-child { border-radius:14px 0 0 14px; }
+tr.hl td:last-child { border-radius:0 14px 14px 0; }
+
+/* chromosomes: a 1 must stand out from a 0 by weight, fill AND border, never by tint alone */
+.bit { border:1.5px solid var(--bit-line); border-radius:11px; background-color:var(--bit-bg); color:var(--bit-ink); font-weight:600; }
+.bit.one { background-color:var(--one-bg); border:2px solid var(--one-line); color:var(--one-ink); font-weight:800; }
+.bit.hatch { background-image:repeating-linear-gradient(135deg, transparent 0 5px, var(--hatch) 5px 7px); }
+.bit.flip { border-color:var(--flip); background-color:var(--flip-bg); color:var(--flip); box-shadow:0 5px 0 -1px var(--flip); }
+.bit.cutafter::before { border-right:3px dashed var(--acc); }
+
+.badge { border:none; border-radius:999px; padding:3px 13px; background:var(--chip); color:var(--ink2); }
+.badge.ok { background:var(--ok-bg); color:var(--ok-ink); }
+.badge.flip { background:var(--flip-bg); color:var(--flip-ink); }
+.badge.bypass { background:var(--wash); border:1.5px dashed var(--axis); }
+.card { background:var(--surface); border:1.5px solid var(--line); border-radius:18px; box-shadow:0 1px 2px rgba(20,26,51,.04); }
+.chip { background:var(--surface); border:1.5px solid var(--line); border-radius:999px; }
+.chip.cur { border-width:1.5px; border-color:var(--acc); background:var(--acc-tint); color:var(--acc-ink); }
+#narr { background:var(--acc-tint); border-left:none; border-radius:18px; color:var(--ink); }
+#narr .m { color:var(--acc-ink); }
+.tag { border-color:var(--ink2); }
+.tag.pend { border-color:var(--flip); color:var(--flip-ink); }
+
+/* drawer and dialog */
+#drawer { background:var(--surface); border-left:none; border-radius:22px 0 0 22px; box-shadow:var(--drawer-shadow); }
+#drawer .sec { border-bottom-color:var(--line-soft); }
+#dim { background:var(--veil); }
+#dialog { background:var(--surface); border:none; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.4); }
+
+/* plots and scrub bar */
+svg text { fill:var(--ink2); }
+svg text.ink { fill:var(--ink); }
+svg .gr { stroke:var(--grid); }
+
+/* ---- app-only additions ---- */
+.viewport { position:fixed; inset:0; background:var(--page); overflow:hidden; }
+.canvas { position:absolute; left:50%; top:50%; width:1920px; height:1080px; transform-origin:0 0; overflow:hidden; background-clip:padding-box; }
+.sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+button:focus-visible, input:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+.btn { cursor:pointer; }
+.btn:disabled { cursor:not-allowed; }
+.tablewrap { position:absolute; left:0; right:0; top:50px; bottom:0; overflow:auto; }
+.tablewrap thead th { position:sticky; top:0; background:var(--surface); z-index:1; }
+#stagebody ol.events { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+#stagebody ol.events li { padding:8px 14px; border-radius:12px; font-size:20px; line-height:1.3; }
+#stagebody ol.events li.latest { background:var(--acc-tint); font-weight:650; }
+#stagebody ol.events li.older { color:var(--ink2); }
+.empty { color:var(--ink2); font-style:italic; }
+.statrow { display:flex; gap:14px; padding:6px 22px 0; }
+.stat { flex:1; background:var(--wash); border-radius:16px; padding:10px 16px; }
+.stat b { display:block; font-size:34px; letter-spacing:-.02em; line-height:1.1; }
+.stat span { color:var(--ink2); font-size:19px; }
+#statusline { margin-left:10px; font-size:20px; color:var(--ink2); display:block; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+#statusline.err { color:var(--flip-ink); }
+input[type=range].speed { width:200px; accent-color:var(--acc); }
+
+/* ---- selection and pairing views ---- */
+.expl { margin:0 0 8px; font-size:20px; color:var(--ink2); }
+.roulette { display:flex; gap:22px; height:calc(100% - 36px); }
+.wheelbox { width:350px; flex:none; margin:0; text-align:center; }
+.wheelbox figcaption { font-size:18px; color:var(--ink2); margin-top:-8px; }
+.sidecol { flex:1; min-width:0; display:flex; flex-direction:column; gap:10px; }
+.formula { font-size:19px; color:var(--ink2); }
+.formula b { color:var(--ink); }
+.notice { background:var(--flip-bg); color:var(--flip-ink); border-radius:14px; padding:8px 14px; font-size:19px; line-height:1.25; }
+.notice b::before { content:"⚠ "; }
+.weights { flex:1; min-height:0; overflow:auto; }
+.weights table { font-size:20px; }
+.weights td { height:36px; }
+.weights th small { display:block; text-transform:none; letter-spacing:0; font-weight:500; font-size:16px; }
+.chips { list-style:none; margin:0; padding:0; display:flex; gap:8px; }
+.chips .chip { flex:1; padding:4px 8px; text-align:center; font-size:19px; white-space:nowrap; }
+.poolbox { display:flex; align-items:center; gap:12px; }
+.poollabel { font-weight:700; font-size:19px; color:var(--ink2); white-space:nowrap; }
+.poolstrip { list-style:none; margin:0; padding:0; display:flex; gap:8px; flex-wrap:wrap; }
+.poolstrip li { min-width:68px; text-align:center; padding:3px 10px; border-radius:12px; border:1.5px dashed var(--axis); font-weight:800; font-size:22px; color:var(--ink2); }
+.poolstrip li.filled { border-style:solid; border-color:var(--one-line); background:var(--one-bg); color:var(--one-ink); }
+.poolstrip .slotno { display:block; font-size:16px; font-weight:600; line-height:1.1; }
+.tournament, .pairing { display:flex; flex-direction:column; gap:10px; height:100%; }
+.tournament .expl { margin:0; }
+.tgrid { flex:1; min-height:0; overflow:auto; display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; align-content:start; }
+.tcard, .pcard { padding:8px 14px; }
+.tcard.current, .pcard.current { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-tint); }
+.tcard.pending, .pcard.pending { border-style:dashed; background:transparent; box-shadow:none; }
+.thead { display:flex; align-items:center; gap:10px; font-size:20px; }
+.contestants { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:4px; }
+.contestants li { display:flex; align-items:center; gap:12px; font-size:19px; padding:2px 6px; border-radius:10px; }
+.contestants li.win { background:var(--ok-bg); }
+.pgrid { display:flex; gap:12px; flex-wrap:wrap; }
+.pcard { flex:1; min-width:380px; }
+.parents { display:flex; gap:18px; margin-top:6px; flex-wrap:wrap; }
+.parent { display:flex; flex-direction:column; gap:4px; font-size:19px; }
+.notes { margin:0; padding:0 0 0 22px; font-size:19px; color:var(--ink2); }
+
+/* ---- layout fixes found by looking at the real screens ---- */
+.chips { flex-wrap:wrap; }
+.chips .chip { flex:0 0 auto; padding:3px 12px; }
+.poolstrip { max-height:84px; overflow:auto; }
+.pairing { overflow:hidden; height:calc(100% - 36px); }
+.pgrid { flex:1; min-height:0; overflow:auto; display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; align-content:start; }
+.pcard { min-width:0; flex:none; }
+.parents { display:flex; flex-direction:column; gap:2px; margin-top:4px; }
+.parent { display:flex; flex-direction:row; align-items:center; gap:12px; font-size:19px; }
+.notes { flex:none; margin:0; padding:0 0 0 22px; font-size:18px; max-height:84px; overflow:auto; }
+
+/* ---- crossover and mutation views ---- */
+.crossover, .mutation { display:flex; flex-direction:column; gap:8px; height:100%; }
+.crossover .expl, .mutation .expl { margin:0; }
+.cgrid { flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:10px; }
+.ccard { padding:8px 14px; flex:none; }
+.ccard.current { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-tint); }
+.ccard.pending { border-style:dashed; background:transparent; box-shadow:none; }
+.cbody { display:flex; flex-wrap:wrap; gap:8px 40px; margin-top:6px; }
+.cside { display:flex; flex-direction:column; gap:4px; }
+.chead { font-size:17px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--th); }
+.crow { display:flex; align-items:center; gap:14px; }
+.crow .who { width:200px; font-size:18px; color:var(--ink2); flex:none; }
+.crow.dropped { opacity:.55; }
+.key { margin:0; font-size:18px; color:var(--ink2); }
+.mwrap { flex:1; min-height:0; overflow:auto; }
+.mtable { font-size:20px; white-space:nowrap; }
+.mtable td { height:46px; }
+.mtable .who { font-weight:700; margin-right:8px; }
+.mtable .draw { font-variant-numeric:tabular-nums; }
+.mtable td.flipcell { outline:3px solid var(--flip); outline-offset:-3px; border-radius:8px; font-weight:700; color:var(--flip-ink); }
+.mtable td.result .bits { margin-right:10px; }
+.mtable tr.hl td { background:var(--acc-tint); }
+.mtable th.num, .mtable td.draw { padding-left:6px; padding-right:6px; }
+.mtable td.result { white-space:normal; }
+.mtable td.result .badge { font-size:17px; padding:2px 10px; }
+
+/* evaluation and replacement */
+.evaluation, .replacement { display:flex; flex-direction:column; height:calc(100% - 36px); min-height:0; }
+.etable td.strong { font-weight:700; }
+.rgrid { flex:1; min-height:0; display:grid; grid-template-columns:280px 1fr 320px; gap:14px; overflow:auto; align-content:start; }
+.rcol { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.rrow { display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; padding:4px 6px; border-bottom:1px solid var(--grid); font-size:19px; }
+.rrow .who { font-weight:700; min-width:1.8em; }
+.rrow .fit { font-variant-numeric:tabular-nums; font-weight:700; min-width:2.2em; text-align:right; }
+.rrow.dim { opacity:.62; }
+.rrow .note { flex-basis:100%; font-size:16px; color:var(--ink2); padding-left:2.4em; }
+.rrow .badge { font-size:16px; padding:1px 9px; }
+.rrow { flex-wrap:nowrap; gap:4px 8px; padding:2px 4px; }
+.rrow .bit.sm { width:25px; height:29px; font-size:18px; }
+.rrow .bits { gap:2px; }
+.rrow .badge { white-space:nowrap; font-size:15px; padding:1px 8px; }
+.rrow .rank { font-size:15px; color:var(--ink2); white-space:nowrap; }
+.rrow .note { flex-basis:auto; font-size:14px; }
+.rrow:has(.note) { flex-wrap:wrap; }
+.cutnote { margin:0 0 4px; font-size:16px; color:var(--ink2); }
+
+/* plots */
+.plot svg { display:block; padding:0 6px; }
+.plot svg text { fill:var(--ink2); font-size:18px; font-family:inherit; }
+.plot svg text.ink { fill:var(--ink); }
+.plot svg .gr { stroke:var(--grid); stroke-width:1; }
+.plot .legend { font-size:17px; white-space:nowrap; }
+.plot .legend b { color:var(--ink); }
+.allele { display:flex; align-items:flex-end; gap:10px; height:112px; padding:6px 14px 0; box-sizing:border-box; }
+.allele .gene { flex:1; text-align:center; }
+.allele .bar { margin:0 8px; border:2px solid var(--ink2); background:var(--seq4); border-radius:4px 4px 0 0; }
+.allele .gene b { display:block; font-size:19px; }
+.allele .gene span { font-size:17px; color:var(--ink2); }
+.plot .summary { margin:6px 16px 0; font-size:18px; line-height:1.25; color:var(--ink2); }
+
+/* run history bar and the discard notice */
+.history { position:absolute; left:0; top:1014px; width:1920px; height:66px; display:flex; align-items:center; background:var(--surface); box-shadow:0 -1px 0 var(--hair); }
+.history .title { width:200px; padding-left:24px; box-sizing:border-box; line-height:1.15; }
+.history .title b { display:block; font-size:20px; }
+.history .title span { font-size:17px; }
+.history .scrub { width:1440px; height:66px; cursor:pointer; touch-action:none; border-radius:8px; }
+.history .scrub:focus-visible { outline:3px solid var(--acc); outline-offset:-3px; }
+.history .scrub svg { display:block; }
+.history .track { fill:var(--grid); }
+.history .fill { fill:var(--acc); }
+.history .cell-tick { stroke:var(--ink2); stroke-width:2; }
+.history .stage-tick { stroke:var(--axis); stroke-width:1.5; }
+.history .thumb { fill:var(--ink); }
+.history text { fill:var(--ink2); font-size:17px; font-family:inherit; }
+.history text.current { fill:var(--ink); font-weight:700; }
+.history .live { margin-left:auto; margin-right:24px; }
+.history .live:disabled { opacity:.45; cursor:default; }
+.scrim { position:absolute; inset:0; background:rgba(10,14,30,.45); display:flex; align-items:center; justify-content:center; z-index:20; }
+.dialog { width:760px; background:var(--surface); border:2px solid var(--ink); border-radius:16px; padding:28px 32px; box-shadow:0 20px 60px rgba(0,0,0,.35); }
+.dialog h2 { margin:0 0 12px; font-size:30px; }
+.dialog #dialog-text p { margin:0 0 12px; font-size:23px; }
+.dialog p { margin:0 0 12px; font-size:23px; }
+.dialog .actions { display:flex; gap:14px; justify-content:flex-end; margin-top:20px; }
+
+/* parameter drawer */
+#drawer { position:absolute; left:1282px; top:156px; width:638px; height:858px; overflow-y:auto; background:var(--surface); border-left:2px solid var(--ink); box-shadow:-12px 0 32px rgba(10,14,40,.22); z-index:10; font-size:20px; }
+#drawer:focus { outline:none; }
+#drawer .dh { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; position:sticky; top:0; background:var(--surface); border-bottom:1px solid var(--hair); z-index:2; }
+#drawer .dh h2 { margin:0; font-size:28px; }
+#drawer .sec { padding:12px 20px 14px; border-bottom:1px solid var(--hair); }
+#drawer h3 { margin:0 0 6px; font-size:22px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+#drawer h3 .note { font-size:16px; font-weight:400; color:var(--ink2); }
+#drawer .ctl { display:grid; grid-template-columns:1fr auto; align-items:center; column-gap:12px; padding:5px 0; }
+#drawer .ctl.wide { grid-template-columns:1fr; }
+#drawer .ctl label, #drawer .ctl .label { font-size:20px; }
+#drawer .ctl .field { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+#drawer .ctl.wide .field { justify-content:stretch; }
+#drawer .ctl .help { grid-column:1 / -1; margin:2px 0 0; font-size:16px; line-height:1.3; color:var(--ink2); }
+#drawer .ctl .err, #drawer .err { grid-column:1 / -1; margin:2px 0 0; font-size:17px; font-weight:600; color:var(--flip-ink); }
+#drawer input[type=text], #drawer select, #drawer textarea { font:inherit; font-size:20px; color:var(--ink); background:var(--surface); border:2px solid var(--ink2); border-radius:8px; padding:4px 10px; height:42px; box-sizing:border-box; }
+#drawer input[type=text] { width:130px; text-align:right; font-variant-numeric:tabular-nums; }
+#drawer input[type=text]:disabled { opacity:.45; }
+#drawer textarea { width:100%; height:auto; font-family:ui-monospace,Consolas,monospace; letter-spacing:.08em; }
+#drawer .ctl.bad input, #drawer .ctl.bad select, #drawer .ctl.bad textarea, #drawer input[aria-invalid=true] { border-color:var(--flip); background:var(--flip-bg); }
+#drawer .switch { display:inline-flex; align-items:center; gap:8px; font-weight:700; font-size:18px; }
+#drawer .switch input { width:26px; height:26px; accent-color:var(--acc); }
+#drawer .tag { font-size:14px; font-weight:700; border-radius:6px; padding:1px 8px; border:1.5px solid currentColor; white-space:nowrap; }
+#drawer .tag.pend { color:var(--flip-ink); }
+#drawer .tag.reset { color:var(--ink2); border-style:dashed; }
+#drawer .warn { margin:10px 20px 0; padding:8px 12px; border:2px solid var(--flip); background:var(--flip-bg); border-radius:8px; color:var(--flip-ink); font-size:17px; }
+#drawer .warn p { margin:0; }
+#drawer .applyreset { display:flex; align-items:center; gap:12px; padding-top:8px; }
+#drawer .applyreset .help { font-size:16px; color:var(--ink2); }
+#drawer .btn.tiny { height:34px; min-width:34px; padding:0 8px; font-size:16px; }
+#drawer .btn:disabled { opacity:.45; cursor:default; }
+#drawer .chain ol { list-style:none; margin:6px 0; padding:0; display:flex; flex-direction:column; gap:8px; }
+#drawer .chain li { border:2px solid var(--axis); border-radius:10px; padding:6px 10px; }
+#drawer .chain li.bad { border-color:var(--flip); background:var(--flip-bg); }
+#drawer .chain .stephead { display:flex; align-items:center; justify-content:space-between; }
+#drawer .chain .steptools { display:flex; gap:6px; }
+#drawer .chain .help { margin:2px 0 4px; font-size:16px; color:var(--ink2); }
+#drawer .chain .param { display:grid; grid-template-columns:auto auto 1fr; align-items:center; gap:8px; font-size:18px; }
+#drawer .chain .param small { color:var(--ink2); font-size:14px; line-height:1.2; }
+#drawer .chain .addstep { display:flex; align-items:center; gap:8px; }
+#drawer .handpop table { margin-top:8px; font-size:19px; }
+#drawer .handpop td { height:40px; }
+#drawer .handpop tr.bad td { color:var(--flip-ink); font-weight:600; }
+.pendingchip { font-size:16px; font-weight:700; color:var(--flip-ink); background:var(--flip-bg); border-radius:999px; padding:3px 12px; white-space:nowrap; }
+
+#drawer .lesson { margin:4px 0; font-size:19px; font-weight:600; }
+#drawer [data-section=presets] .help { margin:2px 0 4px; font-size:16px; line-height:1.3; color:var(--ink2); }
+
+#brand .trow { display:flex; align-items:center; gap:10px; }
+#brand .presetchip { font-size:15px; font-weight:700; color:var(--acc-ink); background:var(--acc-tint); border-radius:999px; padding:1px 10px; white-space:nowrap; }
+
+/* keyboard focus must always be visible */
+:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+.btn:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+
+/* projector mode: larger text and heavier lines, same layout */
+.canvas.projector { font-size:22px; }
+.projector .btn { border-width:3px; }
+.projector .btn kbd { font-size:15px; }
+.projector #brand .s, .projector #gen .l { font-size:21px; }
+.projector td, .projector table { font-size:23px; }
+.projector th { font-size:20px; }
+.projector .bit { border-width:3px; }
+.projector .bit.sm { font-size:24px; }
+.projector .expl, .projector .note, .projector .key, .projector .cutnote { font-size:21px; }
+.projector #narr { font-size:23px; }
+.projector #legend { font-size:21px; }
+.projector .badge { font-size:20px; border-width:2.5px; }
+.projector .plot svg text { font-size:20px; }
+.projector .plot svg path[data-series], .projector .plot svg line[data-now-line] { stroke-width:3.5; }
+.projector .plot svg .gr { stroke-width:2; }
+.projector .plot .legend { font-size:19px; }
+.projector .plot .summary { font-size:20px; }
+.projector .allele .gene b { font-size:21px; }
+.projector .allele .gene span { font-size:19px; }
+.projector .history text { font-size:19px; }
+.projector .history .track { height:14px; }
+.projector .history .thumb { width:10px; }
+.projector #drawer { font-size:22px; }
+.projector #drawer .ctl .help, .projector #drawer .help { font-size:18px; }
+.projector .rrow, .projector .rrow .badge { font-size:21px; }
+.projector .rrow .rank, .projector .rrow .note { font-size:17px; }
+.projector tr.hl td { border-bottom-width:2px; }
+
+/* the current micro-step is marked by a symbol and a heavier outline as well as a tint */
+tr.hl td:first-child::before { content:"\25B8\00a0"; font-weight:700; }
+.tcard.current .thead::before, .pcard.current .thead::before, .ccard.current .thead::before { content:"\25B8\00a0"; font-weight:700; }
+.chip.cur { text-decoration:underline; text-underline-offset:4px; }
+
+/* the playback speed: four stops, a thick track and a large thumb */
+input[type=range].speed { height:28px; cursor:pointer; }
+input[type=range].speed::-webkit-slider-runnable-track { height:10px; border-radius:5px; background:var(--grid); border:1px solid var(--axis); }
+input[type=range].speed::-webkit-slider-thumb { -webkit-appearance:none; width:24px; height:24px; margin-top:-4px; border-radius:50%; background:var(--acc); border:3px solid var(--surface); box-shadow:0 0 0 2px var(--acc); }
+input[type=range].speed::-moz-range-track { height:10px; border-radius:5px; background:var(--grid); border:1px solid var(--axis); }
+input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:var(--acc); border:3px solid var(--surface); box-shadow:0 0 0 2px var(--acc); }
+
+/* a user who asks for less motion gets none, whatever else is styled */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition:none !important; animation:none !important; scroll-behavior:auto !important; }
+}
+#brand .trow .t { white-space:nowrap; flex:none; }
+#brand .presetchip { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+
+/* switching the bottom-right plots */
+.plot .legend .btn.tiny { height:30px; padding:0 8px; font-size:16px; margin-left:10px; vertical-align:middle; }
+
+
+/* ---------- mock chrome (not part of the design) ---------- */
+html, body { background:#2b2b2b; overflow:auto; }
+body { height:auto; }
+#mockbar { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:6px 10px; background:#111; color:#eee; font:13px system-ui,sans-serif; }
+#mockbar b { color:#ffb300; margin-right:6px; }
+#mockbar button { background:#333; color:#eee; border:1px solid #555; border-radius:4px; padding:3px 8px; font:13px system-ui; cursor:pointer; }
+#mockbar button.on { background:#7040ec; border-color:#7040ec; }
+#mockbar .sep { width:1px; height:18px; background:#555; margin:0 4px; }
+#stagewrap { margin-top:40px; }
+#screen { position:relative; width:1920px; height:1080px; overflow:hidden; background:var(--page); color:var(--ink); font-size:20px; line-height:1.3; transform-origin:0 0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+#screen .abs { position:absolute; }
+#screen.projector { font-size:22px; }
+
+/* ---------- new for letters ---------- */
+.gcell { display:inline-flex; flex-direction:column; align-items:center; gap:2px; vertical-align:top; }
+.gcell .under { font-size:15px; height:18px; line-height:18px; color:var(--ink2); font-weight:700; }
+.gcell .under.ok { color:var(--good); }
+.bit.letter { font-family:ui-monospace,Consolas,monospace; font-weight:600; }
+.bit.letter.one { font-weight:800; }
+.bit.sm.letter { width:26px; height:34px; font-size:21px; }
+.bits.tight { gap:3px; }
+.tgtrow { display:inline-flex; gap:3px; color:var(--ink2); font-family:ui-monospace,Consolas,monospace; font-weight:700; }
+.tgtrow span { width:26px; text-align:center; font-size:19px; }
+.tgtlabel { font-size:15px; color:var(--ink2); margin-right:6px; }
+/* variant B: matches are marked by a heavy baseline instead of a ✓ */
+.varB .bit.letter.one { box-shadow:0 5px 0 -1px var(--acc-ink); }
+.varB .bit.letter:not(.one) { border-style:dashed; }
+.varB .gcell .under { display:none; }
+.varA .tgtheader { display:none; }
+.cap { font-size:15px; color:var(--ink2); margin:4px 0 0; }
+.note2 { font-size:17px; color:var(--ink2); }
+.mockdrawer { position:absolute; left:1282px; top:156px; width:638px; height:858px; background:var(--surface); border-left:2px solid var(--ink); box-shadow:-12px 0 32px rgba(10,14,40,.22); overflow:hidden; z-index:10; font-size:20px; }
+.matchbar { display:flex; align-items:flex-end; gap:6px; height:112px; padding:6px 14px 0; }
+.matchbar .gene { flex:1; text-align:center; }
+.matchbar .bar { margin:0 2px; border:2px solid var(--ink2); background:var(--seq4); border-radius:4px 4px 0 0; }
+.matchbar .gene b { display:block; font-size:17px; }
+.matchbar .gene span { font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; }
+</style>
+</head>
+<body>
+<div id="mockbar">
+  <b>Target string mock</b>
+  <button data-s="overview">Selection + population</button>
+  <button data-s="crossover">Crossover</button>
+  <button data-s="mutation">Mutation</button>
+  <button data-s="evaluation">Evaluation</button>
+  <button data-s="replacement">Replacement</button>
+  <button data-s="setup">Drawer: setup</button>
+  <span class="sep"></span>
+  <button data-v="A">Marks A: ✓ and target letter under cells</button>
+  <button data-v="B">Marks B: target row above, heavy baseline</button>
+  <span class="sep"></span>
+  <button data-t="light">Light</button><button data-t="dark">Dark</button>
+  <span class="sep"></span>
+  <button data-z="fit">Fit</button><button data-z="1">100%</button>
+  <button data-p="0">Normal</button><button data-p="1">Projector</button>
+</div>
+<div id="stagewrap"><div id="screen" class="varA"></div></div>
+
+<script>
+const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ '.split('');
+const TARGET = 'HELLO WORLD'.split('');
+const L = TARGET.length;
+const sym = (c) => (c === ' ' ? '␣' : c);
+const matches = (s) => s.split('').filter((c, k) => c === TARGET[k]).length;
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+/* ---------- components ---------- */
+function cell(c, k, o = {}) {
+  const match = c === TARGET[k];
+  const cls = ['bit', 'letter', o.sm ? 'sm' : '', match && !o.plain ? 'one' : '', o.hatch ? 'hatch' : '', o.flip ? 'flip' : '', o.cut ? 'cutafter' : ''].join(' ');
+  const under = o.noUnder ? '' : `<span class="under ${match ? 'ok' : ''}" aria-hidden="true">${match ? '✓' : sym(TARGET[k])}</span>`;
+  return `<span class="gcell"><span class="${cls}" title="${match ? 'matches the target' : 'target has ' + sym(TARGET[k])}">${sym(c)}</span>${o.under === false ? '' : under}</span>`;
+}
+function cells(s, o = {}) {
+  const sources = o.sources || [];
+  const cuts = o.cuts || [];
+  return `<span class="bits ${o.tight ? 'tight' : ''}" style="display:inline-flex;align-items:flex-start">${s.split('').map((c, k) => cell(c, k, { ...o, hatch: sources[k] === 'B', cut: cuts.includes(k + 1), flip: (o.flipped || []).includes(k + 1) })).join('')}</span>`;
+}
+const targetRow = () => `<div class="tgtheader" style="margin:0 0 4px 0"><span class="tgtlabel">target</span><span class="tgtrow">${TARGET.map((c) => `<span>${sym(c)}</span>`).join('')}</span></div>`;
+
+/* ---------- data ---------- */
+const POP = ['HQLXO WMRLZ', 'JELLA WOCLD', 'HELNO QORTD', 'ZELLO WORKD', 'KXLQO BPRLD', 'HELLO TORLD', 'MUVLB WORLX', 'HELPO WIRLD', 'QWLLO ZORLD', 'HZLLE WORLP', 'SELLO WCRLD', 'XYZLF GHJLD'];
+const FIT = POP.map(matches);
+const SUM = FIT.reduce((a, b) => a + b, 0);
+const PROB = FIT.map((f) => f / SUM);
+function screen(inner) { return inner; }
+
+function topbar(cur, done, gen, line) {
+  const stages = ['Selection', 'Pairing', 'Crossover', 'Mutation', 'Evaluation', 'Replacement'];
+  return `<div id="top"><div id="brand"><span class="logo" aria-hidden="true">Aa</span><div><div class="trow"><h1 class="t" style="margin:0">Target string ▾</h1></div><div class="s">Match “HELLO WORLD” · 27 symbols</div></div></div>
+  <ol id="ribbon" style="list-style:none;margin:0">${stages.map((s, k) => `<li class="stage ${k < done ? 'done' : ''} ${k === cur ? 'cur' : ''}"><span class="n">${k < done ? '✓' : k + 1}</span><span>${s}</span></li>`).join('')}</ol>
+  <div id="gen"><div class="g">Generation ${gen}</div><div class="l">${line}</div></div></div>`;
+}
+function transport() {
+  return `<div id="transport"><button class="btn quiet">↺</button><button class="btn quiet">◂ Back <kbd>←</kbd></button><button class="btn primary">Micro-step ▸ <kbd>→</kbd></button><button class="btn quiet">◂◂</button><button class="btn">Stage ▸▸ <kbd>⇧→</kbd></button><button class="btn">Generation ⏭ <kbd>G</kbd></button><span class="vsep"></span><button class="btn">▶ Run <kbd>Space</kbd></button><button class="btn quiet">Run to stop</button><span class="vsep"></span>
+  <div id="tier"><div><input class="speed" type="range" min="0" max="3" value="0"><div class="labels" style="width:200px;margin-left:0"><span>Slow</span><span>Medium</span><span>Fast</span><span>Max</span></div></div></div><span class="vsep"></span>
+  <div id="seedbox">Seed <b>42</b> <button class="btn quiet" style="height:40px;padding:0 10px">↻ New</button></div><div id="statusline">Paused</div><span style="flex:1"></span><button class="btn quiet">◐</button><button class="btn quiet">⚙ Parameters</button><button class="btn quiet">A⁺</button></div>`;
+}
+function popPanel(title, withSel) {
+  const rows = POP.map((s, i) => `<tr><td>${i + 1}</td><td>${cells(s, { sm: true, tight: true, under: false })}</td><td class="num">${FIT[i]} of ${L}</td><td class="num">${withSel ? FIT[i] : '—'}</td><td class="num">${withSel ? PROB[i].toFixed(3) : '—'}</td><td>${withSel && [1, 5, 5, 9].includes(i) ? '◆ ×' + (i === 5 ? 2 : 1) : '<span class="muted">—</span>'}</td></tr>`).join('');
+  return `<section class="panel abs" style="left:1136px;top:172px;width:760px;height:542px"><div class="ph"><h2>${title}</h2><span class="r">Σ fitness ${SUM} · avg ${(SUM / 12).toFixed(2)} · best ${Math.max(...FIT)}</span></div>
+  <div class="tablewrap" style="top:50px;padding:0 6px"><table><thead><tr><th>#</th><th>Chromosome<div class="tgtheader" style="margin-top:2px"><span class="tgtrow">${TARGET.map((c) => `<span>${sym(c)}</span>`).join('')}</span></div></th><th class="num">Fitness<div class="cap" style="margin:2px 0 0;text-transform:none;letter-spacing:0">= matches</div></th><th class="num">Weight</th><th class="num">Prob.</th><th>Parent</th></tr></thead><tbody>${rows}</tbody></table></div></section>
+  <div id="legend" style="left:1136px;top:722px;width:760px"><span><b>★</b> elite</span><span><b>◆</b> parent</span><span><b>◇</b> offspring</span><span><b>✱</b> mutated gene</span><span><b>⤼</b> bypass</span><span><b>✕</b> discarded</span></div>`;
+}
+function strip() {
+  const gens = [0, 1, 2, 3, 4, 5];
+  const best = [6, 7, 7, 8, 9, 9], avg = [3.1, 4.2, 4.9, 5.8, 6.4, 7.1], worst = [1, 2, 2, 3, 3, 4], so = [6, 7, 7, 8, 9, 9];
+  const X = (g) => 66 + (780 - 66) * g / 15, Y = (v) => 138 - (138 - 28) * v / 11;
+  const path = (a) => a.map((v, k) => `${k ? 'L' : 'M'}${X(k)},${Y(v)}`).join(' ');
+  const ticks = [0, 3, 6, 9, 11].map((v) => `<line class="gr" x1="66" x2="780" y1="${Y(v)}" y2="${Y(v)}"/><text x="58" y="${Y(v) + 6}" text-anchor="end">${v}</text>`).join('');
+  const xt = [0, 3, 6, 9, 12, 15].map((g) => `<text x="${X(g)}" y="160" text-anchor="middle">${g}</text>`).join('');
+  const fit = `<svg viewBox="0 0 800 188" width="100%"><g>${ticks}${xt}<line x1="66" x2="780" y1="${Y(11)}" y2="${Y(11)}" stroke="var(--ink2)" stroke-dasharray="2 5"/><text x="780" y="${Y(11) - 6}" text-anchor="end" style="font-size:16px">optimum 11</text>
+   <path d="${path(avg)}" fill="none" stroke="var(--s1)" stroke-width="2.5"/><path d="${path(so)}" fill="none" stroke="var(--s3)" stroke-width="2.5" stroke-dasharray="7 4"/><path d="${path(best)}" fill="none" stroke="var(--s2)" stroke-width="2.5"/>
+   ${gens.map((g) => `<circle cx="${X(g)}" cy="${Y(avg[g])}" r="5" fill="var(--s1)"/><rect x="${X(g) - 5}" y="${Y(best[g]) - 5}" width="10" height="10" fill="var(--s2)"/>`).join('')}
+   <line x1="${X(5)}" x2="${X(5)}" y1="28" y2="138" stroke="var(--ink)" stroke-width="2"/><text class="ink" x="${X(5)}" y="20" text-anchor="middle" style="font-weight:700;font-size:16px">now</text></g></svg>`;
+  const div = [0.62, 0.58, 0.53, 0.49, 0.44, 0.40];
+  const X2 = (g) => 56 + (500 - 56) * g / 15, Y2 = (v) => 138 - 110 * v;
+  const dv = `<svg viewBox="0 0 520 188" width="100%">${[0, 0.5, 1].map((v) => `<line class="gr" x1="56" x2="500" y1="${Y2(v)}" y2="${Y2(v)}"/><text x="48" y="${Y2(v) + 6}" text-anchor="end">${v}</text>`).join('')}${[0, 3, 6, 9, 12, 15].map((g) => `<text x="${X2(g)}" y="160" text-anchor="middle">${g}</text>`).join('')}
+   <path d="${div.map((v, k) => `${k ? 'L' : 'M'}${X2(k)},${Y2(v)}`).join(' ')}" fill="none" stroke="var(--s7)" stroke-width="2.5"/>${div.map((v, k) => `<circle cx="${X2(k)}" cy="${Y2(v)}" r="5" fill="var(--s7)"/>`).join('')}<line x1="${X2(5)}" x2="${X2(5)}" y1="28" y2="138" stroke="var(--ink)" stroke-width="2"/></svg>`;
+  const rate = TARGET.map((c, k) => POP.filter((s) => s[k] === c).length / POP.length);
+  const bars = `<div class="matchbar">${TARGET.map((c, k) => `<div class="gene"><div class="bar" style="height:${Math.round(rate[k] * 60) + 4}px"></div><b>${Math.round(rate[k] * 100)}%</b><span>${sym(c)}</span></div>`).join('')}</div>`;
+  return `<section class="panel plot abs" style="left:24px;top:758px;width:820px;height:244px"><div class="ph"><h2>Fitness</h2><span class="r legend"><b>●</b> average &nbsp;<b>■</b> best of gen. &nbsp;<b>▲</b> best so far</span></div>${fit}</section>
+  <section class="panel plot abs" style="left:860px;top:758px;width:540px;height:244px"><div class="ph"><h2>Diversity</h2><span class="r legend">mean pairwise mismatch, 0–1</span></div>${dv}</section>
+  <section class="panel plot abs" style="left:1416px;top:758px;width:480px;height:244px"><div class="ph"><h2>Match rate per position</h2><span class="r legend">${new Set(POP).size} of 12 distinct</span></div>${bars}<p class="summary" style="margin:6px 16px 0;font-size:18px;color:var(--ink2)">generation 5 · best now 9 of 11 · average 7.1 · worst 4</p></section>
+  <footer class="history"><div class="title"><b>Run history</b><span class="muted">recorded gens 0–5</span></div><div class="scrub"><svg viewBox="0 0 1440 66" width="1440" height="66"><rect x="0" y="14" width="1440" height="12" rx="6" class="track"/><rect x="0" y="14" width="1000" height="12" rx="6" class="fill"/><rect x="996" y="6" width="8" height="28" rx="3" class="thumb"/>${[0, 1, 2, 3, 4, 5].map((g) => `<text x="${(g + 0.5) * 240}" y="54" text-anchor="middle" class="${g === 4 ? 'current' : ''}">gen ${g}</text>`).join('')}</svg></div><button class="btn live" disabled>Return to live</button></footer>`;
+}
+
+/* ---------- screens ---------- */
+function overview() {
+  const wheel = `<svg viewBox="0 0 340 340" width="300" height="300"><circle cx="170" cy="170" r="140" fill="var(--seq2)" stroke="var(--surface)" stroke-width="3"/><text x="170" y="170" text-anchor="middle" class="ink" style="font-size:20px;font-weight:700">12 slices</text><text x="170" y="196" text-anchor="middle" style="font-size:16px">probability = matches ÷ ${SUM}</text></svg>`;
+  const rows = POP.slice(0, 6).map((s, i) => `<tr><td>${i + 1}</td><td class="num">${FIT[i]}</td><td class="num">${FIT[i]}</td><td class="num">${PROB[i].toFixed(3)}</td></tr>`).join('');
+  return `${topbar(0, 0, 5, 'being made · stage entered')}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 1 · Selection</h2></div><div style="position:absolute;left:16px;right:16px;top:54px;display:flex;gap:24px">${wheel}<div style="flex:1"><p class="expl" style="margin:0 0 6px">raw fitness → <b>Identity</b> → weight → probability (weight ÷ ${SUM})</p><table class="mtable"><thead><tr><th>Ind.</th><th class="num">Matches</th><th class="num">Weight</th><th class="num">Prob.</th></tr></thead><tbody>${rows}<tr><td colspan="4" class="muted">… 6 more rows (scroll)</td></tr></tbody></table></div></div>
+  <div id="narr"><span class="m">12 micro-steps</span><span>Stage entered. Step to see the first result.</span></div></section>
+  ${popPanel('Parents · generation 4', true)}${strip()}`;
+}
+function crossover() {
+  const A = POP[1], B = POP[7];
+  const cut = 4;
+  const c1 = A.slice(0, cut) + B.slice(cut), c2 = B.slice(0, cut) + A.slice(cut);
+  const src1 = L => Array.from({ length: L }, (_, k) => (k < cut ? 'A' : 'B')), src2 = L => Array.from({ length: L }, (_, k) => (k < cut ? 'B' : 'A'));
+  const card = (n, a, b, x, y, ai, bi, hdr, cur) => `<section class="card ccard ${cur ? 'current' : ''}"><div class="thead"><b>Pair ${n}</b> ${hdr}</div><div class="cbody"><div class="cside"><div class="chead">Parents</div><div class="crow"><span class="who">A · individual ${ai}</span>${cells(a, { cuts: [cut] })}</div><div class="crow"><span class="who">B · individual ${bi}</span>${cells(b, { cuts: [cut], sources: Array(L).fill('B') })}</div></div>
+   <div class="cside"><div class="chead">Children</div><div class="crow"><span class="who">O${2 * n - 1} · recombined</span>${cells(x, { cuts: [cut], sources: src1(L) })}</div><div class="crow"><span class="who">O${2 * n} · recombined</span>${cells(y, { cuts: [cut], sources: src2(L) })}</div></div></div></section>`;
+  return `${topbar(2, 2, 5, 'being made · micro-step 2 of 6')}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 3 · Crossover</h2></div><div id="stagebody" style="top:56px"><div class="crossover"><p class="expl">One draw u per pair: recombine (one-point) if u &lt; pc (0.8), otherwise the pair is a bypass and its children are copies of the parents.</p>
+  <div class="cgrid" style="height:360px">${card(2, A, B, c1, c2, 2, 8, `<span class="badge ok"><span aria-hidden="true">✓</span> recombined</span><span class="muted">u = 0.41 &lt; pc 0.8 → cut after gene ${cut}</span>`, true)}</div>
+  <p class="key">plain gene = inherited from parent A · <b>hatched</b> = inherited from parent B · <b>dashed line</b> = cut point · <b>✓</b> = matches the target, otherwise the target letter</p></div></div>
+  <div id="narr"><span class="m">Micro-step 2 of 6</span><span>Pair 2: u = 0.41 &lt; pc 0.8 → recombined (cut after gene ${cut}): children ${esc(c1)} and ${esc(c2)}</span></div></section>
+  ${popPanel('Parents · generation 4', true)}${strip()}`;
+}
+function mutation() {
+  const kids = ['JELLO WORLD', 'HXLLA WOCLD', 'HELNO QORTD', 'ZELLO WORKD'];
+  const draws = [[0.62, 0.31, 0.88, 0.54, 0.77, 0.43, 0.95, 0.12, 0.64, 0.58, 0.39], [0.5, 0.071, 0.9, 0.3, 0.6, 0.2, 0.8, 0.4, 0.7, 0.1, 0.55], [0.7, 0.4, 0.2, 0.065, 0.3, 0.5, 0.8, 0.1, 0.9, 0.35, 0.6], [0.3, 0.6, 0.5, 0.7, 0.4, 0.9, 0.2, 0.8, 0.45, 0.75, 0.05]];
+  const block = (s, i) => {
+    const d = draws[i];
+    const flips = d.map((u, k) => (u < 0.09 ? k + 1 : null)).filter(Boolean);
+    const after = s.split('');
+    const info = flips.map((g) => { const old = after[g - 1]; const others = ALPHA.filter((a) => a !== old); const r = 0.12 + g * 0.07; const nw = others[Math.floor(r * others.length)]; after[g - 1] = nw; return { g, old, nw, r }; });
+    const drawRow = `<span class="bits tight" style="display:inline-flex;align-items:flex-start">${s.split('').map((c, k) => `<span class="gcell"><span class="bit sm letter ${c === TARGET[k] ? 'one' : ''} ${d[k] < 0.09 ? 'flip' : ''}">${sym(c)}</span><span class="under ${d[k] < 0.09 ? '' : ''}" style="font-size:14px;width:44px;text-align:center;${d[k] < 0.09 ? 'color:var(--flip-ink);outline:2px solid var(--flip);border-radius:6px' : ''}">${d[k].toFixed(2)}${d[k] < 0.09 ? '✱' : ''}</span></span>`).join('')}</span>`;
+    const res = `<span class="bits tight" style="display:inline-flex;align-items:flex-start">${after.map((c, k) => `<span class="gcell"><span class="bit sm letter ${c === TARGET[k] ? 'one' : ''} ${flips.includes(k + 1) ? 'flip' : ''}">${sym(c)}</span></span>`).join('')}</span>`;
+    return `<div class="card" style="margin:0 0 8px;padding:6px 12px;${i === 3 ? 'border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-tint)' : ''}"><div class="crow"><span class="who" style="width:60px"><b>O${i + 1}</b></span>${drawRow}</div>
+      <div class="crow" style="margin-top:2px"><span class="who" style="width:60px;font-size:15px">result</span>${res}${info.length ? `<span class="badge flip">${info.map((x) => `✱ gene ${x.g}: ${sym(x.old)} → ${sym(x.nw)} <small>(r = ${x.r.toFixed(2)})</small>`).join(' · ')}</span>` : '<span class="muted">unchanged</span>'}</div></div>`;
+  };
+  return `${topbar(3, 3, 5, 'being made · micro-step 4 of 12')}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 4 · Mutation</h2></div><div id="stagebody" style="top:56px"><div class="mutation"><p class="expl">Under each gene: its own draw u. The gene flips if u &lt; pm (0.09), and becomes a different symbol picked by one more draw r.</p>
+  <div class="mwrap" style="overflow:auto">${kids.map(block).join('')}</div></div></div>
+  <div id="narr"><span class="m">Micro-step 4 of 12</span><span>Offspring 4: no gene drew below pm 0.09 → unchanged</span></div></section>
+  ${popPanel('Parents · generation 4', true)}${strip()}`;
+}
+function evaluation() {
+  const kids = ['JELLO WORLD', 'HXLLA WOCLD', 'HELNO QORTD', 'ZELLO WORKD', 'HELLO WORLX', 'HELLP WORLD'];
+  const rows = kids.map((s, i) => `<tr class="${i === 3 ? 'hl' : ''}"><td><span class="who">O${i + 1}</span></td><td>${cells(s, { sm: true, tight: true, under: false })}</td>${i <= 3 ? `<td class="num">${matches(s)} of ${L}</td><td class="num">${matches(s)}</td><td class="num strong">${matches(s)}</td><td>individual ${25 + i}</td>` : '<td class="muted" colspan="4">not scored yet</td>'}</tr>`).join('');
+  return `${topbar(4, 4, 5, 'being made · micro-step 4 of 6')}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 5 · Evaluation of offspring</h2></div><div id="stagebody" style="top:56px"><div class="evaluation"><p class="expl">Each finished offspring is compared with the target position by position: the objective is how many positions match, and fitness is the same number.</p><div class="mwrap"><table class="mtable etable"><thead><tr><th>Offspring</th><th>Chromosome</th><th class="num">Matches</th><th class="num">Objective</th><th class="num">Fitness</th><th>Becomes</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>
+  <div id="narr"><span class="m">Micro-step 4 of 6</span><span>Offspring 4: ZELLO WORKD → 8 of 11 positions match → fitness 8 (individual 28)</span></div></section>
+  ${popPanel('Parents · generation 4', true)}${strip()}`;
+}
+function replacement() {
+  const old = POP.slice(0, 6), kids = ['JELLO WORLD', 'HXLLA WOCLD', 'HELNO QORTD', 'ZELLO WORKD', 'HELLO WORLX', 'HELLP WORLD'];
+  const row = (n, s, badge, dim) => `<div class="rrow ${dim ? 'dim' : ''}"><span class="who">${n}</span>${cells(s, { sm: true, tight: true, under: false })}<span class="fit">${matches(s)}</span>${badge}</div>`;
+  return `${topbar(5, 5, 5, 'being made · micro-step 1 of 1')}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 6 · Replacement</h2></div><div id="stagebody" style="top:56px"><div class="replacement"><p class="expl">Elitism: 1 elite, the best old individual (#6), copied over unchanged; the other 5 old individuals are replaced (the old population is in the table on the right). Offspring truncation: λ = 8 offspring were made and scored; only the best N − e = 5 survive.</p>
+  <div class="rgrid" style="grid-template-columns:1fr 1fr"><section class="rcol"><div class="chead">Offspring, best first</div>${kids.map((s, i) => row('O' + (i + 1), s, i < 4 ? '<span class="badge ok">✓ survives</span>' : '<span class="badge x">✕ discarded</span>', i >= 4)).join('')}</section>
+  <section class="rcol"><div class="chead">Next population</div>${row('1.', old[5], '<span class="badge ok">★ #6</span>')}${kids.slice(0, 4).map((s, i) => row(i + 2 + '.', s, `<span class="badge">◇ O${i + 1}</span>`)).join('')}</section></div></div></div>
+  <div id="narr"><span class="m">Micro-step 1 of 1</span><span>Next population: individuals 6 (elite), 25, 26, 27, 28. Discarded: 2 offspring (ranks 7–8)</span></div></section>
+  ${popPanel('Parents · generation 4', true)}${strip()}`;
+}
+function setup() {
+  return `${topbar(0, 0, 5, 'complete · limit 100')}${transport()}
+  <section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 6 · Replacement</h2></div><div id="stagebody" style="top:56px"><p class="expl">(stage view as before)</p></div></section>${popPanel('Population · generation 5', false)}${strip()}
+  <aside class="mockdrawer" id="drawer"><div class="dh"><h2>Parameters</h2><button class="btn quiet">✕ close</button></div>
+   <div class="sec"><h3>Presets</h3><div class="ctl"><label>Preset</label><span class="field"><select><option>Evolve a word</option></select></span></div></div>
+   <div class="sec"><h3>Run setup <span class="tag reset">↺ needs reset</span></h3>
+    <div class="ctl"><label>Problem</label><span class="field"><select><option>Target string</option></select></span></div>
+    <div class="ctl bad"><label>Target</label><span class="field"><input type="text" value="HELLO, WORLD" style="width:260px;text-align:left"></span><p class="err">The target contains “,”, which is not in the alphabet. Add it to the alphabet or remove it from the target.</p></div>
+    <div class="ctl"><label>Alphabet</label><span class="field"><input type="text" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ " style="width:300px;text-align:left"></span><p class="help">Every symbol a gene can take, in order. 27 symbols. A space is shown as ␣.</p></div>
+    <div class="ctl"><label>Population size N</label><span class="field"><input type="text" value="12"></span></div>
+    <div class="ctl"><label>Seed</label><span class="field"><input type="text" value="42"></span></div>
+    <div class="applyreset"><button class="btn primary" disabled>Apply and restart</button><span class="help">Fix the highlighted fields first.</span></div></div>
+   <div class="sec"><h3>Mutation</h3><div class="ctl"><label>Probability pm</label><span class="field"><input type="text" value="0.09"></span><p class="help">Per gene: every gene of every offspring draws u and flips if u &lt; pm; a flipped gene becomes one of the other 26 symbols, picked by one more draw.</p></div></div>
+   <div class="sec"><h3>Share</h3><div class="ctl"><label>Link to this configuration</label><span class="field"><button class="btn">Copy link</button></span><p class="help">Opens the same paused run at generation 0 for anyone.</p></div></div></aside>`;
+}
+
+/* ---------- mock controls ---------- */
+const screens = { overview, crossover, mutation, evaluation, replacement, setup };
+let state = { s: 'overview', v: 'A', t: 'light', z: 'fit', p: '0' };
+function render() {
+  const el = document.getElementById('screen');
+  el.className = (state.v === 'B' ? 'varB' : 'varA') + (state.p === '1' ? ' projector' : '');
+  el.innerHTML = screens[state.s]();
+  document.documentElement.dataset.theme = state.t;
+  const sc = state.z === 'fit' ? Math.min(innerWidth / 1920, (innerHeight - 40) / 1080) : 1;
+  el.style.transform = `scale(${sc})`;
+  document.getElementById('stagewrap').style.height = 1080 * sc + 'px';
+  document.getElementById('stagewrap').style.width = 1920 * sc + 'px';
+  document.querySelectorAll('#mockbar button').forEach((b) => b.classList.toggle('on', b.dataset.s === state.s || b.dataset.v === state.v || b.dataset.t === state.t || b.dataset.z === state.z || b.dataset.p === state.p));
+  // marks B shows the target above the columns of the population table and stage views
+  if (state.v === 'B') document.querySelectorAll('.cgrid, .mwrap, .rcol').forEach((e) => e.insertAdjacentHTML('afterbegin', ''));
+}
+document.getElementById('mockbar').addEventListener('click', (e) => {
+  const d = e.target.dataset; if (!d) return;
+  if (d.s) state.s = d.s; if (d.v) state.v = d.v; if (d.t) state.t = d.t; if (d.z) state.z = d.z; if (d.p) state.p = d.p;
+  render();
+});
+addEventListener('resize', render);
+const q = new URLSearchParams(location.search);
+for (const k of ['s', 'v', 't', 'z', 'p']) if (q.get(k)) state[k] = q.get(k);
+render();
+</script>
+</body>
+</html>
