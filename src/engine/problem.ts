@@ -8,6 +8,17 @@ export interface Scores {
   objective: number;
   /** The maximised quantity derived from the objective by a visible rule. */
   fitness: number;
+  /**
+   * Whether the individual respects the problem's constraint. Absent means it does, which is what every problem
+   * without a constraint reports (see ADR 0005).
+   */
+  feasible?: boolean;
+  /**
+   * Set when evaluating the chromosome repaired it (Lamarckian repair): the chromosome after repair. The engine
+   * stores it as the individual's chromosome and records the original in the evaluation event, so it is never a field
+   * of an individual.
+   */
+  repaired?: Chromosome;
 }
 
 /** A problem with one decoded number can show its fitness as a curve over every value that number can take. */

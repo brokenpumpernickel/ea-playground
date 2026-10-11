@@ -1,6 +1,6 @@
 import type { Chromosome } from './chromosome';
 import { crossover, type CrossoverConfig, type CrossoverEvent } from './crossover';
-import { initialize, type Individual, type Initialization, type SetupEvent } from './initialize';
+import { evaluated, initialize, type Individual, type Initialization, type SetupEvent } from './initialize';
 import { mutate, type MutationConfig, type MutationEvent } from './mutation';
 import { matingPoolSize, pair, type PairingEvent } from './pairing';
 import type { Problem } from './problem';
@@ -156,6 +156,8 @@ export interface EvaluationEvent {
   /** The offspring number this individual was made from. */
   readonly offspring: number;
   readonly individual: Individual;
+  /** Only when evaluation repaired the chromosome: the chromosome as mutation left it. The individual holds the repaired one. */
+  readonly repairedFrom?: Chromosome;
 }
 
 export interface ReplacementEvent {
@@ -243,9 +245,8 @@ export function runGeneration(
   const offspring = mutated.mutated.map((m, k): Individual => {
     const child = crossed.offspring[k]!;
     const event = crossed.events.find((e) => e.pair === child.pair)!;
-    const individual: Individual = {
+    const { individual, repairedFrom } = evaluated(config.problem, m.chromosome as Chromosome, {
       id: nextId++,
-      chromosome: m.chromosome,
       origin: {
         kind: 'offspring',
         generation,
@@ -255,9 +256,8 @@ export function runGeneration(
         recombined: event.decision === 'recombined',
         flipped: m.flipped,
       },
-      ...config.problem.evaluate(m.chromosome as Chromosome),
-    };
-    events.push({ stage: 'evaluation', kind: 'evaluated', offspring: m.offspring, individual });
+    });
+    events.push({ stage: 'evaluation', kind: 'evaluated', offspring: m.offspring, individual, ...(repairedFrom ? { repairedFrom } : {}) });
     return individual;
   });
 
