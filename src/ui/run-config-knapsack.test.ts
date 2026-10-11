@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { gaAlgorithm, handlings, metricsOf, type GaParams, type KnapsackOptions } from '../engine';
+import { createRng, gaAlgorithm, handlings, metricsOf, minimumGenes, type GaParams, type Initialization, type KnapsackOptions, type StepSpec } from '../engine';
 import { createRun } from '../run';
 import { entryOf } from './problems';
 import { configOf, decodeConfig, encodeConfig, setupOf, type RunConfig } from './run-config';
@@ -89,4 +89,38 @@ describe('bad knapsack links: each is refused in the drawer’s own words, and n
     ).toContain('Two-point crossover needs chromosomes of at least 3 genes, but this problem');
     expect(problemsOf(edited((c) => ((c.options.capacity = 0), (c.options.rho = -1), (c.options.items[0].weight = 0))))).toHaveLength(3);
   });
+});
+
+describe('200 generated knapsack configurations', () => {
+  test('item sets of 2 to 20 items, capacities, every method, ρ, selection, operators, truncation, stop settings, random and hand-edited populations: round trip, and every tenth opens as the same run', () => {
+    const rng = createRng(2026);
+    const int = (lo: number, hi: number) => lo + Math.floor(rng.next() * (hi - lo + 1));
+    const pick = <T,>(items: readonly T[]): T => items[int(0, items.length - 1)]!;
+    const chains: StepSpec[][] = [[{ step: 'shift', epsilon: 0.5 }], [{ step: 'rank' }], [{ step: 'shift' }, { step: 'power', exponent: 2 }]];
+    for (let k = 0; k < 200; k++) {
+      const n = int(2, 20);
+      const items = Array.from({ length: n }, () => ({ weight: int(1, 99), value: int(1, 999) }));
+      const total = items.reduce((t, i) => t + i.weight, 0);
+      const lightest = Math.min(...items.map((i) => i.weight));
+      const options: KnapsackOptions = { items, capacity: int(lightest, total), handling: pick(handlings), rho: pick([0, 1, 2.5, 8, 50, 1000, int(0, 1000) / 4]) };
+      const size = int(1, 12);
+      const init: Initialization =
+        rng.next() < 0.5 ? { kind: 'random', size } : { kind: 'explicit', chromosomes: Array.from({ length: size }, () => Array.from({ length: n }, () => (rng.next() < 0.5 ? '1' : '0')).join('')) };
+      const elites = int(0, size);
+      const params: GaParams = {
+        selection: rng.next() < 0.5 ? { method: 'tournament', size: int(1, 5) } : { method: 'roulette', chain: pick(chains) },
+        crossover: { enabled: rng.next() < 0.8, operator: pick((['one-point', 'two-point', 'uniform'] as const).filter((o) => minimumGenes[o] <= n)), probability: int(0, 100) / 100 },
+        mutation: { enabled: rng.next() < 0.8, mode: pick(['per-gene', 'per-individual'] as const), probability: int(0, 100) / 100 },
+        elites,
+        ...(rng.next() < 0.4 ? { truncation: { enabled: true, lambda: Math.max(1, size - elites + int(0, 4)) } } : {}),
+        stop: { generationLimit: int(1, 200), ...(rng.next() < 0.5 ? { targetFitness: int(0, 3000) } : {}), ...(rng.next() < 0.5 ? { stagnationWindow: int(1, 30) } : {}) },
+      };
+      const config = make(options, init, params, int(0, 4294967295));
+      const decoded = decodeConfig(encodeConfig(config));
+      expect(decoded.ok ? [] : decoded.problems).toEqual([]);
+      if (!decoded.ok) continue;
+      expect(decoded.config).toEqual(config);
+      if (k % 10 === 0) expect(trace(decoded.config, 3)).toEqual(trace(config, 3));
+    }
+  }, 60000);
 });
