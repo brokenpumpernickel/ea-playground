@@ -269,6 +269,24 @@ describe('stop criteria', () => {
     expect(m.run.cursor.cycle).toBe(7);
   });
 
+  test('when the run is started again, what was reported for the old run is forgotten: runUntilStop stops for the same criterion in the new run', () => {
+    const m = make({ params: { step: 30 } });
+    expect(m.playback.runUntilStop()).toEqual({ reason: 'condition', cycles: 3 });
+    m.run.reset();
+    m.playback.forgetReports();
+    expect(m.playback.status).toEqual({ playing: false });
+    expect(m.playback.runUntilStop()).toEqual({ reason: 'condition', cycles: 3 }); // "big" again, not "huge"
+    expect(m.playback.status).toMatchObject({ pausedBecause: 'stop-criterion', stops: ['big'] });
+  });
+
+  test('forgetting reports does not touch playback that is going on', () => {
+    const m = make({ params: { step: 30 } });
+    m.playback.setTier('fast');
+    m.playback.play();
+    m.playback.forgetReports();
+    expect(m.playback.status.playing).toBe(true);
+  });
+
   test('runUntilStop gives up after 2,000 generations when nothing ever stops', () => {
     const m = make({ params: { step: 0 } });
     expect(m.playback.runUntilStop()).toEqual({ reason: 'max-cycles', cycles: 2000 });

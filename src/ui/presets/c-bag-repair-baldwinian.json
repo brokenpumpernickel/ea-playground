@@ -1,0 +1,35 @@
+{
+  "v": 1,
+  "problem": "knapsack",
+  "name": "Repair: Baldwinian",
+  "lesson": "Baldwinian repair scores the repaired bag but leaves the chromosome as it was, so genes that did not fit stay 1 and the chromosomes drift to carry more items than the bag can hold.",
+  "lookFor": "A gene that is 1 but not in the bag is drawn as ✕. With this seed the optimum 123 is found in generation 5, and in generation 10 all 8 chromosomes have more genes set than fit (the bag is repaired only when it is scored). The Lamarckian preset, with the same seed and settings, finds the optimum in generation 25. Over seeds 1 to 100, Baldwinian repair finds 123 within 100 generations in all 100 runs (median generation 11) and Lamarckian repair in 96 (median 15).",
+  "seed": 19,
+  "options": {
+    "items": [
+      {"weight": 9, "value": 4},
+      {"weight": 12, "value": 20},
+      {"weight": 3, "value": 21},
+      {"weight": 3, "value": 17},
+      {"weight": 10, "value": 5},
+      {"weight": 14, "value": 23},
+      {"weight": 4, "value": 7},
+      {"weight": 5, "value": 14},
+      {"weight": 11, "value": 8},
+      {"weight": 7, "value": 12},
+      {"weight": 6, "value": 21},
+      {"weight": 13, "value": 19}
+    ],
+    "capacity": 48,
+    "handling": "repair-baldwinian",
+    "rho": 8
+  },
+  "setup": {"init": {"kind": "random", "size": 8}},
+  "params": {
+    "selection": {"method": "tournament", "size": 2},
+    "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
+    "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.05},
+    "elites": 0,
+    "stop": {"generationLimit": 100, "targetFitness": 123, "stagnationWindow": 50}
+  }
+}

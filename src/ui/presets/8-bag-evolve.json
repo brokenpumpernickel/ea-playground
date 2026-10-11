@@ -1,0 +1,35 @@
+{
+  "v": 1,
+  "problem": "knapsack",
+  "name": "Evolve a bag",
+  "lesson": "Eight random bags of the twelve items evolve toward the best bag by selection, crossover and mutation, and the first-fit decoder keeps every bag within the capacity.",
+  "lookFor": "With this seed a bag worth 123, the optimum (B, C, D, F, G, H, K), is found for the first time in generation 26, and the longest stretch without improvement on the way is 13 generations. The decoder never changes a chromosome: a gene that is 1 but did not fit stays 1 and is drawn as ✕. Another seed takes a different number of generations (191 of 200 seeds find the optimum within 100): this is one run of a random search, not a promise.",
+  "seed": 42,
+  "options": {
+    "items": [
+      {"weight": 9, "value": 4},
+      {"weight": 12, "value": 20},
+      {"weight": 3, "value": 21},
+      {"weight": 3, "value": 17},
+      {"weight": 10, "value": 5},
+      {"weight": 14, "value": 23},
+      {"weight": 4, "value": 7},
+      {"weight": 5, "value": 14},
+      {"weight": 11, "value": 8},
+      {"weight": 7, "value": 12},
+      {"weight": 6, "value": 21},
+      {"weight": 13, "value": 19}
+    ],
+    "capacity": 48,
+    "handling": "decoder",
+    "rho": 8
+  },
+  "setup": {"init": {"kind": "random", "size": 8}},
+  "params": {
+    "selection": {"method": "tournament", "size": 2},
+    "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
+    "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.05},
+    "elites": 0,
+    "stop": {"generationLimit": 100, "targetFitness": 123, "stagnationWindow": 50}
+  }
+}

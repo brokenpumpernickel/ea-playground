@@ -22,8 +22,8 @@ const readPreset = (file: string) => {
 const rows = (page: Page) => page.getByRole('table', { name: /^(Population|Parents) · generation \d+$/ }).locator('tbody tr [data-bits]').evaluateAll((els) => els.map((el) => el.getAttribute('data-bits')!));
 const b64url = (value: unknown) => `#v1.${Buffer.from(JSON.stringify(value)).toString('base64url')}`;
 
-test('the preset files are all here: four for Goldberg and three for the target string', () => {
-  expect(presetFiles.map((f) => readPreset(f).problem)).toEqual(['goldberg', 'goldberg', 'goldberg', 'goldberg', 'target-string', 'target-string', 'target-string']);
+test('the preset files are all here: four for Goldberg, three for the target string and five for the knapsack', () => {
+  expect(presetFiles.map((f) => readPreset(f).problem)).toEqual([...Array(4).fill('goldberg'), ...Array(3).fill('target-string'), ...Array(5).fill('knapsack')]);
 });
 
 for (const file of presetFiles) {
@@ -32,7 +32,7 @@ for (const file of presetFiles) {
     const hash = encodeConfig(configOf(preset.setup, preset.params, preset.seed, preset.problem, preset.options));
     await page.goto(url + hash);
     await expect(page.getByTestId('link-notice')).toHaveCount(0);
-    await expect(page.getByTestId('problem-button')).toHaveText(preset.problem === 'goldberg' ? /Goldberg/ : /Target string/);
+    await expect(page.getByTestId('problem-button')).toHaveText({ goldberg: /Goldberg/, 'target-string': /Target string/, knapsack: /Knapsack/ }[preset.problem]!);
     await expect(page.getByTestId('seed')).toHaveText(String(preset.seed));
     await expect(page.locator('#pop-heading')).toHaveText('Population · generation 0');
     expect(page.url()).toBe(url); // the address is cleared once the link has loaded

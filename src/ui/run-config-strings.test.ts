@@ -59,18 +59,23 @@ describe('the target string configuration in a link', () => {
 });
 
 describe('round trip and run equality', () => {
-  test('the default configuration of both problems and every preset, each with its own problem and options', () => {
+  test('the default configuration of every problem and every preset, each with its own problem and options', () => {
     expect(presets.filter((p) => p.problem === 'goldberg')).toHaveLength(4);
     expect(presets.filter((p) => p.problem === 'target-string')).toHaveLength(3);
+    expect(presets.filter((p) => p.problem === 'knapsack')).toHaveLength(5);
     for (const preset of presets) {
       const config = configOf(preset.setup, preset.params, preset.seed, preset.problem, preset.options);
       expect(config.problem).toBe(preset.problem);
-      expect('options' in config).toBe(preset.problem === 'target-string');
+      expect('options' in config).toBe(preset.problem !== 'goldberg');
       const decoded = roundTrip(config);
       expect(trace(decoded)).toEqual(trace(config));
     }
-    const goldbergEntry = entryOf('goldberg')!;
-    roundTrip(configOf({ problem: goldbergEntry.create(undefined), init: goldbergEntry.defaults.init }, goldbergEntry.defaults.params, goldbergEntry.defaults.seed));
+    for (const id of ['goldberg', 'target-string', 'knapsack']) {
+      const e = entryOf(id)!;
+      const options = e.defaultOptions();
+      const decoded = roundTrip(configOf({ problem: e.create(options), init: e.defaults.init }, e.defaults.params, e.defaults.seed, id, options));
+      expect(trace(decoded, 3)).toEqual(trace(configOf({ problem: e.create(options), init: e.defaults.init }, e.defaults.params, e.defaults.seed, id, options), 3));
+    }
   });
 
   test('the extremes: a space-only alphabet pair, 40 symbols, a 24-letter target, a one-letter target, symbols beyond ASCII', () => {

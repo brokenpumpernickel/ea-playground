@@ -130,6 +130,29 @@ describe('playback', () => {
     expect(scheduler.pendingDelays()).toEqual([]);
   });
 
+  test('after a restart, run until stop stops for the same criterion again (what was reported for the old run is forgotten)', () => {
+    const { session } = make();
+    session.runUntilStop();
+    const first = session.run.cursor.cycle;
+    const reason = session.view.stops[0];
+    session.reset();
+    expect(session.run.lastCycle).toBe(0);
+    session.runUntilStop();
+    expect(session.run.cursor.cycle).toBe(first);
+    expect(session.view.stops[0]).toBe(reason);
+    session.newSeed();
+    expect(session.runUntilStop().reason).toBe('condition'); // a new seed is a new run too
+  });
+
+  test('loading another configuration forgets them too', () => {
+    const { session } = make();
+    session.runUntilStop();
+    session.requestProblemSwitch('target-string');
+    session.confirmReset();
+    expect(session.runUntilStop().reason).toBe('condition');
+    expect(session.view.stops.length).toBeGreaterThan(0);
+  });
+
   test('reduced motion is passed to playback', () => {
     expect(make({ reducedMotion: true }).session.animate).toEqual({ micro: false, stage: false, population: false, plots: false });
     expect(make().session.animate.micro).toBe(true);

@@ -72,6 +72,11 @@ export interface Playback {
    * reported holds (or gives up after 2,000 generations). Stops any playback in progress first.
    */
   runUntilStop(): { reason: 'condition' | 'max-cycles'; cycles: number };
+  /**
+   * The run was started again (a reset, a new seed, another configuration): the stop criteria reported for the old run
+   * and the reason it paused are forgotten, so the new run reports them afresh. Playback in progress is not touched.
+   */
+  forgetReports(): void;
 
   readonly reducedMotion: boolean;
   setReducedMotion(on: boolean): void;
@@ -199,6 +204,12 @@ export function createPlayback<Setup, Params, State, Event extends RunEvent>(
       paused = result.reason === 'condition' ? { pausedBecause: 'stop-criterion', stops: holding.filter((r) => !known.has(r)) } : { pausedBecause: 'user' };
       notify();
       return result;
+    },
+
+    forgetReports() {
+      acknowledged = new Set();
+      if (!playing) paused = undefined;
+      notify();
     },
 
     get reducedMotion() {

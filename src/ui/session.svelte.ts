@@ -317,6 +317,7 @@ export function createSession(options: SessionOptions) {
       act(() => {
         change = undefined;
         run.reset({ setup, params, seed });
+        playback.forgetReports();
         epoch++;
       });
     },
@@ -353,6 +354,7 @@ export function createSession(options: SessionOptions) {
       act(() => {
         change = undefined;
         run.reset();
+        playback.forgetReports();
         epoch++;
       }),
     /** Starts again with a fresh seed. */
@@ -360,6 +362,7 @@ export function createSession(options: SessionOptions) {
       act(() => {
         change = undefined;
         run.reset({ seed: drawSeed() });
+        playback.forgetReports();
         epoch++;
       }),
   };

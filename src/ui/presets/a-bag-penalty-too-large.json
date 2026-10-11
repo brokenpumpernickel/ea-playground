@@ -1,0 +1,35 @@
+{
+  "v": 1,
+  "problem": "knapsack",
+  "name": "Penalty too large",
+  "lesson": "A very large penalty makes every overweight bag worthless, so the search cannot use the edge between bags that fit and bags that do not, and fewer runs find the optimum.",
+  "lookFor": "With ρ = 50 and this seed the best bag that fits after 100 generations is worth 116, not the optimum 123, and 6 of the 8 bags in the final population fit. The same seed finds 123 in generation 33 with ρ = 8 and in generation 13 with ρ = 3. Over seeds 1 to 100, 58 runs find 123 within 100 generations with ρ = 50 and 86 with ρ = 3; every one of the 100 runs with ρ = 50 still ends with a bag worth at least 112, so a penalty that is too large slows the search down but does not stop it.",
+  "seed": 9,
+  "options": {
+    "items": [
+      {"weight": 9, "value": 4},
+      {"weight": 12, "value": 20},
+      {"weight": 3, "value": 21},
+      {"weight": 3, "value": 17},
+      {"weight": 10, "value": 5},
+      {"weight": 14, "value": 23},
+      {"weight": 4, "value": 7},
+      {"weight": 5, "value": 14},
+      {"weight": 11, "value": 8},
+      {"weight": 7, "value": 12},
+      {"weight": 6, "value": 21},
+      {"weight": 13, "value": 19}
+    ],
+    "capacity": 48,
+    "handling": "penalty",
+    "rho": 50
+  },
+  "setup": {"init": {"kind": "random", "size": 8}},
+  "params": {
+    "selection": {"method": "tournament", "size": 2},
+    "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
+    "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.05},
+    "elites": 0,
+    "stop": {"generationLimit": 100, "targetFitness": 123, "stagnationWindow": 50}
+  }
+}

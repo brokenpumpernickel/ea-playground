@@ -1,0 +1,35 @@
+{
+  "v": 1,
+  "problem": "knapsack",
+  "name": "Repair: Lamarckian",
+  "lesson": "Lamarckian repair takes the worst value-per-weight items out of an overweight bag and writes that back into the chromosome, so no chromosome ever stays overweight.",
+  "lookFor": "The ✂ marks show the genes that repair rewrote to 0. With this seed the optimum 123 is found in generation 25, and in generation 10 none of the 8 chromosomes has more genes set than fit. The Baldwinian preset, with the same seed and settings, finds it in generation 5. Over seeds 1 to 100, Lamarckian repair finds 123 within 100 generations in 96 runs (median generation 15) and Baldwinian repair in all 100 (median 11).",
+  "seed": 19,
+  "options": {
+    "items": [
+      {"weight": 9, "value": 4},
+      {"weight": 12, "value": 20},
+      {"weight": 3, "value": 21},
+      {"weight": 3, "value": 17},
+      {"weight": 10, "value": 5},
+      {"weight": 14, "value": 23},
+      {"weight": 4, "value": 7},
+      {"weight": 5, "value": 14},
+      {"weight": 11, "value": 8},
+      {"weight": 7, "value": 12},
+      {"weight": 6, "value": 21},
+      {"weight": 13, "value": 19}
+    ],
+    "capacity": 48,
+    "handling": "repair-lamarckian",
+    "rho": 8
+  },
+  "setup": {"init": {"kind": "random", "size": 8}},
+  "params": {
+    "selection": {"method": "tournament", "size": 2},
+    "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
+    "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.05},
+    "elites": 0,
+    "stop": {"generationLimit": 100, "targetFitness": 123, "stagnationWindow": 50}
+  }
+}

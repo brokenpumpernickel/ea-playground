@@ -1,0 +1,35 @@
+{
+  "v": 1,
+  "problem": "knapsack",
+  "name": "Penalty too small",
+  "lesson": "When the penalty for each unit of excess weight is smaller than what an item earns per unit of weight, an overweight bag can score more than the best bag that fits, so selection breeds overweight bags.",
+  "lookFor": "With ρ = 1 and this seed the best fitness climbs to 135, above the optimum 123 (the dotted line), with an overweight bag; from generation 92 every bag in the population is overweight, and the best bag that fits, in 100 generations, is worth 122 and never reaches 123. In the fitness plot the best-fitness line passes the optimum line while the best-feasible line stays below it, and the run never reports that the target was reached.",
+  "seed": 35,
+  "options": {
+    "items": [
+      {"weight": 9, "value": 4},
+      {"weight": 12, "value": 20},
+      {"weight": 3, "value": 21},
+      {"weight": 3, "value": 17},
+      {"weight": 10, "value": 5},
+      {"weight": 14, "value": 23},
+      {"weight": 4, "value": 7},
+      {"weight": 5, "value": 14},
+      {"weight": 11, "value": 8},
+      {"weight": 7, "value": 12},
+      {"weight": 6, "value": 21},
+      {"weight": 13, "value": 19}
+    ],
+    "capacity": 48,
+    "handling": "penalty",
+    "rho": 1
+  },
+  "setup": {"init": {"kind": "random", "size": 8}},
+  "params": {
+    "selection": {"method": "tournament", "size": 2},
+    "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
+    "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.05},
+    "elites": 0,
+    "stop": {"generationLimit": 100, "targetFitness": 123, "stagnationWindow": 50}
+  }
+}
