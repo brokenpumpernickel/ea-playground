@@ -1,6 +1,6 @@
 # Milestone 4: the deceptive trap
 
-Status: broken into tickets (14), see `issues/`
+Status: built (14 tickets); awaiting the instructor's sign-off (ticket 14)
 
 Vocabulary follows `CONTEXT.md` (including the new **Block**, **Trap function**, **Deceptive attractor**, **Linkage** and **Schema**). Architecture follows ADRs 0001–0005 in `docs/adr/`. Where this spec and those disagree, the ADRs and glossary win and this spec is wrong. Milestones 1–3 are complete and published; this milestone builds on the problem registry, the problem-declared columns, the contexts that give views problem-specific information (as the knapsack's bag context does), and the share-link configuration.
 
@@ -83,7 +83,7 @@ A fourth problem in which students evolve a chromosome divided into visible bloc
 - ~~How loose linkage is drawn.~~ **Decided (ticket 01, instructor):** style A: the genes keep their true order, every gene column has its block number printed above it (alternate blocks underlined differently), the contributions are a line of text under the chromosome, and one-point cuts stay where they really are. The regrouped style B is dropped.
 - ~~Block marks and views.~~ **Decided (ticket 01, instructor):** block all ones `✓ n`, all zeros (deceptive attractor) `▽ n`, otherwise the number; crossover marks `● A` (whole from A), `▨ B` (whole from B), `◧ split`, with a badge "n whole · m split"; the mutation view marks a changed block with an orange badge "✱ block 3: 0100 → 1110 · 2 → 0" **and also says, in a dashed grey badge, when flips inside a block cancel because its number of 1s is unchanged** (this replaces the "not called out" wording above); block states panel with one bar per block (all ones solid, in between empty, all zeros hatched), the counts as text and a history line; the fitness plot gains a dashed "all zeros" reference line beside the optimum line; the schema tracker is a second tab beside "Stage view" and shows the schema's order and defining length.
 - ~~Size limit.~~ **Decided (ticket 01, instructor):** at most **30 genes** (k × m ≤ 30; k 2 to 8, m 1 to 10), because 40 genes does not fit the population table at a readable size; the spec's limit of 40 is replaced throughout. With more than 20 genes only the draws that flipped a gene are printed under the genes in the mutation view.
-- The defaults and preset seeds, by measurement.
-- Whether "Bigger population" or "Uniform crossover" is demonstrable with a real seed, as for the knapsack's penalty-too-large: reduce the claim to what holds, or drop the preset.
+- ~~The defaults and preset seeds.~~ **Decided (tickets 10, 11; instructor approved the measurements):** 5 blocks of 4 tight, population 12, tournament 2, one-point crossover 0.8, per-gene mutation 0.05, no elites, generation limit 100, target 20, stagnation window 70 (2 of 100 seeds reach the optimum). Six presets with seeds found by scanning and every claim tested: Tight blocks (42), Loose blocks (44, population 50), Bigger population (42, 200 individuals), Elitism (42, population 100, one elite), Uniform crossover (10, population 100), No mutation (42).
+- ~~Whether "Bigger population" or "Uniform crossover" is demonstrable with a real seed.~~ **Decided (ticket 11):** both are, with statistics over seeds 1 to 100 (83 against 2; 0 against 43) and the pause generation of Run until stop stated where the run stagnates first.
 
 ## Comments
