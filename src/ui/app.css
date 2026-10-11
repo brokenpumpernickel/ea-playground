@@ -746,3 +746,20 @@ table:has(.itemhdr) thead th:first-child { vertical-align:top; }
 .bits.blocked .gcell { width:var(--bcw, var(--bw)); align-items:center; }
 .bits.blocked .gcell .under { width:100%; font-size:11px; letter-spacing:-.3px; padding:0; }
 .bits.blocked[style*="--bw:15px"] .gcell .under { font-size:10px; letter-spacing:-.4px; }
+
+/* ---------- the trap's block states panel ---------- */
+.bstates { padding:2px 16px 0; }
+.bsrow { display:grid; grid-template-columns:64px minmax(0, 1fr) 118px; align-items:center; gap:8px; height:var(--bsrow); font-size:14px; }
+.bsrow > b { font-weight:700; white-space:nowrap; }
+.bsbar { display:flex; height:calc(var(--bsrow) - 4px); border:2px solid var(--ink2); border-radius:5px; overflow:hidden; background:var(--surface); box-sizing:border-box; }
+.bsbar .sg { display:block; }
+.bsbar .sg.opt { background:var(--seq3); }
+.bsbar .sg.mid { background:var(--surface); }
+.bsbar .sg.att { background:repeating-linear-gradient(135deg, var(--flip) 0 4px, var(--surface) 4px 8px); }
+.bsnum { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; color:var(--ink2); }
+.bsnum b { color:var(--ink); }
+.bskey { display:flex; gap:14px; font-size:13px; color:var(--ink2); margin-top:2px; }
+.bshist { margin:2px 16px 0; font-size:14px; color:var(--ink2); font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.projector .bsrow, .projector .bsnum { font-size:15px; }
+/* the summary under the block states is smaller, so the bars of ten blocks and two lines of figures both fit */
+.panel:has(.bstates) .summary, .projector .panel:has(.bstates) .summary { font-size:15px; line-height:1.25; margin-top:3px; }

@@ -33,6 +33,8 @@ export interface PlotModel {
   readonly yTicks: readonly number[];
   /** The best fitness any solution can have, when known; drawn as a reference line. */
   readonly optimum?: number;
+  /** What all zeros scores, for the trap: drawn as a second reference line, dashed differently from the optimum's. */
+  readonly attractor?: number;
   /** True when the plot has a line for the best feasible fitness so far. */
   readonly feasibleLine?: boolean;
 }
@@ -52,7 +54,7 @@ export function niceCeiling(value: number): number {
 
 const generationAxes = [15, 30, 50, 100, 200, 500, 1000, 2000];
 
-export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: number, optimum: number | undefined, feasibleLine = false): PlotModel {
+export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: number, optimum: number | undefined, feasibleLine = false, attractor?: number): PlotModel {
   const points = Array.from({ length: run.lastCycle + 1 }, (_, g): PlotPoint => {
     const m = metricsOf(run.snapshot(g).state, run.setup.problem.alphabet.length);
     return {
@@ -80,6 +82,7 @@ export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: n
     yMax,
     yTicks: Array.from({ length: 5 }, (_, k) => (yMax / 4) * k),
     ...(optimum !== undefined ? { optimum } : {}),
+    ...(attractor !== undefined ? { attractor } : {}),
     ...(feasibleLine ? { feasibleLine } : {}),
   };
 }

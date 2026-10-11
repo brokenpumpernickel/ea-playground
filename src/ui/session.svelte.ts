@@ -3,6 +3,7 @@ import { createPlayback, createRun, type AnimationFlags, type Playback, type Pla
 import { defaultParams, defaultSeed, defaultSetup } from './config';
 import type { BagInfo } from './bag-context';
 import { blockInfoOf, type BlockInfo } from './block-context';
+import { blockStatesModel, type BlockStatesModel } from './block-states-model';
 import { changes, draftOf } from './drawer-model';
 import { displayOf, type Display } from './format';
 import { entryOf, type ProblemEntry, type ProblemOptions } from './problems';
@@ -141,7 +142,7 @@ export function createSession(options: SessionOptions) {
     /** Every recorded generation's metrics and the plot axes, with the cursor's generation marked. */
     get plots(): PlotModel {
       void version;
-      return plotModel(run, shownMetrics().generation, run.setup.problem.knownOptimumFitness, run.setup.problem.mayBeInfeasible === true);
+      return plotModel(run, shownMetrics().generation, run.setup.problem.knownOptimumFitness, run.setup.problem.mayBeInfeasible === true, (run.setup.problem as Partial<TrapProblem>).attractorFitness);
     },
     get seed(): number {
       void version;
@@ -212,6 +213,12 @@ export function createSession(options: SessionOptions) {
       void version;
       const p = run.setup.problem as Partial<TrapProblem>;
       return p.blockGenes && p.options && p.outcomeOf ? blockInfoOf(run.setup.problem as TrapProblem) : undefined;
+    },
+    /** The trap's block states for the generation the cursor shows and the recorded history; absent for other problems. */
+    get blockStates(): BlockStatesModel | undefined {
+      void version;
+      const p = run.setup.problem as Partial<TrapProblem>;
+      return p.blockGenes && p.options && p.outcomeOf ? blockStatesModel(run, blockInfoOf(run.setup.problem as TrapProblem), shownMetrics().generation) : undefined;
     },
     get problemEntry(): ProblemEntry {
       return entryOf(problemId)!;

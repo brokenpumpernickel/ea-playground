@@ -1,5 +1,6 @@
 <script lang="ts">
   import AlleleStrip from './AlleleStrip.svelte';
+  import BlockStatesStrip from './BlockStatesStrip.svelte';
   import ChosenStrip from './ChosenStrip.svelte';
   import { chosenShares } from './chosen-model';
   import DiversityPlot from './DiversityPlot.svelte';
@@ -19,6 +20,7 @@
   const size = $derived(session.table.rows.length);
   const entry = $derived(session.problemEntry);
   const rates = $derived(entry.genePanel === 'match-rate' && targetOf(session.problemOptions) !== undefined ? matchRates(m, targetOf(session.problemOptions)!, session.problem.alphabet) : undefined);
+  const blockStates = $derived(entry.genePanel === 'blocks' ? session.blockStates : undefined);
   const chosen = $derived(entry.genePanel === 'chosen' ? chosenShares(m) : undefined);
   const landscape = $derived(session.problem.landscape);
   const curve = $derived(landscape ? landscapeModel(landscape, session.table.rows) : undefined);
@@ -53,10 +55,10 @@
 
 <section class="panel plot" style="left:1416px;top:758px;width:480px;height:244px" aria-labelledby="allele-heading">
   <div class="ph">
-    <h2 id="allele-heading">{rates ? 'Match rate per position' : chosen ? 'Chosen per item' : 'Share of 1s per gene'}</h2>
+    <h2 id="allele-heading">{rates ? 'Match rate per position' : chosen ? 'Chosen per item' : blockStates ? 'Block states' : 'Share of 1s per gene'}</h2>
     <span class="r legend" data-testid="distinct">{m.distinct} of {size} distinct</span>
   </div>
-  {#if rates}<MatchRateStrip {rates} />{:else if chosen}<ChosenStrip shares={chosen} />{:else}<AlleleStrip shares={m.alleleFrequencies} />{/if}
+  {#if rates}<MatchRateStrip {rates} />{:else if chosen}<ChosenStrip shares={chosen} />{:else if blockStates}<BlockStatesStrip model={blockStates} />{:else}<AlleleStrip shares={m.alleleFrequencies} />{/if}
   <p class="summary" data-testid="summary">
     generation {m.generation} · best now {m.best} · best so far {m.bestSoFar}<br />
     average {num(Math.round(m.average * 10) / 10)} · worst {m.worst} · evaluations {m.evaluations}{#if m.feasible}{' · '}feasible {m.feasible.count} of {size}{/if}

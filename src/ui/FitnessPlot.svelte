@@ -34,7 +34,8 @@
   const summary = $derived.by(() => {
     const at = model.points[Math.min(model.now, model.points.length - 1)]!;
     const feasible = model.feasibleLine ? `, best feasible so far ${at.feasibleBestSoFar === null || at.feasibleBestSoFar === undefined ? 'none yet' : num(at.feasibleBestSoFar)}` : '';
-    return `Fitness by generation, scale 0 to ${num(model.yMax)}. Generation ${at.generation}: average ${num(at.average)}, best of generation ${at.best}, best so far ${at.bestSoFar}${feasible}.`;
+    const zeros = model.attractor !== undefined ? ` All zeros scores ${num(model.attractor)}.` : '';
+    return `Fitness by generation, scale 0 to ${num(model.yMax)}. Generation ${at.generation}: average ${num(at.average)}, best of generation ${at.best}, best so far ${at.bestSoFar}${feasible}.${zeros}`;
   });
 </script>
 
@@ -48,6 +49,10 @@
   {/each}
   <text x={(L + R) / 2} y={H - 6} text-anchor="middle" style="font-size:16px">generation</text>
 
+  {#if model.attractor !== undefined}
+    <line x1={L} x2={R} y1={Y(model.attractor)} y2={Y(model.attractor)} stroke="var(--ink2)" stroke-width="1.5" stroke-dasharray="9 5" data-attractor={model.attractor} />
+    <text x={R} y={Y(model.attractor) + 20} text-anchor="end" style="font-size:16px">all zeros {num(model.attractor)}</text>
+  {/if}
   {#if model.optimum !== undefined}
     <line x1={L} x2={R} y1={Y(model.optimum)} y2={Y(model.optimum)} stroke="var(--ink2)" stroke-width="1.5" stroke-dasharray="2 5" data-optimum={model.optimum} />
     <text x={R} y={Y(model.optimum) - 6} text-anchor="end" style="font-size:16px">optimum {num(model.optimum)}</text>
