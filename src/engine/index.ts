@@ -78,3 +78,18 @@ export {
   type KnapsackItem,
 } from './knapsack-instance';
 export { targetStringDefaults, targetStringLimits, targetStringProblem, validateTargetString, validateTargetStringFields, type TargetStringOptions, type TargetStringProblem } from './target-string';
+export {
+  linkages,
+  trapContribution,
+  trapDefaultOptions,
+  trapLimits,
+  trapProblem,
+  validateTrap,
+  validateTrapFields,
+  type BlockState,
+  type Linkage,
+  type TrapBlock,
+  type TrapOptions,
+  type TrapOutcome,
+  type TrapProblem,
+} from './trap';
