@@ -1,5 +1,7 @@
 <script lang="ts">
   import AlleleStrip from './AlleleStrip.svelte';
+  import ChosenStrip from './ChosenStrip.svelte';
+  import { chosenShares } from './chosen-model';
   import DiversityPlot from './DiversityPlot.svelte';
   import FitnessPlot from './FitnessPlot.svelte';
   import FunctionPlot from './FunctionPlot.svelte';
@@ -17,6 +19,7 @@
   const size = $derived(session.table.rows.length);
   const entry = $derived(session.problemEntry);
   const rates = $derived(entry.genePanel === 'match-rate' && targetOf(session.problemOptions) !== undefined ? matchRates(m, targetOf(session.problemOptions)!, session.problem.alphabet) : undefined);
+  const chosen = $derived(entry.genePanel === 'chosen' ? chosenShares(m) : undefined);
   const landscape = $derived(session.problem.landscape);
   const curve = $derived(landscape ? landscapeModel(landscape, session.table.rows) : undefined);
 </script>
@@ -24,7 +27,7 @@
 <section class="panel plot" style="left:24px;top:758px;width:820px;height:244px" aria-labelledby="fitness-heading">
   <div class="ph">
     <h2 id="fitness-heading">Fitness</h2>
-    <span class="r legend"><b>●</b> average &nbsp;<b>■</b> best of gen. &nbsp;<b>▲</b> best so far &nbsp;<b class="band">▒</b> min–max</span>
+    <span class="r legend"><b>●</b> average &nbsp;<b>■</b> best of gen. &nbsp;<b>▲</b> best so far &nbsp;<b class="band">▒</b> min–max{#if plots.feasibleLine} &nbsp;<b>◇</b> best <u>feasible</u> so far{/if}</span>
   </div>
   <FitnessPlot model={plots} />
 </section>
@@ -50,13 +53,13 @@
 
 <section class="panel plot" style="left:1416px;top:758px;width:480px;height:244px" aria-labelledby="allele-heading">
   <div class="ph">
-    <h2 id="allele-heading">{rates ? 'Match rate per position' : 'Share of 1s per gene'}</h2>
+    <h2 id="allele-heading">{rates ? 'Match rate per position' : chosen ? 'Chosen per item' : 'Share of 1s per gene'}</h2>
     <span class="r legend" data-testid="distinct">{m.distinct} of {size} distinct</span>
   </div>
-  {#if rates}<MatchRateStrip {rates} />{:else}<AlleleStrip shares={m.alleleFrequencies} />{/if}
+  {#if rates}<MatchRateStrip {rates} />{:else if chosen}<ChosenStrip shares={chosen} />{:else}<AlleleStrip shares={m.alleleFrequencies} />{/if}
   <p class="summary" data-testid="summary">
     generation {m.generation} · best now {m.best} · best so far {m.bestSoFar}<br />
-    average {num(Math.round(m.average * 10) / 10)} · worst {m.worst} · evaluations {m.evaluations}
+    average {num(Math.round(m.average * 10) / 10)} · worst {m.worst} · evaluations {m.evaluations}{#if m.feasible} · feasible {m.feasible.count} of {size}{/if}
   </p>
 </section>
 {/if}

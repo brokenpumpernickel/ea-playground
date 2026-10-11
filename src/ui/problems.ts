@@ -37,7 +37,7 @@ export interface ProblemEntry {
   /** The two or three characters in the logo tile. */
   readonly logo: string;
   /** Which panel sits beside the diversity plot: Goldberg's share of 1s per gene, or the string problem's match rate. */
-  readonly genePanel: 'ones' | 'match-rate';
+  readonly genePanel: 'ones' | 'match-rate' | 'chosen';
   /** What the diversity plot says it measures. */
   readonly diversityNote: string;
   /** The line under the name in the brand area. */
@@ -102,7 +102,7 @@ const knapsackEntry: ProblemEntry = {
   id: 'knapsack',
   name: 'Knapsack',
   logo: 'Kn',
-  genePanel: 'ones',
+  genePanel: 'chosen',
   diversityNote: 'mean pairwise Hamming, 0–1',
   subtitle(options) {
     if (!options || !isKnapsackOptions(options)) return 'Pack a bag';

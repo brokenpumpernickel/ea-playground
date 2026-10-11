@@ -140,7 +140,7 @@ export function createSession(options: SessionOptions) {
     /** Every recorded generation's metrics and the plot axes, with the cursor's generation marked. */
     get plots(): PlotModel {
       void version;
-      return plotModel(run, shownMetrics().generation, run.setup.problem.knownOptimumFitness);
+      return plotModel(run, shownMetrics().generation, run.setup.problem.knownOptimumFitness, run.setup.problem.mayBeInfeasible === true);
     },
     get seed(): number {
       void version;

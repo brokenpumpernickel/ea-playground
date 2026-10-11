@@ -66,6 +66,11 @@ export interface Problem {
   explainEvaluation?(chromosome: Chromosome): { readonly summary: string; readonly details: readonly string[] };
   /** The columns the evaluation view shows when it should differ from the table's (Goldberg also shows the objective value). */
   readonly evaluationColumns?: readonly ProblemColumn[];
+  /**
+   * True when some individuals can be infeasible (the knapsack under a penalty), so the plots draw the best feasible
+   * fitness as a line of its own; false or absent when every individual is feasible by construction.
+   */
+  readonly mayBeInfeasible?: boolean;
   /** The best fitness any chromosome can have, when it is known; plots draw it as a reference line and stop criteria can aim at it. */
   readonly knownOptimumFitness?: number;
   /** Present when the decoded solution is a single whole number, so its fitness can be drawn as a curve. */

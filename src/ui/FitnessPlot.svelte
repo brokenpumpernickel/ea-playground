@@ -27,9 +27,14 @@
     { key: 'best', label: 'best of generation', color: 'var(--s2)', dash: 'none', marker: 'square', pick: (p: PlotPoint) => p.best },
   ] as const;
 
+  // the best feasible fitness so far, where there is one yet (only for a problem that can have infeasible individuals)
+  const feasibleKnown = (points: readonly PlotPoint[]) => points.filter((p) => p.feasibleBestSoFar !== undefined && p.feasibleBestSoFar !== null);
+  const feasibleValue = (p: PlotPoint) => p.feasibleBestSoFar as number;
+
   const summary = $derived.by(() => {
     const at = model.points[Math.min(model.now, model.points.length - 1)]!;
-    return `Fitness by generation, scale 0 to ${num(model.yMax)}. Generation ${at.generation}: average ${num(at.average)}, best of generation ${at.best}, best so far ${at.bestSoFar}.`;
+    const feasible = model.feasibleLine ? `, best feasible so far ${at.feasibleBestSoFar === null || at.feasibleBestSoFar === undefined ? 'none yet' : num(at.feasibleBestSoFar)}` : '';
+    return `Fitness by generation, scale 0 to ${num(model.yMax)}. Generation ${at.generation}: average ${num(at.average)}, best of generation ${at.best}, best so far ${at.bestSoFar}${feasible}.`;
   });
 </script>
 
@@ -67,6 +72,16 @@
       {/if}
     {/each}
   {/each}
+
+  {#if model.feasibleLine}
+    <path d={line(feasibleKnown(fromNow), feasibleValue)} fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="2 4" opacity=".3" />
+    <path d={line(feasibleKnown(upToNow), feasibleValue)} fill="none" stroke="var(--ink)" stroke-width="3" stroke-dasharray="2 4" data-series="feasibleBestSoFar" />
+    {#each feasibleKnown(model.points) as p (p.generation)}
+      {@const x = X(p.generation)}
+      {@const y = Y(feasibleValue(p))}
+      <path d="M{x},{y - 8} l7,8 l-7,8 l-7,-8 Z" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.5" opacity={p.future ? 0.3 : 1} data-series="feasibleBestSoFar" data-gen={p.generation} data-value={feasibleValue(p)} data-future={p.future}><title>generation {p.generation}: best feasible so far {num(feasibleValue(p))}</title></path>
+    {/each}
+  {/if}
 
   <line x1={X(model.now)} x2={X(model.now)} y1={T} y2={B} stroke="var(--ink)" stroke-width="2" data-now-line />
   <text class="ink" x={X(model.now) + (model.now === 0 ? 8 : 0)} y={T - 8} text-anchor={model.now === 0 ? 'start' : 'middle'} style="font-weight:700;font-size:16px">now</text>

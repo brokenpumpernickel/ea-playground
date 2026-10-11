@@ -100,6 +100,7 @@ export function knapsackProblem(options: KnapsackOptions): KnapsackProblem {
     alphabet: binaryAlphabet,
     columns,
     knownOptimumFitness: optimalBag(instance).value,
+    mayBeInfeasible: handling === 'penalty',
     scoreText(scores) {
       const letters = [...String(scores.decoded)];
       const weight = weightOf(scores);

@@ -14,6 +14,8 @@ export interface PlotPoint {
   /** Best of this generation's population (equal to `max`) and best of any generation so far. */
   readonly best: number;
   readonly bestSoFar: number;
+  /** Only for a problem that can have infeasible individuals: the best feasible fitness so far (null until there is one). */
+  readonly feasibleBestSoFar?: number | null;
   readonly diversity: number;
   readonly distinct: number;
   readonly alleleFrequencies: readonly number[];
@@ -31,6 +33,8 @@ export interface PlotModel {
   readonly yTicks: readonly number[];
   /** The best fitness any solution can have, when known; drawn as a reference line. */
   readonly optimum?: number;
+  /** True when the plot has a line for the best feasible fitness so far. */
+  readonly feasibleLine?: boolean;
 }
 
 const niceSteps = [1, 2, 4, 8, 10];
@@ -48,7 +52,7 @@ export function niceCeiling(value: number): number {
 
 const generationAxes = [15, 30, 50, 100, 200, 500, 1000, 2000];
 
-export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: number, optimum: number | undefined): PlotModel {
+export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: number, optimum: number | undefined, feasibleLine = false): PlotModel {
   const points = Array.from({ length: run.lastCycle + 1 }, (_, g): PlotPoint => {
     const m = metricsOf(run.snapshot(g).state, run.setup.problem.alphabet.length);
     return {
@@ -58,6 +62,7 @@ export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: n
       max: m.best,
       best: m.best,
       bestSoFar: m.bestSoFar,
+      ...(feasibleLine ? { feasibleBestSoFar: m.feasible?.bestSoFar ?? null } : {}),
       diversity: m.diversity,
       distinct: m.distinct,
       alleleFrequencies: m.alleleFrequencies,
@@ -75,5 +80,6 @@ export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: n
     yMax,
     yTicks: Array.from({ length: 5 }, (_, k) => (yMax / 4) * k),
     ...(optimum !== undefined ? { optimum } : {}),
+    ...(feasibleLine ? { feasibleLine } : {}),
   };
 }

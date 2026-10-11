@@ -628,3 +628,13 @@ table.tight .capbar { display:none; }
 .etable:has(.bit.knap) td[data-col="id"] { font-size:15px; color:var(--ink2); }
 .projector .etable:has(.bit.knap) td { font-size:18px; }
 .projector .etable:has(.bit.knap) td.why { font-size:14px; }
+
+/* chosen per item: up to twenty narrow bars */
+.matchbar.chosen { gap:3px; padding:6px 10px 0; }
+.matchbar.chosen .gene b { font-size:13px; }
+.matchbar.chosen .gene span { font-size:17px; }
+.projector .matchbar.chosen .gene b { font-size:14px; }
+.matchbar.chosen.dense { gap:2px; padding:6px 6px 0; }
+.matchbar.chosen.dense .gene b { font-size:11px; }
+.matchbar.chosen.dense .gene span { font-size:14px; }
+.projector .matchbar.chosen.dense .gene b { font-size:12px; }
