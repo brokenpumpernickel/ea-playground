@@ -6,8 +6,12 @@ export interface BlockNote {
   /** 1-based. */
   readonly block: number;
   readonly text: string;
-  readonly state: BlockState;
+  /** What the note says: how the block scores (all ones, all zeros, between) or where crossover took it from. */
+  readonly state: BlockState | 'whole-a' | 'whole-b' | 'split';
 }
+
+/** Where crossover took a block of a child from: whole from parent A, whole from parent B, or split between them. */
+export type BlockOrigin = 'A' | 'B' | 'split';
 
 /** One label of the block row, with the 1-based genes it stands for. */
 export interface BlockRowLabel {
@@ -72,4 +76,31 @@ function genesPhrase(genes: readonly number[]): string {
 /** The block row in one sentence for a screen reader: which genes each block owns. */
 export function blockRowSentence(info: BlockInfo): string {
   return `Blocks: ${info.blockGenes.map((genes, b) => `block ${b + 1} is genes ${genesPhrase(genes.map((g) => g + 1))}`).join('; ')}`;
+}
+
+/** For each block of a child, whether all its genes came from A, all from B, or from both (the cut fell inside it). */
+export function blockOrigins(info: BlockInfo, sources: readonly ('A' | 'B')[]): BlockOrigin[] {
+  if (sources.length !== info.blockSize * info.blocks) return [];
+  return info.blockGenes.map((genes): BlockOrigin => {
+    const fromA = genes.filter((g) => sources[g] === 'A').length;
+    return fromA === genes.length ? 'A' : fromA === 0 ? 'B' : 'split';
+  });
+}
+
+const ORIGIN_NOTE: Record<BlockOrigin, { text: string; state: 'whole-a' | 'whole-b' | 'split' }> = {
+  A: { text: '● A', state: 'whole-a' },
+  B: { text: '▨ B', state: 'whole-b' },
+  split: { text: '◧ split', state: 'split' },
+};
+
+/** The note under each block of a child after crossover: ● A, ▨ B or ◧ split (a shape and a word, never colour alone). */
+export function blockOriginNotes(info: BlockInfo, sources: readonly ('A' | 'B')[]): BlockNote[] {
+  return blockOrigins(info, sources).map((origin, b) => ({ block: b + 1, ...ORIGIN_NOTE[origin] }));
+}
+
+/** How many blocks came whole and how many the cut split, in words. */
+export function blockSplitSummary(origins: readonly BlockOrigin[]): { whole: number; split: number; text: string } {
+  const split = origins.filter((o) => o === 'split').length;
+  const n = origins.length;
+  return { whole: n - split, split, text: split === 0 ? 'no block split' : `${split} of ${n} block${n === 1 ? '' : 's'} split` };
 }

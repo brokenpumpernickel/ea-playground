@@ -729,3 +729,12 @@ table:has(.itemhdr) thead th:first-child { vertical-align:top; }
 .etable:has(.bits.blocked[style*="--bw:15px"]) th, .etable:has(.bits.blocked[style*="--bw:15px"]) td { padding-left:3px; padding-right:3px; }
 .etable:has(.bits.blocked[style*="--bw:15px"]) td[data-col="id"] { font-size:15px; }
 .projector .etable:has(.bits.blocked[style*="--bw:15px"]) td[data-col="id"] { font-size:16px; }
+/* crossover marks under the blocks of a child */
+.bnote.whole-a, .bnote.whole-b { color:var(--ink2); }
+.bnote.split { color:var(--flip-ink); }
+/* the trap's chromosomes are too long for two columns: parents above, children below, one per line */
+.cbody:has(.bits.blocked) { flex-direction:column; flex-wrap:nowrap; gap:2px; }
+.cbody:has(.bits.blocked) .crow .who { width:150px; }
+/* a cut line in a chromosome of blocks sits in the gap between two genes and does not push the genes after it, so the block row stays over its cells */
+.bits.blocked .bit.cutafter { margin-right:0; }
+.bits.blocked .bit.cutafter::before { right:-2px; top:-8px; bottom:-8px; }
