@@ -93,9 +93,9 @@ Chosen in the drawer's run setup; **the default is the first-fit decoder** (inst
 
 ## To decide during implementation (record the choice here when made)
 
-- The exact built-in instance (weights, values, capacity) satisfying the three design conditions.
-- The defaults (population size, tournament size, operator settings, ρ, stagnation window) and the preset seeds, by measurement.
+- ~~The exact built-in instance.~~ **Decided (ticket 04):** 12 items A–L, weights 9, 12, 3, 3, 10, 14, 4, 5, 11, 7, 6, 13 and values 4, 20, 21, 17, 5, 23, 7, 14, 8, 12, 21, 19, capacity 48 (of a total weight of 97). The optimum is 123 (bag B, C, D, F, G, H, K, weight 47), value-per-weight greedy gets 112, and 2048 of the 4096 bags are feasible.
+- ~~The defaults and the preset seeds.~~ **Decided (tickets 13, 14; instructor approved the measurements):** first-fit decoder, population 8, tournament size 2, one-point crossover with probability 0.8, per-gene mutation 0.05, no elites, seed 42, generation limit 100, target 123 (best feasible), stagnation window 50, penalty ρ = 8. Preset seeds: Evolve a bag 42, Penalty too small (ρ = 1) 35, Penalty too large (ρ = 50) 9, both repairs 19; the claims in each preset's text are verified by tests on those seeds.
 - ~~The mark for a gene dropped by repair and for a skipped gene; where the capacity bar goes.~~ **Decided (ticket 01, instructor):** a gene that is 1 but not in the bag (decoder, Baldwinian repair) is a ✕ in a dashed, plain cell; a gene Lamarckian repair rewrote to 0 has a dotted orange outline with ✂ above it; there is no separate before/after box (the ✂ marks and the "what happened" column carry it); the capacity bar is small in each table row and stacked per item in the evaluation view; there is no Packed column (the filled cells are the packed items); cells are 23 px wide in the knapsack tables.
-- Whether penalty-too-large is demonstrable with a real seed; if not, the preset is dropped or its text reduced to what holds.
+- ~~Whether penalty-too-large is demonstrable.~~ **Decided (ticket 14):** the preset stays, with its text narrowed to what was measured: a large ρ does not stop the search, but it makes it worse (over seeds 1 to 100, 58 runs find 123 with ρ = 50 against 86 with ρ = 3; with seed 9 it ends at 116 and finds nothing better).
 
 ## Comments
