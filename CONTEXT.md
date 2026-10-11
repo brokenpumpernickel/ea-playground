@@ -78,6 +78,14 @@ _Avoid_: Utility, goodness
 
 ### Constraint handling
 
+**Feasible**:
+An individual whose packed set respects the problem's constraint (for the knapsack, a total weight within capacity). Problems without a constraint have only feasible individuals. Success and the stop criteria refer to feasible individuals only.
+_Avoid_: Valid, legal
+
+**Packed set**:
+The items an individual actually carries after the constraint-handling method has been applied. It can differ from the genes: the first-fit decoder and Baldwinian repair leave genes set to 1 that are not packed, and Lamarckian repair rewrites the genes to match.
+_Avoid_: Solution (a solution is the decoded part generally), phenotype
+
 **Penalty**:
 A reduction applied to the fitness of an infeasible individual, shown separately from its objective value.
 _Avoid_: Cost, discount
