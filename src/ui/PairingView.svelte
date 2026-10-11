@@ -23,7 +23,7 @@
               <div class="parent">
                 <span class="muted">slot {side.slot} ← individual {side.parent.id}</span>
                 <Bits chromosome={side.parent.bits} small />
-                <span class="muted">x = {side.parent.x}</span>
+                {#if typeof side.parent.x === 'number'}<span class="muted">x = {side.parent.x}</span>{/if}
               </div>
             {/each}
           </div>

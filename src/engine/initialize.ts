@@ -73,7 +73,7 @@ function explicitChromosomes(problem: Problem, texts: readonly string[]): Chromo
 }
 
 /** "0 and 1", "a, b and c", or for a long alphabet just how many symbols it has. */
-function describeAlphabet(alphabet: readonly string[]): string {
+export function describeAlphabet(alphabet: readonly string[]): string {
   if (alphabet.length > 8) return `of the alphabet (${alphabet.length} symbols)`;
   return alphabet.length < 2 ? alphabet.join('') : `${alphabet.slice(0, -1).join(', ')} and ${alphabet[alphabet.length - 1]}`;
 }

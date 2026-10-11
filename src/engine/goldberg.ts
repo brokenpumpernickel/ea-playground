@@ -9,6 +9,11 @@ export const goldberg: Problem & { readonly knownOptimumFitness: number } = {
   chromosomeLength: 5,
   alphabet: binaryAlphabet,
   columns: [{ header: 'x', show: (scores) => String(scores.decoded) }, fitnessColumn],
+  evaluationColumns: [
+    { header: 'x', show: (scores) => String(scores.decoded) },
+    { header: 'Objective', show: (scores) => String(scores.objective) },
+    fitnessColumn,
+  ],
   knownOptimumFitness: 31 * 31,
   landscape: { label: 'f(x) = x²', domain: [0, 31], fitnessAt: (x) => x * x },
   evaluate(chromosome: Chromosome): Scores {

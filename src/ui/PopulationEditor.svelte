@@ -18,17 +18,18 @@
     bind:value={text}
   ></textarea>
   <table aria-label="Hand-edited population">
-    <thead><tr><th scope="col">#</th><th scope="col">Chromosome</th><th scope="col" class="num">x</th><th scope="col" class="num">Fitness</th></tr></thead>
+    <thead><tr><th scope="col">#</th><th scope="col">Chromosome</th>{#each problem.columns as column (column.header)}<th scope="col" class="num">{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>{/each}</tr></thead>
     <tbody>
       {#each rows as row, k (k)}
         <tr class:bad={row.error !== undefined} data-row={k + 1}>
           <td>{k + 1}</td>
           {#if row.error}
-            <td colspan="3" class="err">{row.text}</td>
+            <td colspan={problem.columns.length + 1} class="err">{row.text}</td>
           {:else}
             <td><Bits chromosome={row.text} small /></td>
-            <td class="num" data-col="x">{row.decoded}</td>
-            <td class="num" data-col="fitness">{row.fitness}</td>
+            {#each problem.columns as column, c (column.header)}
+              <td class="num" data-col={column.header.toLowerCase()}>{row.cells?.[c]}</td>
+            {/each}
           {/if}
         </tr>
       {/each}

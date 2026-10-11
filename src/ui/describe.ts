@@ -1,4 +1,5 @@
-import { formatBits, type GaEvent } from '../engine';
+import type { GaEvent } from '../engine';
+import { goldbergDisplay, type Display } from './format';
 import { geneList, num } from './format';
 
 /** Plain-language sentences for what the engine recorded, so every number a view shows can be traced to an event. */
@@ -16,11 +17,18 @@ export function stageTitle(stage: string): string {
   return titles[stage] ?? stage;
 }
 
-export function describeEvent(event: GaEvent): string {
+/** A describer for a problem's way of showing chromosomes. */
+export const describer = (display: Display) => (event: GaEvent): string => describeWith(event, display);
+
+/** The describer for Goldberg (and any other binary problem). */
+export const describeEvent = describer(goldbergDisplay);
+
+function describeWith(event: GaEvent, display: Display): string {
+  const formatBits = display.show;
   switch (event.stage) {
     case 'setup': {
       const i = event.individual;
-      return `Individual ${i.id} (${formatBits(i.chromosome)}): x = ${i.decoded}, fitness ${i.fitness}`;
+      return `Individual ${i.id} (${formatBits(i.chromosome)}): ${typeof i.decoded === 'number' ? `x = ${i.decoded}, ` : ''}fitness ${i.fitness}`;
     }
 
     case 'selection':
@@ -91,7 +99,7 @@ export function describeEvent(event: GaEvent): string {
 
     case 'evaluation': {
       const i = event.individual;
-      return `Offspring ${event.offspring}: ${formatBits(i.chromosome)} → x = ${i.decoded} → fitness ${i.fitness} (individual ${i.id})`;
+      return `Offspring ${event.offspring}: ${formatBits(i.chromosome)} → ${typeof i.decoded === 'number' ? `x = ${i.decoded} → ` : ''}fitness ${i.fitness} (individual ${i.id})`;
     }
 
     case 'replacement': {

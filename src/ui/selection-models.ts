@@ -1,4 +1,5 @@
-import { formatBits, weightSteps, type GaEvent, type RunState } from '../engine';
+import { weightSteps, type GaEvent, type RunState } from '../engine';
+import { goldbergDisplay, type Display } from './format';
 import type { View } from '../run';
 
 /**
@@ -8,7 +9,7 @@ import type { View } from '../run';
 type GaView = View<RunState, GaEvent>;
 
 const selectionEvents = (view: GaView) => view.events.flatMap((e) => (e.stage === 'selection' ? [e] : []));
-const bitsById = (view: GaView) => new Map(view.before!.population.map((i) => [i.id, { bits: formatBits(i.chromosome), x: i.decoded, fitness: i.fitness }]));
+const bitsById = (view: GaView, display: Display) => new Map(view.before!.population.map((i) => [i.id, { bits: display.show(i.chromosome), x: i.decoded, fitness: i.fitness }]));
 
 /** The mating pool as far as it is known: one slot per parent, filled in the order selection chose them, null until then. */
 function poolSlots(events: ReturnType<typeof selectionEvents>, slots: number): (number | null)[] {
@@ -123,12 +124,12 @@ export interface TournamentModel {
   readonly pool: readonly (number | null)[];
 }
 
-export function tournamentModel(view: GaView): TournamentModel {
+export function tournamentModel(view: GaView, display: Display = goldbergDisplay): TournamentModel {
   const events = selectionEvents(view);
   const setup = events.find((e) => e.kind === 'tournament-setup');
   if (setup?.kind !== 'tournament-setup') throw new Error('The selection stage is not tournament selection');
   const revealed = events.flatMap((e) => (e.kind === 'tournament' ? [e] : []));
-  const lookup = bitsById(view);
+  const lookup = bitsById(view, display);
   const total = view.micros;
 
   return {
@@ -181,10 +182,10 @@ export interface PairingModel {
   readonly notes: readonly string[];
 }
 
-export function pairingModel(view: GaView): PairingModel {
+export function pairingModel(view: GaView, display: Display = goldbergDisplay): PairingModel {
   const selection = selectionEvents(view);
   const pool = selection.flatMap((e) => (e.kind === 'spin' ? [e.individualId] : e.kind === 'tournament' ? [e.winnerId] : []));
-  const lookup = bitsById(view);
+  const lookup = bitsById(view, display);
   const parent = (id: number): Parent => ({ id, bits: lookup.get(id)?.bits ?? '', x: lookup.get(id)?.x ?? 0 });
   const revealed = view.events.flatMap((e) => (e.stage === 'pairing' ? [e] : []));
   const total = view.micros;

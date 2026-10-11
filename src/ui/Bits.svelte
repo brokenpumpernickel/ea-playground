@@ -8,6 +8,9 @@
    * - `sources`: which parent each gene came from; genes from B are hatched.
    * - `cuts`: a dashed line after that many genes.
    * - `flipped`: 1-based genes marked as flipped by mutation.
+   * - `marks`: which genes are drawn filled and bold. By default that is every `1` (the binary problems); other problems
+   *   say which genes, for example the ones that match a target.
+   * A space is drawn as `␣` so it is visible.
    */
   let {
     chromosome,
@@ -15,7 +18,17 @@
     sources,
     cuts = [],
     flipped = [],
-  }: { chromosome: string; small?: boolean; sources?: readonly ('A' | 'B')[]; cuts?: readonly number[]; flipped?: readonly number[] } = $props();
+    marks,
+  }: {
+    chromosome: string;
+    small?: boolean;
+    sources?: readonly ('A' | 'B')[];
+    cuts?: readonly number[];
+    flipped?: readonly number[];
+    marks?: readonly boolean[];
+  } = $props();
+
+  const letters = $derived(!/^[01]*$/.test(chromosome));
 
   const fromB = $derived(sources ? [...sources].flatMap((s, k) => (s === 'B' ? [k + 1] : [])) : []);
   const label = $derived(
@@ -37,4 +50,4 @@
   data-bits={chromosome}
   data-sources={sources ? sources.join('') : undefined}
   data-cuts={cuts.length > 0 ? cuts.join(',') : undefined}
-  data-flipped={flipped.length > 0 ? flipped.join(',') : undefined}>{#each [...chromosome] as bit, k (k)}<b class="bit" class:one={bit === '1'} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{bit}</b>{/each}</span>
+  data-flipped={flipped.length > 0 ? flipped.join(',') : undefined}>{#each [...chromosome] as bit, k (k)}<b class="bit" class:one={marks ? marks[k] : bit === '1'} class:letter={letters} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{bit === ' ' ? '␣' : bit}</b>{/each}</span>

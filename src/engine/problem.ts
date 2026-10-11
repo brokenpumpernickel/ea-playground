@@ -36,6 +36,8 @@ export interface Problem {
   readonly alphabet: readonly string[];
   /** The columns the population table and the evaluation view show for this problem, besides the chromosome. */
   readonly columns: readonly ProblemColumn[];
+  /** The columns the evaluation view shows when it should differ from the table's (Goldberg also shows the objective value). */
+  readonly evaluationColumns?: readonly ProblemColumn[];
   /** The best fitness any chromosome can have, when it is known; plots draw it as a reference line and stop criteria can aim at it. */
   readonly knownOptimumFitness?: number;
   /** Present when the decoded solution is a single whole number, so its fitness can be drawn as a curve. */

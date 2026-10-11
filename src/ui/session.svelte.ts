@@ -2,6 +2,7 @@ import { gaAlgorithm, metricsOf, type GaEvent, type GaParams, type GaSetup, type
 import { createPlayback, createRun, type AnimationFlags, type Playback, type PlaybackStatus, type Position, type Run, type Scheduler, type Tier, type View } from '../run';
 import { defaultParams, defaultSeed, defaultSetup } from './config';
 import { changes, draftOf } from './drawer-model';
+import { displayOf, type Display } from './format';
 import { configOf, type RunConfig } from './run-config';
 import { plotModel, type PlotModel } from './plot-models';
 import { atCycleEnd, populationTable, type PopulationTable } from './population';
@@ -112,9 +113,14 @@ export function createSession(options: SessionOptions) {
       void version;
       return isEnd();
     },
+    /** How this run's problem shows chromosomes and which columns its tables have. */
+    get display(): Display {
+      void version;
+      return displayOf(run.setup.problem);
+    },
     get table(): PopulationTable {
       void version;
-      return populationTable(currentView(), isEnd());
+      return populationTable(currentView(), isEnd(), displayOf(run.setup.problem));
     },
     /** Metrics of the population the table shows. */
     get metrics(): GenerationMetrics {

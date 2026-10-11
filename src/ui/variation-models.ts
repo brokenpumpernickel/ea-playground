@@ -1,4 +1,5 @@
-import { formatBits, type CrossoverConfig, type GaEvent, type MutationConfig, type RunState } from '../engine';
+import type { CrossoverConfig, GaEvent, MutationConfig, RunState } from '../engine';
+import { goldbergDisplay, type Display } from './format';
 import type { View } from '../run';
 import { num } from './format';
 
@@ -47,7 +48,8 @@ export interface CrossoverModel {
   readonly pairs: readonly PairResult[];
 }
 
-export function crossoverModel(view: GaView, config: CrossoverConfig): CrossoverModel {
+export function crossoverModel(view: GaView, config: CrossoverConfig, display: Display = goldbergDisplay): CrossoverModel {
+  const formatBits = display.show;
   const lookup = new Map(view.before!.population.map((i) => [i.id, formatBits(i.chromosome)]));
   const pairing = view.events.flatMap((e) => (e.stage === 'pairing' ? [e] : []));
   const revealed = view.events.flatMap((e) => (e.stage === 'crossover' ? [e] : []));
@@ -117,7 +119,8 @@ export interface MutationModel {
   readonly rows: readonly MutationRow[];
 }
 
-export function mutationModel(view: GaView, config: MutationConfig): MutationModel {
+export function mutationModel(view: GaView, config: MutationConfig, display: Display = goldbergDisplay): MutationModel {
+  const formatBits = display.show;
   const made = view.events.flatMap((e) => (e.stage === 'crossover' ? e.children.filter((c) => !c.discarded) : []));
   const revealed = view.events.flatMap((e) => (e.stage === 'mutation' ? [e] : []));
   const rows = Array.from({ length: view.micros }, (_, k): MutationRow => {

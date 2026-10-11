@@ -1,4 +1,4 @@
-import { formatBits, parseBits, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
+import { describeAlphabet, parseGenes, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
 
 /**
  * What the parameter drawer edits. Numbers are kept as the text the user typed, so a half-typed or wrong entry can be
@@ -105,21 +105,38 @@ export interface ChromosomeRow {
   readonly error?: string;
   readonly decoded?: number | string;
   readonly fitness?: number;
+  /** The problem's table columns for this chromosome, in order (Goldberg: x, fitness). */
+  readonly cells?: readonly string[];
+}
+
+/**
+ * Splits typed text into chromosomes. A new line always separates them; a space, comma, semicolon or tab does too,
+ * unless that character is a symbol of the alphabet (a string over letters and a space is typed one per line).
+ */
+export function chromosomePieces(text: string, problem: Problem): string[] {
+  const separators = new Set(['\r', '\n', ';', ',', ' ', '\t']);
+  for (const symbol of problem.alphabet) if (symbol !== '\n' && symbol !== '\r') separators.delete(symbol);
+  return text.split('').reduce<string[]>(
+    (pieces, char) => {
+      if (separators.has(char)) pieces.push('');
+      else pieces[pieces.length - 1] += char;
+      return pieces;
+    },
+    [''],
+  ).filter((piece) => piece !== '');
 }
 
 /** Splits the text into chromosomes and, for each, either what it decodes to or what is wrong with it. */
 export function parseChromosomes(text: string, problem: Problem): ChromosomeRow[] {
-  return text
-    .split(/[\s,;]+/)
-    .filter((piece) => piece !== '')
-    .map((piece, k): ChromosomeRow => {
-      if (!/^[01]+$/.test(piece)) return { text: piece, error: `Chromosome ${k + 1} ("${piece}") may only contain the characters 0 and 1.` };
-      if (piece.length !== problem.chromosomeLength) {
-        return { text: piece, error: `Chromosome ${k + 1} has ${piece.length} genes, but this problem needs ${problem.chromosomeLength}.` };
-      }
-      const scores = problem.evaluate(parseBits(piece));
-      return { text: formatBits(parseBits(piece)), decoded: scores.decoded, fitness: scores.fitness };
-    });
+  return chromosomePieces(text, problem).map((piece, k): ChromosomeRow => {
+    const genes = parseGenes(piece, problem.alphabet);
+    if (!genes) return { text: piece, error: `Chromosome ${k + 1} ("${piece}") may only contain the characters ${describeAlphabet(problem.alphabet)}.` };
+    if (genes.length !== problem.chromosomeLength) {
+      return { text: piece, error: `Chromosome ${k + 1} has ${genes.length} genes, but this problem needs ${problem.chromosomeLength}.` };
+    }
+    const scores = problem.evaluate(genes);
+    return { text: piece, decoded: scores.decoded, fitness: scores.fitness, cells: problem.columns.map((column) => column.show(scores)) };
+  });
 }
 
 /* ------------------------------------------------------------------ validation */

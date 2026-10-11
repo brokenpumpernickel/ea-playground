@@ -1,6 +1,6 @@
 export { binaryAlphabet, formatBits, formatGenes, parseBits, parseGenes, type Bit, type Chromosome, type Gene } from './chromosome';
 export { goldberg } from './goldberg';
-export { initialize, type Individual, type Initialization, type Origin, type SetupEvent } from './initialize';
+export { describeAlphabet, initialize, type Individual, type Initialization, type Origin, type SetupEvent } from './initialize';
 export { fitnessColumn, type Landscape, type Problem, type ProblemColumn, type Scores } from './problem';
 export { createRng, type Rng, type SeededRng } from '../run/rng';
 export { matingPoolSize, pair, type Pair, type PairingEvent } from './pairing';

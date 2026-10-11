@@ -5,6 +5,7 @@
   let { session }: { session: Session } = $props();
 
   const table = $derived(session.table);
+  const display = $derived(session.display);
   const total = $derived(table.rows.reduce((sum, r) => sum + r.fitness, 0));
   const best = $derived(Math.max(...table.rows.map((r) => r.fitness)));
   const average = $derived(Math.round((total / table.rows.length) * 100) / 100);
@@ -21,8 +22,9 @@
         <tr>
           <th scope="col">#</th>
           <th scope="col">Chromosome</th>
-          <th scope="col" class="num">x</th>
-          <th scope="col" class="num">Fitness</th>
+          {#each display.columns as column (column.header)}
+            <th scope="col" class="num">{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>
+          {/each}
           <th scope="col" class="num">Weight</th>
           <th scope="col" class="num">Prob.</th>
           <th scope="col">Parent</th>
@@ -33,8 +35,9 @@
           <tr>
             <td data-col="id"><span class="sym" title={row.elite ? 'Elite: carried over unchanged' : undefined}>{row.elite ? '★' : ''}</span>{row.id}</td>
             <td><Bits chromosome={row.chromosome} small /></td>
-            <td class="num" data-col="x">{row.decoded}</td>
-            <td class="num" data-col="fitness">{row.fitness}</td>
+            {#each display.columns as column, c (column.header)}
+              <td class="num" data-col={column.header.toLowerCase()}>{row.cells[c]}</td>
+            {/each}
             <td class="num" data-col="weight">{row.weight ?? '—'}</td>
             <td class="num" data-col="prob">{row.probability === undefined ? '—' : row.probability.toFixed(3)}</td>
             <td data-col="parent">{#if row.parentCount}<span class="sym" aria-hidden="true">◆</span>×{row.parentCount}{:else}<span class="muted">—</span>{/if}</td>

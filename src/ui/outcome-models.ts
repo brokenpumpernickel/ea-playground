@@ -1,4 +1,5 @@
-import { formatBits, type GaEvent, type GaParams, type RunState } from '../engine';
+import type { GaEvent, GaParams, RunState } from '../engine';
+import { goldbergDisplay, type Display } from './format';
 import type { View } from '../run';
 import { num } from './format';
 
@@ -22,14 +23,19 @@ export interface EvaluationRow {
   readonly decoded?: number | string;
   readonly objective?: number;
   readonly fitness?: number;
+  /** The problem's evaluation columns for this offspring, in order, once it has been scored. */
+  readonly cells?: readonly string[];
 }
 
 export interface EvaluationModel {
   readonly explanation: string;
+  /** The headers (and notes) of the problem's evaluation columns. */
+  readonly columns: readonly { readonly header: string; readonly note?: string }[];
   readonly rows: readonly EvaluationRow[];
 }
 
-export function evaluationModel(view: GaView): EvaluationModel {
+export function evaluationModel(view: GaView, display: Display = goldbergDisplay): EvaluationModel {
+  const formatBits = display.show;
   const mutated = view.events.flatMap((e) => (e.stage === 'mutation' ? [e] : []));
   const scored = view.events.flatMap((e) => (e.stage === 'evaluation' ? [e] : []));
   const rows = mutated.map((m, k): EvaluationRow => {
@@ -46,9 +52,11 @@ export function evaluationModel(view: GaView): EvaluationModel {
       decoded: i.decoded,
       objective: i.objective,
       fitness: i.fitness,
+      cells: display.evaluationColumns.map((column) => column.show(i)),
     };
   });
   return {
+    columns: display.evaluationColumns.map(({ header, note }) => ({ header, ...(note ? { note } : {}) })),
     explanation: 'Each finished offspring is decoded to a solution x, scored by the objective, and given its fitness and a new individual number.',
     rows,
   };
@@ -97,7 +105,8 @@ export interface ReplacementModel {
   readonly next: readonly ReplacementNext[];
 }
 
-export function replacementModel(view: GaView, params: GaParams): ReplacementModel {
+export function replacementModel(view: GaView, params: GaParams, display: Display = goldbergDisplay): ReplacementModel {
+  const formatBits = display.show;
   const before = view.before!.population;
   const scored = view.events.flatMap((e) => (e.stage === 'evaluation' ? [e.individual] : []));
   const event = view.events.flatMap((e) => (e.stage === 'replacement' ? [e] : []))[0];

@@ -14,9 +14,9 @@
         <tr>
           <th scope="col">Offspring</th>
           <th scope="col">Chromosome</th>
-          <th scope="col" class="num">x</th>
-          <th scope="col" class="num">Objective</th>
-          <th scope="col" class="num">Fitness</th>
+          {#each model.columns as column (column.header)}
+            <th scope="col" class="num">{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>
+          {/each}
           <th scope="col">Becomes</th>
         </tr>
       </thead>
@@ -26,12 +26,12 @@
             <td><span class="who">O{row.offspring}</span></td>
             <td><Bits chromosome={row.bits} small flipped={row.flipped} /></td>
             {#if row.revealed}
-              <td class="num" data-col="x">{row.decoded}</td>
-              <td class="num" data-col="objective">{row.objective}</td>
-              <td class="num strong" data-col="fitness">{row.fitness}</td>
+              {#each model.columns as column, c (column.header)}
+                <td class="num" class:strong={c === model.columns.length - 1} data-col={column.header.toLowerCase()}>{row.cells?.[c]}</td>
+              {/each}
               <td data-col="id">individual {row.id}</td>
             {:else}
-              <td class="muted" colspan="4">not scored yet</td>
+              <td class="muted" colspan={model.columns.length + 1}>not scored yet</td>
             {/if}
           </tr>
         {/each}

@@ -495,3 +495,11 @@ input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radi
 .linknotice .btn { flex:none; background:var(--surface); }
 #drawer .sharerow { display:flex; align-items:center; gap:12px; padding:4px 0; }
 #drawer .linkfield { width:100%; text-align:left; font-size:15px; margin-top:4px; }
+
+/* a note under a column header, such as "= matches" */
+.colnote { display:block; font-size:14px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--ink2); }
+
+/* letters instead of digits: monospaced, a little narrower in the small cells so a long string still fits */
+.bit.letter { font-family:ui-monospace,Consolas,monospace; font-weight:600; }
+.bit.letter.one { font-weight:800; }
+.bit.sm.letter { width:26px; height:34px; font-size:21px; }

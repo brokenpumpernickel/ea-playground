@@ -3,7 +3,7 @@
   import { gaAlgorithm } from '../engine';
   import ChainEditor from './ChainEditor.svelte';
   import DrawerRow from './DrawerRow.svelte';
-  import { changes, draftOf, toParams, toSetup, validate, type Draft, type Field } from './drawer-model';
+  import { changes, chromosomePieces, draftOf, toParams, toSetup, validate, type Draft, type Field } from './drawer-model';
   import PopulationEditor from './PopulationEditor.svelte';
   import ShareLink from './ShareLink.svelte';
   import { presets } from './presets';
@@ -69,7 +69,7 @@
   const pendingFor = (label: string, was: string, now: string) => (isPending(label) ? `${was} → ${now}` : undefined);
   const tag = (label: string) => (isPending(label) ? '' : undefined);
 
-  const size = $derived(draft.init === 'random' ? Number(draft.size) : draft.chromosomes.split(/[\s,;]+/).filter(Boolean).length);
+  const size = $derived(draft.init === 'random' ? Number(draft.size) : chromosomePieces(draft.chromosomes, problem).length);
   const elitePercent = $derived.by(() => {
     const e = Number(draft.elites);
     return size > 0 && Number.isFinite(e) ? `${Math.round((e / size) * 1000) / 10}% of N` : '';

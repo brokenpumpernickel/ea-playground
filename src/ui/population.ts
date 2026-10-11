@@ -1,4 +1,5 @@
-import { formatBits, type GaEvent, type RunState } from '../engine';
+import type { GaEvent, RunState } from '../engine';
+import { goldbergDisplay, type Display } from './format';
 import type { Position, StageLayout, View } from '../run';
 
 export interface PopulationRow {
@@ -6,6 +7,8 @@ export interface PopulationRow {
   readonly chromosome: string;
   readonly decoded: number | string;
   readonly fitness: number;
+  /** The problem's columns for this individual, in order (Goldberg: x, fitness). */
+  readonly cells: readonly string[];
   /** Selection weight and probability, once the selection stage has been entered (roulette only). */
   readonly weight?: number;
   readonly probability?: number;
@@ -30,7 +33,7 @@ export function atCycleEnd(layout: readonly StageLayout[], position: Position): 
  * with the selection results as they are revealed); once the generation is complete it shows the new population.
  * Cycle 0 is the initial population.
  */
-export function populationTable(view: View<RunState, GaEvent>, atEnd: boolean): PopulationTable {
+export function populationTable(view: View<RunState, GaEvent>, atEnd: boolean, display: Display = goldbergDisplay): PopulationTable {
   const cycle = view.position.cycle;
   const showNew = cycle === 0 || atEnd;
   const state = showNew ? view.after : view.before!;
@@ -53,9 +56,10 @@ export function populationTable(view: View<RunState, GaEvent>, atEnd: boolean): 
     title: showNew ? `Population · generation ${cycle}` : `Parents · generation ${cycle - 1}`,
     rows: state.population.map((i) => ({
       id: i.id,
-      chromosome: formatBits(i.chromosome),
+      chromosome: display.show(i.chromosome),
       decoded: i.decoded,
       fitness: i.fitness,
+      cells: display.columns.map((column) => column.show(i)),
       ...(shares.has(i.id) ? { weight: shares.get(i.id)!.weight, probability: shares.get(i.id)!.probability } : {}),
       ...(sawPick ? { parentCount: picks.filter((p) => p === i.id).length } : {}),
       elite: showNew && eliteIds.has(i.id),
