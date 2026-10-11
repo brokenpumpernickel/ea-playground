@@ -54,6 +54,8 @@
   const getBag = getContext<BagGetter | undefined>(bagContextKey);
   const bag = $derived(getBag?.());
   const knap = $derived(bag !== undefined && /^[01]+$/.test(chromosome) && chromosome.length === bag.items.length);
+  /** With more than fourteen items the cells are narrower still, so that twenty fit beside the table's other columns. */
+  const dense = $derived(knap && chromosome.length > 14);
   const outcome = $derived(knap ? bag!.outcomeOf([...chromosome].map(Number)) : undefined);
   /** Which genes are 1 although the item is not in the bag. */
   const skippedAt = $derived(outcome ? [...chromosome].flatMap((c, k) => (c === '1' && !outcome.packed[k] ? [k] : [])) : []);
@@ -82,7 +84,7 @@
   );
 </script>
 
-{#snippet cell(bit: string, k: number)}<b class="bit" class:knap={knap} class:skip={skippedAt.includes(k)} class:one={marks ? marks[k] : matched ? matched[k] : bit === '1' && !skippedAt.includes(k)} class:match={matched?.[k] === true} class:miss={matched?.[k] === false} class:letter={letters} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cut={dropped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{skippedAt.includes(k) ? '✕' : bit === ' ' ? '␣' : bit}</b>{/snippet}
+{#snippet cell(bit: string, k: number)}<b class="bit" class:knap={knap} class:dense={dense} class:skip={skippedAt.includes(k)} class:one={marks ? marks[k] : matched ? matched[k] : bit === '1' && !skippedAt.includes(k)} class:match={matched?.[k] === true} class:miss={matched?.[k] === false} class:letter={letters} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cut={dropped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{skippedAt.includes(k) ? '✕' : bit === ' ' ? '␣' : bit}</b>{/snippet}
 
 <span
   class="bits"

@@ -15,7 +15,7 @@
   const changed = (c: MutationRow['changes'][number]) => `gene ${c.gene}: ${shown(c.from)} → ${shown(c.to)}`;
   const flipLabel = (row: MutationRow): string => (row.flipped.length === 1 ? `✱ ${changed(row.changes[0]!)}` : `✱ ${geneList(row.flipped)} flipped`);
   /** Letters with a draw under each one, instead of a column per gene. */
-  const underEach = $derived(model.multiSymbol && model.mode === 'per-gene' && model.enabled);
+  const underEach = $derived((model.multiSymbol || model.geneCount > 8) && model.mode === 'per-gene' && model.enabled);
 </script>
 
 {#snippet outcome(row: MutationRow)}

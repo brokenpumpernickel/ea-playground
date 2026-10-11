@@ -19,8 +19,8 @@
    */
   const knapsack = $derived(session.bag !== undefined);
   const showSelection = $derived(!knapsack || table.rows.some((r) => r.weight !== undefined || r.probability !== undefined));
-  /** With the selection columns on show beside the knapsack's own, the bars and the optional columns make way. */
-  const tight = $derived(knapsack && showSelection);
+  /** With the selection columns on show beside the knapsack's own, or with more than fourteen items, the bars and the optional columns make way. */
+  const tight = $derived(knapsack && (showSelection || display.chromosomeLength > 14));
   const columns = $derived(display.columns.map((column, c) => ({ column, c })).filter(({ column }) => !(tight && column.optional)));
 </script>
 

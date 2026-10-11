@@ -59,7 +59,7 @@
   {#if rates}<MatchRateStrip {rates} />{:else if chosen}<ChosenStrip shares={chosen} />{:else}<AlleleStrip shares={m.alleleFrequencies} />{/if}
   <p class="summary" data-testid="summary">
     generation {m.generation} · best now {m.best} · best so far {m.bestSoFar}<br />
-    average {num(Math.round(m.average * 10) / 10)} · worst {m.worst} · evaluations {m.evaluations}{#if m.feasible} · feasible {m.feasible.count} of {size}{/if}
+    average {num(Math.round(m.average * 10) / 10)} · worst {m.worst} · evaluations {m.evaluations}{#if m.feasible}{' · '}feasible {m.feasible.count} of {size}{/if}
   </p>
 </section>
 {/if}

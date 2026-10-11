@@ -648,3 +648,23 @@ table.tight .capbar { display:none; }
 #drawer .itemtable input[type=text] { width:64px; height:30px; padding:0 8px; font-size:17px; }
 #drawer .itemtable input.bad { border-color:var(--flip); background:var(--flip-bg); }
 #drawer .itemtable .btn.tiny { height:28px; padding:0 8px; }
+
+/* twenty items: the narrowest cells, and a pairing card whose chromosome drops under its label */
+.bit.sm.knap.dense { width:19px; height:28px; font-size:15px; border-radius:6px; }
+.bits:has(.bit.dense) { gap:2px; }
+.itemrow.dense span { width:19px; }
+.itemrow.dense b { font-size:13px; }
+.itemrow.dense u, .itemrow.dense s { font-size:11px; }
+.pcard .parent { flex-wrap:wrap; }
+.tablewrap:has(.bit.dense) th, .tablewrap:has(.bit.dense) td { padding-left:3px; padding-right:3px; }
+.etable:has(.bit.dense) th, .etable:has(.bit.dense) td { padding-left:3px; padding-right:3px; }
+.tablewrap:has(.parentmark) .capbar { width:26px; }
+.tablewrap .parentmark { margin-left:3px; font-size:14px; }
+.rrow:has(.bit.dense) { flex-wrap:wrap; }
+.tablewrap:has(.bit.dense) td { font-size:16px; }
+.projector .tablewrap:has(.bit.dense) td { font-size:17px; }
+.tablewrap:has(.bit.dense) th { font-size:13px; }
+.tablewrap:has(.bit.dense) .parentmark { font-size:12px; margin-left:2px; }
+.etable:has(.bit.dense) .capbar { display:none; }
+.etable:has(.bit.dense) td.why { font-size:13px; }
+.etable:has(.bit.dense) td[data-col="id"] { font-size:13px; }
