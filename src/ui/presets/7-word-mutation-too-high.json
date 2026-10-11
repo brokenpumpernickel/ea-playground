@@ -12,6 +12,6 @@
     "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
     "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.5},
     "elites": 0,
-    "stop": {"generationLimit": 100, "targetFitness": 5, "stagnationWindow": 15}
+    "stop": {"generationLimit": 100, "targetFitness": 5, "stagnationWindow": 70}
   }
 }

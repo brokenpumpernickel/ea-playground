@@ -3,7 +3,7 @@
   "problem": "target-string",
   "name": "Evolve a word",
   "lesson": "Twelve random strings of letters evolve toward HELLO by selection, crossover and mutation alone.",
-  "lookFor": "With this seed the best string matches all 5 positions (HELLO) for the first time in generation 65. The average starts at 0.42 matches, and diversity falls from 0.97 to 0.39 by then, as the population fills with similar strings. Run first pauses at generation 20 to report that the best has not improved for 15 generations: that is only a report, the search is not stuck, and Run again carries on. Another seed would take a different number of generations: this is one run of a random search, not a promise.",
+  "lookFor": "With this seed the best string matches all 5 positions (HELLO) for the first time in generation 65. The average starts at 0.42 matches, and diversity falls from 0.97 to 0.39 by then, as the population fills with similar strings. Another seed would take a different number of generations: this is one run of a random search, not a promise.",
   "seed": 42,
   "options": {"alphabet": "ABCDEFGHIJKLMNOPQRSTUVWXYZ ", "target": "HELLO"},
   "setup": {"init": {"kind": "random", "size": 12}},
@@ -12,6 +12,6 @@
     "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
     "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.1},
     "elites": 0,
-    "stop": {"generationLimit": 100, "targetFitness": 5, "stagnationWindow": 15}
+    "stop": {"generationLimit": 100, "targetFitness": 5, "stagnationWindow": 70}
   }
 }

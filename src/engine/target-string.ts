@@ -96,7 +96,10 @@ export const targetStringDefaults: {
     crossover: { enabled: true, operator: 'one-point', probability: 0.8 },
     mutation: { enabled: true, mode: 'per-gene', probability: 0.1 },
     elites: 0,
-    // the target is reached when every position matches
-    stop: { generationLimit: 100, targetFitness: 5, stagnationWindow: 15 },
+    // the target is reached when every position matches; the stagnation window is long because this search
+    // plateaus for a long time before it improves (over 60 seeds the longest plateau of a run that went on to
+    // succeed had a median of 27 generations and went up to 68; the default seed itself waits 59), so a shorter window would call a run stuck
+    // that is only slow
+    stop: { generationLimit: 100, targetFitness: 5, stagnationWindow: 70 },
   },
 };

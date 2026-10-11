@@ -68,10 +68,7 @@ test('Evolve a word: loading it restarts with its seed, and HELLO appears in gen
   await expect(page.getByTestId('seed')).toHaveText('42');
   const engine = engineRun(preset);
   expect(await rows(page)).toEqual(shown(preset, engine, 0));
-  // the first thing Run reports is stagnation at generation 20; it is only a report, and Run again goes on to HELLO
-  await page.getByRole('button', { name: 'Run until stop' }).click();
-  await expect(page.locator('#pop-heading')).toHaveText(/generation 20$/);
-  expect(await rows(page)).not.toContain('HELLO');
+  // nothing is reported on the way: the first stop criterion to hold is the target itself
   await page.getByRole('button', { name: 'Run until stop' }).click();
   await expect(page.locator('#pop-heading')).toHaveText(/generation 65$/);
   for (let g = 0; g < 65; g++) engine.forwardCycle();

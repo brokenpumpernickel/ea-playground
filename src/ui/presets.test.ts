@@ -135,14 +135,12 @@ describe('the target string presets behave as their descriptions say for their s
     expect(m[64]!.best).toBeLessThan(5); // not found a generation earlier
   });
 
-  test('evolve a word: the first stop criterion to hold is stagnation, in generation 20, and the target is reached later (65), as the description says', () => {
+  test('evolve a word: no stop criterion holds before the target is reached in generation 65, so Run does not pause on the way', () => {
     const run = play(wordPreset('evolve-a-word'), 100);
     const stops = (g: number) => run.snapshot(g).stops;
-    expect(stops(19)).toEqual([]);
-    expect(stops(20)).toEqual(['stagnation']);
+    for (let g = 0; g < 65; g++) expect(stops(g)).toEqual([]);
     expect(stops(64)).not.toContain('target-reached');
     expect(stops(65)).toContain('target-reached');
-    expect(wordPreset('evolve-a-word').lookFor).toContain('pauses at generation 20');
   });
 
   test('evolve a word uses the problem’s defaults, so the first run a student sees is this one', () => {

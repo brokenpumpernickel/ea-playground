@@ -106,7 +106,7 @@ describe('defaults', () => {
     expect(validateTargetString(options)).toEqual([]);
     expect(options.target).toBe('HELLO');
     expect(targetStringDefaults.populationSize).toBe(12);
-    expect(params.stop).toEqual({ generationLimit: 100, targetFitness: problem(options.target, options.alphabet).knownOptimumFitness, stagnationWindow: 15 });
+    expect(params.stop).toEqual({ generationLimit: 100, targetFitness: problem(options.target, options.alphabet).knownOptimumFitness, stagnationWindow: 70 });
     expect(params.selection).toEqual({ method: 'tournament', size: 3 });
     expect(params.mutation).toEqual({ enabled: true, mode: 'per-gene', probability: 0.1 });
     expect(params.crossover).toEqual({ enabled: true, operator: 'one-point', probability: 0.8 });
