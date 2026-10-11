@@ -21,3 +21,13 @@ Each returns the scores plus what the views need to explain it: the packed set, 
 - Fitness and objective are as the spec defines for each method, including negative penalty-method fitness.
 
 ## Comments
+
+## Answer
+
+`src/engine/knapsack-handling.ts`: `Handling` (`'decoder' | 'penalty' | 'repair-lamarckian' | 'repair-baldwinian'`), `handlings`, and `handleBag(instance, handling, rho, chromosome)`, which returns a `BagOutcome`: the genes after handling, the packed set, weight, value, excess, penalty, feasibility, fitness and objective, what the decoder skipped (item, its weight and the room left when it was reached), what repair dropped (item and value per weight, in order), the repaired chromosome (Lamarckian only, only when something was dropped) and the `Scores` in the engine's form (decoded = the packed letters, `feasible`, and `repaired` for Lamarckian). The views will recompute an outcome from a chromosome, so the explanation is never stored in the engine's state.
+
+Rules as the spec states them, with two details fixed here: repair compares values per weight by cross-multiplication (exact, no floating-point ties), and a tie goes to the later item; the decoder walks A, B, C, … and records the room left at each skip. ρ must be a finite number of at least 0 (the drawer's own range is ticket 06's); a chromosome of the wrong length is refused.
+
+**Tests** (`knapsack-handling.test.ts`, 22; worked by hand on the built-in instance): penalty at exactly the capacity (A, B, C, E, F: 48, 73, no penalty), one over (A, B, E, F, G: 49, 59, penalty 4, fitness 55), everything on (97, 49 over, penalty 196, fitness −25, so fitness can be negative), non-integer ρ; decoder with everything on packs A, B, C, D, E, G, H (46, 88), skips F (14 > 11 left), I, J, K, L in order and still packs G after skipping F, never changes genes; repair with everything on drops A, E, I, L, F in that order (ratios 0.44, 0.50, 0.73, 1.46, 1.64) leaving B, C, D, G, H, J, K (40, 112), stops as soon as the bag fits (over by 1 drops only A), a tie goes to the later item, a chromosome that fits is untouched, Lamarckian writes the genes of the dropped items as 0 while Baldwinian keeps the chromosome; the scores the engine sees. Properties over 300 generated instances and chromosomes: decoder and both repairs are always feasible and use only items whose genes were on, repair never drops more than needed, a chromosome that fits is packed as it is by all four methods with no penalty, skip or repair, Lamarckian and Baldwinian agree on packed set and score, and nothing feasible beats the DP optimum. A mutation of the tie rule failed the tie test.
+
+State: 1076 unit tests, `npm run check` clean.
