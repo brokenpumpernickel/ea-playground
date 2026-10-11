@@ -131,8 +131,10 @@ test('replacement shows the engine’s next population, with and without elites 
     } else {
       await expect(page.locator('[data-offspring][data-fate="survives"]')).toHaveCount(12);
     }
-    // the target row is shown above each list, and every cell is marked by its own letter
-    await expect(page.locator('.replacement [data-testid="target-row"]')).toHaveCount(3);
+    // the target row is shown above each list (the old population is the table beside the stage), and every cell is marked by its own letter
+    await expect(page.locator('.replacement [data-testid="target-row"]')).toHaveCount(2);
+    await expect(page.getByRole('region', { name: 'Old population' })).toHaveCount(0);
+    await expect(page.locator('.replacement .expl')).toContainText('The old population is in the table on the right.');
     const cells = page.locator('.replacement .bits');
     const count = await cells.count();
     for (let k = 0; k < count; k++) {

@@ -43,7 +43,7 @@ describe('cells with letters', () => {
     expect(markup).toContain('data-bits="HI YO"');
     expect([...markup.matchAll(/<b class="bit[^"]*"[^>]*>(.*?)<\/b>/g)].map((m) => m[1])).toEqual(['H', 'I', '␣', 'Y', 'O']);
     expect(markup).toContain('letter');
-    expect(markup).toContain('aria-label="Chromosome HI YO"');
+    expect(markup).toContain('aria-label="Chromosome H, I, space, Y, O."');
   });
 
   test('only the genes the caller marks are filled; digits still fill on their own', () => {

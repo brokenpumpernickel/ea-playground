@@ -20,9 +20,12 @@ describe('cells compared with a target string', () => {
   test('say how many positions match, in words and as data', () => {
     const markup = bits('HELPS', 'HELLO');
     expect(markup).toContain('data-matches="3"');
-    expect(markup).toContain('Chromosome HELPS, 3 of 5 positions match the target');
-    expect(bits('HELLO', 'HELLO')).toContain('5 of 5 positions match the target');
+    expect(markup).toContain('Chromosome H, E, L, P, S. 3 of 5 positions match the target (positions 1, 2 and 3)');
+    expect(bits('HELLO', 'HELLO')).toContain('Chromosome H, E, L, L, O. 5 of 5 positions match the target"');
     expect(bits('ZZZZZ', 'HELLO')).toContain('0 of 5 positions match the target');
+    expect(bits('ZZZZZ', 'HELLO')).not.toContain('0 of 5 positions match the target (');
+    expect(bits('HELPO', 'HELLO')).toContain('4 of 5 positions match the target (positions 1, 2, 3 and 5)');
+    expect(bits('HZZZZ', 'HELLO')).toContain('1 of 5 positions match the target (position 1)');
   });
 
   test('a space is compared like any other letter and drawn as ␣', () => {

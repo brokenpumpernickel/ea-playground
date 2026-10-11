@@ -97,6 +97,8 @@ export interface ReplacementNext {
 
 export interface ReplacementModel {
   readonly revealed: boolean;
+  /** Whether the old population gets a column of its own (it does for bits; strings leave it to the table beside the stage). */
+  readonly showOld: boolean;
   readonly explanation: string;
   /** With truncation, once decided: how the offspring were ranked and where the cut fell. */
   readonly cutNote?: string;
@@ -169,5 +171,9 @@ export function replacementModel(view: GaView, params: GaParams, display: Displa
     ? `Offspring truncation: λ = ${lambda} offspring were made and scored; only the best N − e = ${room} survive.`
     : `All ${room} offspring survive and take the remaining places.`;
   const cutNote = ranking ? `Ranked by fitness (1 = best): the best ${room} are kept, ${lambda - room} discarded.` : undefined;
-  return { revealed: event !== undefined, explanation: `${elitism} ${fill}`, ...(cutNote ? { cutNote } : {}), old, offspring, next };
+  // a problem with strings has no room for a third column of long strings: the old population is the table beside the stage
+  const showOld = display.alphabetSize <= 2;
+  const where = showOld ? '' : ' The old population is in the table on the right.';
+  const kept = !showOld && event && event.elites.length > 0 ? ` Elite${event.elites.length === 1 ? '' : 's'}: ${event.elites.map((id) => `#${id}`).join(', ')}.` : '';
+  return { revealed: event !== undefined, showOld, explanation: `${elitism}${kept} ${fill}${where}`, ...(cutNote ? { cutNote } : {}), old, offspring, next };
 }

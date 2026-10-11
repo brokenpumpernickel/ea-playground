@@ -10,7 +10,8 @@
   <p class="expl">{model.explanation}</p>
   <!-- a scrolling region must be reachable from the keyboard -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <div class="rgrid" tabindex="0" role="region" aria-label="Replacement flow: old population, offspring, next population">
+  <div class="rgrid" class:two={!model.showOld} tabindex="0" role="region" aria-label={model.showOld ? 'Replacement flow: old population, offspring, next population' : 'Replacement flow: offspring, next population'}>
+    {#if model.showOld}
     <section class="rcol" aria-label="Old population">
       <div class="chead">Old population</div>
       <div class="rtarget"><TargetRow /></div>
@@ -24,6 +25,7 @@
         </div>
       {/each}
     </section>
+    {/if}
 
     <section class="rcol" aria-label="Offspring">
       <div class="chead">Offspring</div>

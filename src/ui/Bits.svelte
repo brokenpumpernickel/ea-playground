@@ -43,16 +43,22 @@
   const matchCount = $derived(matched ? matched.filter(Boolean).length : undefined);
 
   const fromB = $derived(sources ? [...sources].flatMap((s, k) => (s === 'B' ? [k + 1] : [])) : []);
+  /** A screen reader should say each letter, so letters are spelled out one by one and a space is named. */
+  const spelled = $derived(letters ? [...chromosome].map((c) => (c === ' ' ? 'space' : c)).join(', ') : chromosome);
+  const matchedAt = $derived(matched ? matched.flatMap((m, k) => (m ? [k + 1] : [])) : []);
+  const positions = (list: readonly number[]) => `${list.length === 1 ? 'position' : 'positions'} ${list.length < 2 ? list.join('') : `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`}`;
   const label = $derived(
     [
-      `Chromosome ${chromosome}`,
-      matchCount !== undefined ? `${matchCount} of ${chromosome.length} positions match the target` : '',
+      // the letters end with a full stop so that the next fact is not read as one more letter
+      `Chromosome ${spelled}${letters ? '.' : ''}`,
+      matchCount !== undefined ? `${matchCount} of ${chromosome.length} positions match the target${matchedAt.length > 0 && matchedAt.length < chromosome.length ? ` (${positions(matchedAt)})` : ''}` : '',
       fromB.length > 0 ? `${geneList(fromB)} from parent B` : '',
       cuts.length > 0 ? `cut after ${geneList(cuts)}` : '',
       flipped.length > 0 ? `${geneList(flipped)} flipped` : '',
     ]
       .filter(Boolean)
-      .join(', '),
+      .join(', ')
+      .replace('., ', '. '),
   );
 </script>
 
