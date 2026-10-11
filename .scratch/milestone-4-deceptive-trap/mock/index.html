@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trap – design mock (throwaway)</title>
+<style>
+* { box-sizing: border-box; }
+html, body { margin:0; height:100%; overflow:hidden; background:var(--page); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+.canvas { width:1920px; height:1080px; transform-origin:0 0; position:relative; overflow:hidden;
+  background:var(--page); color:var(--ink); font-size:20px; line-height:1.3; }
+/* ---------- top ribbon ---------- */
+#top { position:absolute; left:0; top:0; width:1920px; height:84px; display:flex; align-items:center; gap:24px; padding:0 24px;
+  background:var(--surface); border-bottom:1px solid var(--hair); }
+#brand { width:430px; }
+#brand .t { font-size:26px; font-weight:700; }
+#brand .s { font-size:20px; color:var(--ink2); }
+#ribbon { display:flex; flex:1; gap:0; }
+.stage { flex:1; height:56px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:22px; font-weight:600;
+  color:var(--ink2); background:var(--wash); clip-path:polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%, 22px 50%);
+  margin-left:-10px; padding:0 22px; }
+.stage:first-child { margin-left:0; clip-path:polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%); }
+.stage.done { color:var(--ink); }
+.stage.cur { background:var(--s1); color:var(--on-s1); }
+.stage .n { font-weight:700; }
+#gen { width:300px; text-align:right; }
+#gen .g { font-size:30px; font-weight:700; }
+#gen .l { font-size:20px; color:var(--ink2); }
+
+/* ---------- transport ---------- */
+#transport { position:absolute; left:0; top:84px; width:1920px; height:72px; display:flex; align-items:center; gap:6px; padding:0 24px;
+  background:var(--surface); border-bottom:1px solid var(--hair); }
+.btn { height:48px; padding:0 9px; border:2px solid var(--ink2); border-radius:8px; background:var(--surface); color:var(--ink);
+  font:600 20px system-ui,"Segoe UI",sans-serif; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+.btn kbd { font:600 14px ui-monospace,Consolas,monospace; color:var(--ink2); border:1px solid var(--axis); border-radius:4px; padding:0 4px; background:var(--wash); }
+.btn.primary { background:var(--s1); border-color:var(--s1); color:var(--on-s1); }
+.btn.primary kbd { color:#fff; background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.5); }
+.btn.quiet { border-color:var(--axis); }
+.vsep { width:2px; height:36px; background:var(--axis); margin:0 6px; }
+#tier { display:flex; align-items:center; gap:10px; }
+#tier .track { position:relative; width:240px; height:10px; background:var(--grid); border-radius:5px; }
+#tier .stop { position:absolute; top:-5px; width:20px; height:20px; border-radius:50%; background:var(--surface); border:2px solid var(--ink2); transform:translateX(-10px); }
+#tier .stop.cur { background:var(--s1); border-color:var(--s1); }
+#tier .labels { display:flex; justify-content:space-between; width:340px; font-size:18px; color:var(--ink2); margin-top:4px; }
+#seedbox { display:flex; align-items:center; gap:8px; color:var(--ink2); }
+#seedbox b { color:var(--ink); }
+
+/* ---------- panels ---------- */
+.panel { position:absolute; background:var(--surface); border:1px solid var(--hair); border-radius:10px; overflow:hidden; }
+.ph { display:flex; align-items:baseline; justify-content:space-between; padding:10px 16px 8px; border-bottom:1px solid var(--hair); }
+.ph h2 { margin:0; font-size:22px; font-weight:700; }
+.ph .r { font-size:20px; color:var(--ink2); }
+table { border-collapse:collapse; width:100%; font-size:21px; }
+th { text-align:left; font-weight:600; color:var(--ink2); font-size:19px; padding:6px 10px; border-bottom:2px solid var(--axis); white-space:nowrap; }
+td { padding:0 10px; height:44px; border-bottom:1px solid var(--grid); white-space:nowrap; }
+td.num, th.num { text-align:right; }
+.mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-weight:700; letter-spacing:.14em; font-size:25px; }
+tr.hl td { background:color-mix(in srgb, var(--s1) 14%, transparent); }
+tr.dim td { color:var(--ink2); }
+.sym { display:inline-block; min-width:1.3em; text-align:center; font-weight:700; }
+.muted { color:var(--ink2); }
+.pending { color:var(--ink2); font-style:italic; }
+
+/* bits */
+.bits { display:inline-flex; gap:4px; vertical-align:middle; }
+.bit { width:36px; height:44px; display:inline-flex; align-items:center; justify-content:center; border:2px solid var(--ink2); border-radius:6px;
+  font:700 27px ui-monospace,"Cascadia Mono",Consolas,monospace; background:var(--surface); position:relative; }
+.bit.sm { width:30px; height:38px; font-size:23px; }
+.bit.hatch { background-image:repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ink2) 55%, transparent) 5px 7px); }
+.bit.flip { border-color:var(--flip); border-width:3px; box-shadow:0 5px 0 -1px var(--flip); }
+.bit.flip::after { content:"✱"; position:absolute; top:-17px; left:50%; transform:translateX(-50%); color:var(--flip); font-size:18px; }
+.bit.cutafter { margin-right:10px; }
+.bit.cutafter::before { content:""; position:absolute; right:-11px; top:-10px; bottom:-10px; border-right:3px dashed var(--ink); }
+
+/* badges */
+.badge { display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:19px; border-radius:6px; padding:2px 10px; border:2px solid var(--ink2); }
+.badge.bypass { border-style:dashed; background:var(--wash); }
+.badge.ok { border-color:var(--good); color:var(--good); }
+.badge.flip { border-color:var(--flip); color:var(--flip); }
+.badge.x { border-color:var(--ink2); color:var(--ink2); text-decoration:none; }
+
+/* stage panel body */
+#stagebody { position:absolute; left:16px; right:16px; top:84px; bottom:80px; }
+#narr { position:absolute; left:16px; right:16px; bottom:12px; height:58px; display:flex; align-items:center; gap:12px; padding:0 14px;
+  background:var(--wash); border-left:6px solid var(--s1); border-radius:6px; font-size:21px; line-height:1.2; }
+#narr .m { font-weight:700; white-space:nowrap; color:var(--ink2); }
+#legend { position:absolute; left:24px; top:722px; width:800px; height:26px; display:flex; justify-content:space-between; font-size:19px; color:var(--ink2); align-items:center; }
+#legend b { color:var(--ink); }
+.chip { flex:1; border:2px solid var(--ink2); border-radius:8px; padding:4px 10px; text-align:center; font-size:20px; white-space:nowrap; }
+.chip.cur { border-width:4px; background:color-mix(in srgb, var(--s1) 14%, transparent); font-weight:700; }
+.chip.future { border-style:dashed; color:var(--ink2); }
+
+.note { font-size:20px; color:var(--ink2); }
+.card { border:2px solid var(--ink2); border-radius:8px; padding:8px 12px; background:var(--surface); }
+.row { display:flex; align-items:center; gap:14px; }
+.flow { display:flex; align-items:stretch; gap:34px; height:100%; }
+.col { flex:1; display:flex; flex-direction:column; gap:8px; min-width:0; }
+.col h3 { margin:0 0 4px; font-size:21px; color:var(--ink2); font-weight:700; }
+.arrow { align-self:center; font-size:40px; color:var(--ink2); }
+
+/* plots */
+svg text { font-family: system-ui,"Segoe UI",sans-serif; fill:var(--ink2); font-size:18px; }
+svg text.ink { fill:var(--ink); }
+svg .ax { stroke:var(--axis); stroke-width:1; }
+svg .gr { stroke:var(--grid); stroke-width:1; }
+
+/* drawer + dialog */
+#drawer { position:absolute; right:0; top:156px; bottom:0; width:640px; background:var(--surface); border-left:2px solid var(--ink2);
+  box-shadow:-12px 0 30px rgba(0,0,0,.25); overflow:hidden; z-index:20; }
+#drawer .dh { height:56px; display:flex; justify-content:space-between; align-items:center; padding:0 18px; border-bottom:1px solid var(--hair); font-size:24px; font-weight:700; }
+#drawer { overflow-y:auto; }
+#drawer .sec { padding:6px 18px 4px; border-bottom:1px solid var(--grid); }
+#drawer .sec h4 { margin:0 0 2px; font-size:20px; }
+#drawer .ctl { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:19px; line-height:1.15; }
+#drawer .help { font-size:17px; color:var(--ink2); margin:0 0 2px; line-height:1.2; }
+.field { border:2px solid var(--ink2); border-radius:6px; padding:0 10px; font-weight:600; min-width:90px; text-align:center; background:var(--surface); }
+.switch { display:inline-flex; align-items:center; gap:8px; font-weight:700; }
+.switch i { width:46px; height:24px; border-radius:12px; background:var(--s1); position:relative; display:inline-block; }
+.switch i::after { content:""; position:absolute; right:3px; top:3px; width:18px; height:18px; border-radius:50%; background:#fff; }
+.tag { font-size:16px; font-weight:700; border-radius:4px; padding:0 6px; border:2px solid var(--ink2); }
+.tag.reset { border-style:dashed; }
+.tag.pend { border-color:var(--flip); color:var(--flip); }
+#dim { position:absolute; inset:0; background:rgba(0,0,0,.5); z-index:30; }
+#dialog { position:absolute; left:230px; top:300px; width:800px; z-index:40; background:var(--surface); border:3px solid var(--ink); border-radius:12px; padding:24px 28px; }
+#dialog h3 { margin:0 0 10px; font-size:28px; }
+#dialog p { margin:0 0 18px; font-size:22px; }
+#dialog .acts { display:flex; justify-content:flex-end; gap:14px; }
+
+/* =====================================================================
+   STUDIO — the chosen direction. Light by default, with a dark theme from the same tokens.
+   Data colours (--s1 --s2 --s3 --s7) are the validated plot palette in both themes and are
+   never used for chrome; chrome uses --acc (violet), which is deliberately unlike the plot blue.
+   ===================================================================== */
+#tier .labels { margin-top:12px !important; }
+#brand { display:flex; align-items:center; gap:14px; }
+.mono { font-variant-ligatures:none; }
+
+:root, :root[data-theme="light"] {
+  color-scheme:light;
+  --page:#f1f2f9; --page2:#e9ecf8; --surface:#ffffff; --ink:#141a33; --ink2:#586081; --axis:#ccd1e6; --grid:#eceef7; --hair:rgba(20,26,51,.09); --wash:#f4f5fb;
+  --line:#dadff0; --line-soft:#eef0f8; --chip:#eef0f9; --th:#6f7799; --knob:#ffffff;
+  --elev:0 1px 2px rgba(20,26,51,.05), 0 14px 34px rgba(20,26,51,.07); --bar-shadow:0 1px 0 rgba(20,26,51,.06), 0 12px 32px rgba(20,26,51,.05);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s7:#4a3aa7;
+  --acc:#7040ec; --acc-ink:#4a24b8; --acc-tint:#efe9ff; --on-acc:#ffffff; --acc-glow:rgba(112,64,236,.38); --logo:linear-gradient(135deg,#8b5cf6,#6d4aea);
+  --bit-bg:#ffffff; --bit-line:#c9cee5; --bit-ink:#7a82a6; --one-bg:#ddd3ff; --one-line:#8a68f0; --one-ink:#36199e; --hatch:rgba(112,64,236,.34);
+  --ok-bg:#dcf4e6; --ok-ink:#0b6b36; --flip:#d6470e; --flip-bg:#ffe9dc; --flip-ink:#b3400a; --good:#0b6b36;
+  --seq1:#ece6ff; --seq2:#cbbdff; --seq3:#a590fa; --seq4:#7c5df0;
+  --veil:rgba(20,26,51,.5); --drawer-shadow:-18px 0 50px rgba(20,26,51,.22);
+}
+:root[data-theme="dark"] {
+  color-scheme:dark;
+  --page:#0c1022; --page2:#10152c; --surface:#171c36; --ink:#eef0ff; --ink2:#a9b1d4; --axis:#323a66; --grid:#222a50; --hair:rgba(150,160,255,.16); --wash:#1d2342;
+  --line:#2d3562; --line-soft:#232a4f; --chip:#1d2342; --th:#8a93bd; --knob:#eef0ff;
+  --elev:0 1px 2px rgba(0,0,0,.3), 0 14px 34px rgba(0,0,0,.38); --bar-shadow:0 1px 0 rgba(150,160,255,.12), 0 12px 32px rgba(0,0,0,.3);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s7:#9085e9;
+  --acc:#a78bfa; --acc-ink:#dcd1ff; --acc-tint:rgba(167,139,250,.17); --on-acc:#160d3a; --acc-glow:rgba(167,139,250,.35); --logo:linear-gradient(135deg,#c4b5fd,#8b5cf6);
+  --bit-bg:#0f1430; --bit-line:#323a66; --bit-ink:#8a93bd; --one-bg:rgba(167,139,250,.24); --one-line:#a78bfa; --one-ink:#efe9ff; --hatch:rgba(196,181,253,.5);
+  --ok-bg:rgba(74,222,128,.14); --ok-ink:#86efac; --flip:#fb923c; --flip-bg:rgba(251,146,60,.16); --flip-ink:#fdba74; --good:#4ade80;
+  --seq1:#4a3a9c; --seq2:#5d49bd; --seq3:#7058d6; --seq4:#8a6ff0;
+  --veil:rgba(2,4,14,.6); --drawer-shadow:-18px 0 50px rgba(0,0,0,.55);
+}
+
+.canvas { background:linear-gradient(180deg,var(--page) 0%,var(--page2) 100%); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+#top { background:var(--surface); border-bottom:none; box-shadow:var(--bar-shadow); z-index:2; }
+#transport { background:transparent; border-bottom:none; }
+.logo { display:inline-flex; flex:none; width:52px; height:52px; border-radius:16px; align-items:center; justify-content:center; background:var(--logo); color:var(--on-acc); font:800 24px system-ui; box-shadow:0 8px 18px var(--acc-glow); }
+:root[data-theme="dark"] .logo { color:#160d3a; }
+#brand .t { font-size:25px; letter-spacing:-.01em; }
+#brand .s { font-size:19px; }
+
+/* stage tracker */
+#ribbon { background:var(--chip); border-radius:999px; padding:5px; gap:4px; }
+.stage, .stage:first-child { clip-path:none; margin-left:0; border-radius:999px; background:transparent; height:50px; font-size:21px; font-weight:650; color:var(--ink2); padding:0 12px; gap:10px; }
+.stage .n { width:30px; height:30px; border-radius:50%; background:var(--surface); color:var(--ink2); display:inline-flex; align-items:center; justify-content:center; font-size:17px; box-shadow:0 1px 3px rgba(20,26,51,.16); }
+.stage.done { color:var(--ink); }
+.stage.done .n { background:var(--ok-bg); color:var(--ok-ink); box-shadow:none; }
+.stage.cur { background:var(--acc); color:var(--on-acc); box-shadow:0 8px 22px var(--acc-glow); }
+.stage.cur .n { background:rgba(255,255,255,.26); color:inherit; box-shadow:none; }
+#gen .g { color:var(--acc); font-weight:800; font-size:32px; letter-spacing:-.02em; }
+
+/* controls */
+.btn { border:1.5px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(20,26,51,.05); }
+.btn.primary { background:var(--acc); border-color:var(--acc); color:var(--on-acc); box-shadow:0 8px 18px var(--acc-glow); }
+.btn.quiet { background:transparent; box-shadow:none; border-color:transparent; color:var(--ink2); }
+.btn kbd { border-radius:6px; background:var(--wash); border-color:var(--line); color:var(--ink2); }
+.btn.primary kbd { background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.42); color:inherit; }
+.vsep { background:var(--line); width:1.5px; }
+#tier .track { height:8px; background:var(--line); }
+#tier .stop { border-color:var(--axis); background:var(--surface); }
+#tier .stop.cur { background:var(--acc); border-color:var(--acc); box-shadow:0 0 0 4px var(--acc-tint); }
+.field { border:1.5px solid var(--line); border-radius:10px; background:var(--surface); }
+.switch i { background:var(--acc); }
+
+/* panels */
+.panel { background:var(--surface); border:none; border-radius:22px; box-shadow:var(--elev); }
+.ph { border-bottom:none; }
+.ph:not([style]) { padding:14px 22px 6px; }
+.ph h2 { font-weight:700; letter-spacing:-.01em; }
+.ph h2::before { content:""; display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--acc); margin-right:10px; vertical-align:1px; }
+th { border-bottom:none; font-size:18px; text-transform:uppercase; letter-spacing:.05em; font-weight:700; color:var(--th); padding:6px 12px; }
+td { border-bottom:1px solid var(--line-soft); padding:0 12px; }
+tbody tr:last-child td { border-bottom:none; }
+tr.hl td { background:var(--acc-tint); }
+tr.hl td:first-child { border-radius:14px 0 0 14px; }
+tr.hl td:last-child { border-radius:0 14px 14px 0; }
+
+/* chromosomes: a 1 must stand out from a 0 by weight, fill AND border, never by tint alone */
+.bit { border:1.5px solid var(--bit-line); border-radius:11px; background-color:var(--bit-bg); color:var(--bit-ink); font-weight:600; }
+.bit.one { background-color:var(--one-bg); border:2px solid var(--one-line); color:var(--one-ink); font-weight:800; }
+.bit.hatch { background-image:repeating-linear-gradient(135deg, transparent 0 5px, var(--hatch) 5px 7px); }
+.bit.flip { border-color:var(--flip); background-color:var(--flip-bg); color:var(--flip); box-shadow:0 5px 0 -1px var(--flip); }
+.bit.cutafter::before { border-right:3px dashed var(--acc); }
+
+.badge { border:none; border-radius:999px; padding:3px 13px; background:var(--chip); color:var(--ink2); }
+.badge.ok { background:var(--ok-bg); color:var(--ok-ink); }
+.badge.flip { background:var(--flip-bg); color:var(--flip-ink); }
+.badge.bypass { background:var(--wash); border:1.5px dashed var(--axis); }
+.card { background:var(--surface); border:1.5px solid var(--line); border-radius:18px; box-shadow:0 1px 2px rgba(20,26,51,.04); }
+.chip { background:var(--surface); border:1.5px solid var(--line); border-radius:999px; }
+.chip.cur { border-width:1.5px; border-color:var(--acc); background:var(--acc-tint); color:var(--acc-ink); }
+#narr { background:var(--acc-tint); border-left:none; border-radius:18px; color:var(--ink); }
+#narr .m { color:var(--acc-ink); }
+.tag { border-color:var(--ink2); }
+.tag.pend { border-color:var(--flip); color:var(--flip-ink); }
+
+/* drawer and dialog */
+#drawer { background:var(--surface); border-left:none; border-radius:22px 0 0 22px; box-shadow:var(--drawer-shadow); }
+#drawer .sec { border-bottom-color:var(--line-soft); }
+#dim { background:var(--veil); }
+#dialog { background:var(--surface); border:none; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.4); }
+
+/* plots and scrub bar */
+svg text { fill:var(--ink2); }
+svg text.ink { fill:var(--ink); }
+svg .gr { stroke:var(--grid); }
+
+/* ---- app-only additions ---- */
+.viewport { position:fixed; inset:0; background:var(--page); overflow:hidden; }
+.canvas { position:absolute; left:50%; top:50%; width:1920px; height:1080px; transform-origin:0 0; overflow:hidden; background-clip:padding-box; }
+.sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+button:focus-visible, input:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+.btn { cursor:pointer; }
+.btn:disabled { cursor:not-allowed; }
+.tablewrap { position:absolute; left:0; right:0; top:50px; bottom:0; overflow:auto; }
+.tablewrap thead th { position:sticky; top:0; background:var(--surface); z-index:1; }
+#stagebody ol.events { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+#stagebody ol.events li { padding:8px 14px; border-radius:12px; font-size:20px; line-height:1.3; }
+#stagebody ol.events li.latest { background:var(--acc-tint); font-weight:650; }
+#stagebody ol.events li.older { color:var(--ink2); }
+.empty { color:var(--ink2); font-style:italic; }
+.statrow { display:flex; gap:14px; padding:6px 22px 0; }
+.stat { flex:1; background:var(--wash); border-radius:16px; padding:10px 16px; }
+.stat b { display:block; font-size:34px; letter-spacing:-.02em; line-height:1.1; }
+.stat span { color:var(--ink2); font-size:19px; }
+#statusline { margin-left:10px; font-size:20px; color:var(--ink2); display:block; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+#statusline.err { color:var(--flip-ink); }
+input[type=range].speed { width:200px; accent-color:var(--acc); }
+
+/* ---- selection and pairing views ---- */
+.expl { margin:0 0 8px; font-size:20px; color:var(--ink2); }
+.roulette { display:flex; gap:22px; height:calc(100% - 36px); }
+.wheelbox { width:350px; flex:none; margin:0; text-align:center; }
+.wheelbox figcaption { font-size:18px; color:var(--ink2); margin-top:-8px; }
+.sidecol { flex:1; min-width:0; display:flex; flex-direction:column; gap:10px; }
+.formula { font-size:19px; color:var(--ink2); }
+.formula b { color:var(--ink); }
+.notice { background:var(--flip-bg); color:var(--flip-ink); border-radius:14px; padding:8px 14px; font-size:19px; line-height:1.25; }
+.notice b::before { content:"⚠ "; }
+.weights { flex:1; min-height:0; overflow:auto; }
+.weights table { font-size:20px; }
+.weights td { height:36px; }
+.weights th small { display:block; text-transform:none; letter-spacing:0; font-weight:500; font-size:16px; }
+.chips { list-style:none; margin:0; padding:0; display:flex; gap:8px; }
+.chips .chip { flex:1; padding:4px 8px; text-align:center; font-size:19px; white-space:nowrap; }
+.poolbox { display:flex; align-items:center; gap:12px; }
+.poollabel { font-weight:700; font-size:19px; color:var(--ink2); white-space:nowrap; }
+.poolstrip { list-style:none; margin:0; padding:0; display:flex; gap:8px; flex-wrap:wrap; }
+.poolstrip li { min-width:68px; text-align:center; padding:3px 10px; border-radius:12px; border:1.5px dashed var(--axis); font-weight:800; font-size:22px; color:var(--ink2); }
+.poolstrip li.filled { border-style:solid; border-color:var(--one-line); background:var(--one-bg); color:var(--one-ink); }
+.poolstrip .slotno { display:block; font-size:16px; font-weight:600; line-height:1.1; }
+.tournament, .pairing { display:flex; flex-direction:column; gap:10px; height:100%; }
+.tournament .expl { margin:0; }
+.tgrid { flex:1; min-height:0; overflow:auto; display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; align-content:start; }
+.tcard, .pcard { padding:8px 14px; }
+.tcard.current, .pcard.current { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-tint); }
+.tcard.pending, .pcard.pending { border-style:dashed; background:transparent; box-shadow:none; }
+.thead { display:flex; align-items:center; gap:10px; font-size:20px; }
+.contestants { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:4px; }
+.contestants li { display:flex; align-items:center; gap:12px; font-size:19px; padding:2px 6px; border-radius:10px; }
+.contestants li.win { background:var(--ok-bg); }
+.pgrid { display:flex; gap:12px; flex-wrap:wrap; }
+.pcard { flex:1; min-width:380px; }
+.parents { display:flex; gap:18px; margin-top:6px; flex-wrap:wrap; }
+.parent { display:flex; flex-direction:column; gap:4px; font-size:19px; }
+.notes { margin:0; padding:0 0 0 22px; font-size:19px; color:var(--ink2); }
+
+/* ---- layout fixes found by looking at the real screens ---- */
+.chips { flex-wrap:wrap; }
+.chips .chip { flex:0 0 auto; padding:3px 12px; }
+.poolstrip { max-height:84px; overflow:auto; }
+.pairing { overflow:hidden; height:calc(100% - 36px); }
+.pgrid { flex:1; min-height:0; overflow:auto; display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; align-content:start; }
+.pcard { min-width:0; flex:none; }
+.parents { display:flex; flex-direction:column; gap:2px; margin-top:4px; }
+.parent { display:flex; flex-direction:row; align-items:center; gap:12px; font-size:19px; }
+.notes { flex:none; margin:0; padding:0 0 0 22px; font-size:18px; max-height:84px; overflow:auto; }
+
+/* ---- crossover and mutation views ---- */
+.crossover, .mutation { display:flex; flex-direction:column; gap:8px; height:100%; }
+.crossover .expl, .mutation .expl { margin:0; }
+.cgrid { flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:10px; }
+.ccard { padding:8px 14px; flex:none; }
+.ccard.current { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-tint); }
+.ccard.pending { border-style:dashed; background:transparent; box-shadow:none; }
+.cbody { display:flex; flex-wrap:wrap; gap:8px 40px; margin-top:6px; }
+.cside { display:flex; flex-direction:column; gap:4px; }
+.chead { font-size:17px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--th); }
+.crow { display:flex; align-items:center; gap:14px; }
+.crow .who { width:200px; font-size:18px; color:var(--ink2); flex:none; }
+.crow.dropped { opacity:.55; }
+.key { margin:0; font-size:18px; color:var(--ink2); }
+.mwrap { flex:1; min-height:0; overflow:auto; }
+.mtable { font-size:20px; white-space:nowrap; }
+.mtable td { height:46px; }
+.mtable .who { font-weight:700; margin-right:8px; }
+.mtable .draw { font-variant-numeric:tabular-nums; }
+.mtable td.flipcell { outline:3px solid var(--flip); outline-offset:-3px; border-radius:8px; font-weight:700; color:var(--flip-ink); }
+.mtable td.result .bits { margin-right:10px; }
+.mtable tr.hl td { background:var(--acc-tint); }
+.mtable th.num, .mtable td.draw { padding-left:6px; padding-right:6px; }
+.mtable td.result { white-space:normal; }
+.mtable td.result .badge { font-size:17px; padding:2px 10px; }
+
+/* evaluation and replacement */
+.evaluation, .replacement { display:flex; flex-direction:column; height:calc(100% - 36px); min-height:0; }
+.etable td.strong { font-weight:700; }
+.rgrid { flex:1; min-height:0; display:grid; grid-template-columns:280px 1fr 320px; gap:14px; overflow:auto; align-content:start; }
+.rcol { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.rrow { display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; padding:4px 6px; border-bottom:1px solid var(--grid); font-size:19px; }
+.rrow .who { font-weight:700; min-width:1.8em; }
+.rrow .fit { font-variant-numeric:tabular-nums; font-weight:700; min-width:2.2em; text-align:right; }
+.rrow.dim { opacity:.62; }
+.rrow .note { flex-basis:100%; font-size:16px; color:var(--ink2); padding-left:2.4em; }
+.rrow .badge { font-size:16px; padding:1px 9px; }
+.rrow { flex-wrap:nowrap; gap:4px 8px; padding:2px 4px; }
+.rrow .bit.sm { width:25px; height:29px; font-size:18px; }
+.rrow .bits { gap:2px; }
+.rrow .badge { white-space:nowrap; font-size:15px; padding:1px 8px; }
+.rrow .rank { font-size:15px; color:var(--ink2); white-space:nowrap; }
+.rrow .note { flex-basis:auto; font-size:14px; }
+.rrow:has(.note) { flex-wrap:wrap; }
+.cutnote { margin:0 0 4px; font-size:16px; color:var(--ink2); }
+
+/* plots */
+.plot svg { display:block; padding:0 6px; }
+.plot svg text { fill:var(--ink2); font-size:18px; font-family:inherit; }
+.plot svg text.ink { fill:var(--ink); }
+.plot svg .gr { stroke:var(--grid); stroke-width:1; }
+.plot .legend { font-size:17px; white-space:nowrap; }
+.plot .legend b { color:var(--ink); }
+.allele { display:flex; align-items:flex-end; gap:10px; height:112px; padding:6px 14px 0; box-sizing:border-box; }
+.allele .gene { flex:1; text-align:center; }
+.allele .bar { margin:0 8px; border:2px solid var(--ink2); background:var(--seq4); border-radius:4px 4px 0 0; }
+.allele .gene b { display:block; font-size:19px; }
+.allele .gene span { font-size:17px; color:var(--ink2); }
+.plot .summary { margin:6px 16px 0; font-size:18px; line-height:1.25; color:var(--ink2); }
+
+/* run history bar and the discard notice */
+.history { position:absolute; left:0; top:1014px; width:1920px; height:66px; display:flex; align-items:center; background:var(--surface); box-shadow:0 -1px 0 var(--hair); }
+.history .title { width:200px; padding-left:24px; box-sizing:border-box; line-height:1.15; }
+.history .title b { display:block; font-size:20px; }
+.history .title span { font-size:17px; }
+.history .scrub { width:1440px; height:66px; cursor:pointer; touch-action:none; border-radius:8px; }
+.history .scrub:focus-visible { outline:3px solid var(--acc); outline-offset:-3px; }
+.history .scrub svg { display:block; }
+.history .track { fill:var(--grid); }
+.history .fill { fill:var(--acc); }
+.history .cell-tick { stroke:var(--ink2); stroke-width:2; }
+.history .stage-tick { stroke:var(--axis); stroke-width:1.5; }
+.history .thumb { fill:var(--ink); }
+.history text { fill:var(--ink2); font-size:17px; font-family:inherit; }
+.history text.current { fill:var(--ink); font-weight:700; }
+.history .live { margin-left:auto; margin-right:24px; }
+.history .live:disabled { opacity:.45; cursor:default; }
+.scrim { position:absolute; inset:0; background:rgba(10,14,30,.45); display:flex; align-items:center; justify-content:center; z-index:20; }
+.dialog { width:760px; background:var(--surface); border:2px solid var(--ink); border-radius:16px; padding:28px 32px; box-shadow:0 20px 60px rgba(0,0,0,.35); }
+.dialog h2 { margin:0 0 12px; font-size:30px; }
+.dialog #dialog-text p { margin:0 0 12px; font-size:23px; }
+.dialog p { margin:0 0 12px; font-size:23px; }
+.dialog .actions { display:flex; gap:14px; justify-content:flex-end; margin-top:20px; }
+
+/* parameter drawer */
+#drawer { position:absolute; left:1282px; top:156px; width:638px; height:858px; overflow-y:auto; background:var(--surface); border-left:2px solid var(--ink); box-shadow:-12px 0 32px rgba(10,14,40,.22); z-index:10; font-size:20px; }
+#drawer:focus { outline:none; }
+#drawer .dh { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; position:sticky; top:0; background:var(--surface); border-bottom:1px solid var(--hair); z-index:2; }
+#drawer .dh h2 { margin:0; font-size:28px; }
+#drawer .sec { padding:12px 20px 14px; border-bottom:1px solid var(--hair); }
+#drawer h3 { margin:0 0 6px; font-size:22px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+#drawer h3 .note { font-size:16px; font-weight:400; color:var(--ink2); }
+#drawer .ctl { display:grid; grid-template-columns:1fr auto; align-items:center; column-gap:12px; padding:5px 0; }
+#drawer .ctl.wide { grid-template-columns:1fr; }
+#drawer .ctl label, #drawer .ctl .label { font-size:20px; }
+#drawer .ctl .field { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+#drawer .ctl.wide .field { justify-content:stretch; }
+#drawer .ctl .help { grid-column:1 / -1; margin:2px 0 0; font-size:16px; line-height:1.3; color:var(--ink2); }
+#drawer .ctl .err, #drawer .err { grid-column:1 / -1; margin:2px 0 0; font-size:17px; font-weight:600; color:var(--flip-ink); }
+#drawer input[type=text], #drawer select, #drawer textarea { font:inherit; font-size:20px; color:var(--ink); background:var(--surface); border:2px solid var(--ink2); border-radius:8px; padding:4px 10px; height:42px; box-sizing:border-box; }
+#drawer input[type=text] { width:130px; text-align:right; font-variant-numeric:tabular-nums; }
+#drawer input[type=text]:disabled { opacity:.45; }
+#drawer textarea { width:100%; height:auto; font-family:ui-monospace,Consolas,monospace; letter-spacing:.08em; }
+#drawer .ctl.bad input, #drawer .ctl.bad select, #drawer .ctl.bad textarea, #drawer input[aria-invalid=true] { border-color:var(--flip); background:var(--flip-bg); }
+#drawer .switch { display:inline-flex; align-items:center; gap:8px; font-weight:700; font-size:18px; }
+#drawer .switch input { width:26px; height:26px; accent-color:var(--acc); }
+#drawer .tag { font-size:14px; font-weight:700; border-radius:6px; padding:1px 8px; border:1.5px solid currentColor; white-space:nowrap; }
+#drawer .tag.pend { color:var(--flip-ink); }
+#drawer .tag.reset { color:var(--ink2); border-style:dashed; }
+#drawer .warn { margin:10px 20px 0; padding:8px 12px; border:2px solid var(--flip); background:var(--flip-bg); border-radius:8px; color:var(--flip-ink); font-size:17px; }
+#drawer .warn p { margin:0; }
+#drawer .applyreset { display:flex; align-items:center; gap:12px; padding-top:8px; }
+#drawer .applyreset .help { font-size:16px; color:var(--ink2); }
+#drawer .btn.tiny { height:34px; min-width:34px; padding:0 8px; font-size:16px; }
+#drawer .btn:disabled { opacity:.45; cursor:default; }
+#drawer .chain ol { list-style:none; margin:6px 0; padding:0; display:flex; flex-direction:column; gap:8px; }
+#drawer .chain li { border:2px solid var(--axis); border-radius:10px; padding:6px 10px; }
+#drawer .chain li.bad { border-color:var(--flip); background:var(--flip-bg); }
+#drawer .chain .stephead { display:flex; align-items:center; justify-content:space-between; }
+#drawer .chain .steptools { display:flex; gap:6px; }
+#drawer .chain .help { margin:2px 0 4px; font-size:16px; color:var(--ink2); }
+#drawer .chain .param { display:grid; grid-template-columns:auto auto 1fr; align-items:center; gap:8px; font-size:18px; }
+#drawer .chain .param small { color:var(--ink2); font-size:14px; line-height:1.2; }
+#drawer .chain .addstep { display:flex; align-items:center; gap:8px; }
+#drawer .handpop table { margin-top:8px; font-size:19px; }
+#drawer .handpop td { height:40px; }
+#drawer .handpop tr.bad td { color:var(--flip-ink); font-weight:600; }
+.pendingchip { font-size:16px; font-weight:700; color:var(--flip-ink); background:var(--flip-bg); border-radius:999px; padding:3px 12px; white-space:nowrap; }
+
+#drawer .lesson { margin:4px 0; font-size:19px; font-weight:600; }
+#drawer [data-section=presets] .help { margin:2px 0 4px; font-size:16px; line-height:1.3; color:var(--ink2); }
+
+#brand .trow { display:flex; align-items:center; gap:10px; }
+#brand .presetchip { font-size:15px; font-weight:700; color:var(--acc-ink); background:var(--acc-tint); border-radius:999px; padding:1px 10px; white-space:nowrap; }
+
+/* keyboard focus must always be visible */
+:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+.btn:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+
+/* projector mode: larger text and heavier lines, same layout */
+.canvas.projector { font-size:22px; }
+.projector .btn { border-width:3px; }
+.projector .btn kbd { font-size:15px; }
+.projector #brand .s, .projector #gen .l { font-size:21px; }
+.projector td, .projector table { font-size:23px; }
+.projector th { font-size:20px; }
+.projector .bit { border-width:3px; }
+.projector .bit.sm { font-size:24px; }
+.projector .expl, .projector .note, .projector .key, .projector .cutnote { font-size:21px; }
+.projector #narr { font-size:23px; }
+.projector #legend { font-size:21px; }
+.projector .badge { font-size:20px; border-width:2.5px; }
+.projector .plot svg text { font-size:20px; }
+.projector .plot svg path[data-series], .projector .plot svg line[data-now-line] { stroke-width:3.5; }
+.projector .plot svg .gr { stroke-width:2; }
+.projector .plot .legend { font-size:19px; }
+.projector .plot .summary { font-size:20px; }
+.projector .allele .gene b { font-size:21px; }
+.projector .allele .gene span { font-size:19px; }
+.projector .history text { font-size:19px; }
+.projector .history .track { height:14px; }
+.projector .history .thumb { width:10px; }
+.projector #drawer { font-size:22px; }
+.projector #drawer .ctl .help, .projector #drawer .help { font-size:18px; }
+.projector .rrow, .projector .rrow .badge { font-size:21px; }
+.projector .rrow .rank, .projector .rrow .note { font-size:17px; }
+.projector tr.hl td { border-bottom-width:2px; }
+
+/* the current micro-step is marked by a symbol and a heavier outline as well as a tint */
+tr.hl td:first-child::before { content:"\25B8\00a0"; font-weight:700; }
+.tcard.current .thead::before, .pcard.current .thead::before, .ccard.current .thead::before { content:"\25B8\00a0"; font-weight:700; }
+.chip.cur { text-decoration:underline; text-underline-offset:4px; }
+
+/* the playback speed: four stops, a thick track and a large thumb */
+input[type=range].speed { height:28px; cursor:pointer; }
+input[type=range].speed::-webkit-slider-runnable-track { height:10px; border-radius:5px; background:var(--grid); border:1px solid var(--axis); }
+input[type=range].speed::-webkit-slider-thumb { -webkit-appearance:none; width:24px; height:24px; margin-top:-4px; border-radius:50%; background:var(--acc); border:3px solid var(--surface); box-shadow:0 0 0 2px var(--acc); }
+input[type=range].speed::-moz-range-track { height:10px; border-radius:5px; background:var(--grid); border:1px solid var(--axis); }
+input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:var(--acc); border:3px solid var(--surface); box-shadow:0 0 0 2px var(--acc); }
+
+/* a user who asks for less motion gets none, whatever else is styled */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition:none !important; animation:none !important; scroll-behavior:auto !important; }
+}
+#brand .trow .t { white-space:nowrap; flex:none; }
+#brand .presetchip { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+
+/* switching the bottom-right plots */
+.plot .legend .btn.tiny { height:30px; padding:0 8px; font-size:16px; margin-left:10px; vertical-align:middle; }
+
+
+/* ---------- mock chrome (not part of the design) ---------- */
+html, body { background:#2b2b2b; overflow:auto; }
+body { height:auto; }
+#mockbar { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:6px 10px; background:#111; color:#eee; font:13px system-ui,sans-serif; }
+#mockbar b { color:#ffb300; margin-right:6px; }
+#mockbar button { background:#333; color:#eee; border:1px solid #555; border-radius:4px; padding:3px 8px; font:13px system-ui; cursor:pointer; }
+#mockbar button.on { background:#7040ec; border-color:#7040ec; }
+#mockbar .sep { width:1px; height:18px; background:#555; margin:0 4px; }
+#stagewrap { margin-top:40px; }
+#screen { position:relative; width:1920px; height:1080px; overflow:hidden; background:var(--page); color:var(--ink); font-size:20px; line-height:1.3; transform-origin:0 0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+#screen .abs { position:absolute; }
+#screen.projector { font-size:22px; }
+
+/* ---------- new for letters ---------- */
+.gcell { display:inline-flex; flex-direction:column; align-items:center; gap:2px; vertical-align:top; }
+.gcell .under { font-size:15px; height:18px; line-height:18px; color:var(--ink2); font-weight:700; }
+.gcell .under.ok { color:var(--good); }
+.bit.letter { font-family:ui-monospace,Consolas,monospace; font-weight:600; }
+.bit.letter.one { font-weight:800; }
+.bit.sm.letter { width:26px; height:34px; font-size:21px; }
+.bits.tight { gap:3px; }
+.tgtrow { display:inline-flex; gap:3px; color:var(--ink2); font-family:ui-monospace,Consolas,monospace; font-weight:700; }
+.tgtrow span { width:26px; text-align:center; font-size:19px; }
+.tgtlabel { font-size:15px; color:var(--ink2); margin-right:6px; }
+/* variant B: matches are marked by a heavy baseline instead of a ✓ */
+.varB .bit.letter.one { box-shadow:0 5px 0 -1px var(--acc-ink); }
+.varB .bit.letter:not(.one) { border-style:dashed; }
+.varB .gcell .under { display:none; }
+.varA .tgtheader { display:none; }
+.cap { font-size:15px; color:var(--ink2); margin:4px 0 0; }
+.note2 { font-size:17px; color:var(--ink2); }
+.mockdrawer { position:absolute; left:1282px; top:156px; width:638px; height:858px; background:var(--surface); border-left:2px solid var(--ink); box-shadow:-12px 0 32px rgba(10,14,40,.22); overflow:hidden; z-index:10; font-size:20px; }
+.matchbar { display:flex; align-items:flex-end; gap:6px; height:112px; padding:6px 14px 0; }
+.matchbar .gene { flex:1; text-align:center; }
+.matchbar .bar { margin:0 2px; border:2px solid var(--ink2); background:var(--seq4); border-radius:4px 4px 0 0; }
+.matchbar .gene b { display:block; font-size:17px; }
+.matchbar .gene span { font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; }
+
+/* ---------- new for the trap ---------- */
+.presetchip { margin-left:14px; font-size:17px; background:var(--chip); color:var(--ink2); border-radius:999px; padding:2px 12px; vertical-align:middle; font-weight:600; }
+.menulist { list-style:none; margin:0; padding:6px; min-width:260px; background:var(--surface); border:2px solid var(--ink); border-radius:10px; box-shadow:0 12px 30px rgba(0,0,0,.25); font-size:22px; font-weight:600; }
+.menulist li { padding:8px 12px; border-radius:8px; display:flex; gap:10px; }
+.menulist li.cur { font-weight:800; background:var(--acc-tint); }
+.menulist li span { width:1.2em; }
+.ktable td { padding-top:3px; padding-bottom:3px; vertical-align:middle; }
+.ktable .num.strong { font-weight:800; }
+.ktable .colnote { display:block; font-size:13px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--ink2); }
+.ktable th, .ktable td { padding-left:5px; padding-right:5px; }
+.ktable .dec { font-size:17px; white-space:nowrap; color:var(--ink2); font-variant-numeric:tabular-nums; }
+.ktable td.chr { white-space:nowrap; }
+.bit.g { position:relative; border-radius:6px; }
+.bit.g em.below { position:absolute; top:100%; left:0; right:0; text-align:center; font-style:normal; }
+.bit.g em.below u { text-decoration:none; font-size:10px; color:var(--ink2); font-weight:400; }
+.bits.grp .blk { display:inline-flex; gap:2px; position:relative; }
+.bits.grp .blk::before { content:""; position:absolute; left:-1px; right:-1px; top:-6px; height:4px; border:2px solid var(--ink2); border-bottom:none; border-radius:4px 4px 0 0; }
+/* the block row, printed once above the genes */
+.blkhdr { display:flex; align-items:flex-end; margin-top:2px; text-transform:none; letter-spacing:0; font-weight:400; }
+.blkhdr .lbl { margin-right:6px; font-size:12px; color:var(--ink2); } .blkhdr .lbl i { font-style:normal; }
+.blkrow { display:inline-flex; }
+.blkrow .brk { text-align:center; font-size:14px; font-weight:700; color:var(--ink); border-bottom:3px solid var(--ink2); padding-bottom:1px; }
+.blkrow.loose .bn { text-align:center; font-size:13px; font-weight:700; font-family:ui-monospace,Consolas,monospace; border-bottom:3px solid var(--ink2); padding-bottom:1px; }
+.blkrow.loose .bn.b1 { border-bottom-style:dotted; background:color-mix(in srgb, var(--ink2) 10%, transparent); }
+.cline { display:flex; margin-top:2px; font-size:14px; }
+.cline.grp { display:inline-flex; }
+.cline .cb { text-align:center; white-space:nowrap; font-weight:700; color:var(--ink2); font-variant-numeric:tabular-nums; }
+.cline .cb.opt { color:var(--good); } .cline .cb.att { color:var(--flip-ink); }
+.cline.text { gap:12px; flex-wrap:nowrap; font-size:13px; }
+.cline.text .cb b { font-weight:800; }
+.cline.text .cb.vsplit b, .cb.vsplit { color:var(--flip-ink); }
+.cb.vB { color:var(--ink2); }
+/* crossover view */
+.cgrid2 { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+.cbody2 .chrow { display:flex; align-items:center; gap:12px; min-height:36px; }
+.chrow .who { width:150px; font-size:16px; color:var(--ink2); flex:none; }
+.chrow.marks { min-height:20px; margin-top:-4px; }
+.crow2 { margin-bottom:4px; }
+.chead { font-weight:700; font-size:15px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink2); margin:4px 0 2px; }
+.badge.warn { border-color:var(--flip); color:var(--flip-ink); } .badge.quiet { border-style:dashed; border-color:var(--ink2); color:var(--ink2); font-weight:500; }
+.card.ccard { border:2px solid var(--line); border-radius:16px; padding:6px 12px; background:var(--surface); }
+.card.ccard.current { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-tint); }
+.card.ccard.pending { border-style:dashed; background:transparent; }
+.card.ccard .thead { display:flex; align-items:center; gap:12px; font-size:18px; }
+/* mutation cards */
+.mcards2 { display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+.mcard { border:2px solid var(--line); border-radius:16px; padding:6px 12px; background:var(--surface); }
+.mcard.current { border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-tint); }
+.mcard .crow { display:flex; align-items:center; gap:12px; }
+.mcard .crow .who { width:60px; font-weight:700; font-size:20px; }
+.mcard .crow .who.sub { font-weight:400; font-size:15px; }
+.mcard .crow.res { margin-top:22px; }
+.gcell { display:inline-flex; flex-direction:column; align-items:center; }
+.gcell .under { font-size:11px; height:16px; line-height:16px; color:var(--ink2); font-weight:700; font-variant-numeric:tabular-nums; margin-top:2px; }
+.gcell .under.flag { outline:2px solid var(--flip); outline-offset:-2px; border-radius:5px; color:var(--flip-ink); padding:0 2px; }
+.badge.flip { border-color:var(--flip); background:var(--flip-bg); color:var(--flip-ink); }
+/* block states panel */
+.bstates { padding:2px 16px 0; }
+.bsrow { display:flex; align-items:center; gap:10px; height:26px; font-size:16px; }
+.bsrow b { width:70px; font-weight:700; }
+.bits.grp .blk:has(.below) { margin-bottom:14px; }
+.chrow .badge { white-space:nowrap; }
+.bsnum { width:128px; font-size:15px; color:var(--ink2); text-align:right; white-space:nowrap; }
+.ktable td.chr > div { display:block; }
+.cgrid2 + .key { font-size:16px; margin:2px 0 0; white-space:nowrap; }
+.cgrid2 .cbody2 .ctarget { min-height:22px; }
+.bsbar { flex:1; display:flex; height:22px; border:2px solid var(--ink2); border-radius:5px; overflow:hidden; background:var(--surface); }
+.bsbar .sg { display:flex; align-items:center; justify-content:center; font-style:normal; font-size:14px; font-weight:700; }
+.bsbar .sg.opt { background:var(--seq3); color:#fff; }
+.bsbar .sg.mid { background:var(--surface); }
+.bsbar .sg.att { background:repeating-linear-gradient(135deg, var(--flip) 0 4px, var(--surface) 4px 8px); color:var(--ink); }
+.bskey { display:flex; gap:14px; font-size:14px; color:var(--ink2); margin-top:2px; }
+/* tabs and the schema tracker */
+.tabs { position:absolute; left:16px; top:50px; display:flex; gap:6px; }
+.tabs .tab { padding:4px 14px; border:2px solid var(--line); border-radius:10px 10px 0 0; font-size:17px; font-weight:600; color:var(--ink2); }
+.tabs .tab.on { border-color:var(--acc); background:var(--acc-tint); color:var(--ink); }
+.schema { font-size:18px; }
+.schema .srow { display:flex; align-items:center; gap:12px; margin:8px 0; }
+.schema input { font:inherit; font-family:ui-monospace,Consolas,monospace; letter-spacing:.06em; border:2px solid var(--ink2); border-radius:6px; background:var(--surface); color:var(--ink); height:34px; padding:0 8px; }
+.sfacts { display:flex; gap:28px; color:var(--ink2); font-size:16px; } .sfacts i { font-style:normal; }
+.scharts { display:flex; gap:24px; margin-top:6px; } .scharts h3 { margin:0; font-size:17px; } .scharts svg text { fill:var(--ink); } .scharts .gr { stroke:var(--line); }
+.schema .sum { margin:6px 0 2px; } .schema .caveat { margin:0; color:var(--ink2); font-size:16px; font-style:italic; }
+/* drawer */
+.mockdrawer .err { color:var(--flip-ink); font-weight:600; margin:4px 0 0; font-size:17px; }
+.trapdef { margin:8px 0; padding:8px 12px; border:2px dashed var(--ink2); border-radius:10px; font-size:16px; line-height:1.3; }
+
+</style>
+</head>
+<body>
+<div id="mockbar">
+  <b>Trap mock</b>
+  <button data-s="cross">Crossover</button>
+  <button data-s="mut">Mutation</button>
+  <button data-s="schema">Schema tracker</button>
+  <button data-s="table">Population (wide)</button>
+  <button data-s="menu">Menu</button>
+  <button data-s="drawer">Drawer</button>
+  <span class="sep"></span>
+  <button data-l="tight">Tight</button>
+  <button data-l="loose">Loose</button>
+  <button data-ls="A">Loose A: block numbers on the genes</button>
+  <button data-ls="B">Loose B: genes grouped by block</button>
+  <span class="sep"></span>
+  <button data-x="0">4 × 5</button><button data-x="2">6 × 5 (30 genes)</button><button data-x="1">8 × 5 (40 genes)</button>
+  <button data-bad="0">Drawer ok</button><button data-bad="1">Drawer error</button>
+  <span class="sep"></span>
+  <button data-t="light">Light</button><button data-t="dark">Dark</button>
+  <button data-z="fit">Fit</button><button data-z="1">100%</button>
+  <button data-p="0">Normal</button><button data-p="1">Projector</button>
+</div>
+<div id="stagewrap"><div id="screen"></div></div>
+<script>
+/* ===== Trap mock: hand-made data, thrown away after review. Default k = 4, m = 5 (20 genes); stress case k = 8, m = 5 (40 genes). ===== */
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const sum = (a) => a.reduce((t, x) => t + x, 0);
+const OPT_MARK = '✓', ATT_MARK = '▽';
+
+/* ---------- the trap ---------- */
+const cfgOf = () => (state.stress === '1' ? { k: 8, m: 5 } : state.stress === '2' ? { k: 6, m: 5 } : { k: 4, m: 5 });
+const lengthOf = (c) => c.k * c.m;
+const blockOf = (g, c) => (state.link === 'tight' ? Math.floor(g / c.k) : g % c.m); // gene index 0-based -> block 0-based
+const genesOf = (b, c) => Array.from({ length: lengthOf(c) }, (_, g) => g).filter((g) => blockOf(g, c) === b);
+const contribution = (u, k) => (u === k ? k : k - 1 - u);
+function blocksOf(bits, c) {
+  return Array.from({ length: c.m }, (_, b) => {
+    const gs = genesOf(b, c), text = gs.map((g) => bits[g]).join(''), u = [...text].filter((x) => x === '1').length;
+    return { b, gs, text, u, score: contribution(u, c.k), state: u === c.k ? 'opt' : u === 0 ? 'att' : 'mid' };
+  });
+}
+const fitnessOf = (bits, c) => sum(blocksOf(bits, c).map((x) => x.score));
+
+/* ---------- hand-made populations ---------- */
+const POP4 = ['00001111000000010000', '00000000111000000110', '11110000010000001111', '00000000000010000000', '11111111000000000001', '00010000111100100000'];
+function lcg(seed) { let s = seed; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function bigPop() {
+  const r = lcg(7);
+  return Array.from({ length: 6 }, () => Array.from({ length: 40 }, () => (r() < 0.22 ? '1' : '0')).join(''));
+}
+const POP8 = bigPop();
+const pop = () => (state.stress === '1' ? POP8 : state.stress === '2' ? POP8.map((b) => b.slice(0, 30)) : POP4);
+const cross = (a, b, cuts) => { // cuts: 1-based genes after which a cut falls; returns the two children and their sources
+  const src = [];
+  let flip = false; let ci = 0;
+  for (let g = 0; g < a.length; g++) { src.push(flip ? 'B' : 'A'); if (cuts[ci] === g + 1) { flip = !flip; ci++; } }
+  const c1 = [...a].map((x, g) => (src[g] === 'A' ? a[g] : b[g])).join('');
+  const c2 = [...a].map((x, g) => (src[g] === 'A' ? b[g] : a[g])).join('');
+  return { c1, c2, s1: src, s2: src.map((s) => (s === 'A' ? 'B' : 'A')) };
+};
+const prng = lcg(3);
+const draws = (n, flips) => Array.from({ length: n }, (_, g) => (flips.includes(g + 1) ? (0.01 + prng() * 0.04).toFixed(3) : (0.06 + prng() * 0.93).toFixed(3)));
+
+/* ---------- chromosome cells ---------- */
+function geometry() { const c = cfgOf(); return c.k * c.m > 20 ? { w: c.k * c.m > 30 ? 14 : 16, h: 24, f: c.k * c.m > 30 ? 12 : 13, gap: 1, bgap: 5 } : { w: 20, h: 28, f: 17, gap: 2, bgap: 6 }; }
+function cell(ch, o = {}) {
+  const gm = geometry();
+  const cls = ['bit', 'g', ch === '1' ? 'one' : '', o.src === 'B' ? 'hatch' : '', o.flip ? 'flip' : '', o.cut ? 'cutafter' : ''].join(' ');
+  return `<span class="${cls}" style="width:${gm.w}px;height:${gm.h}px;font-size:${gm.f}px">${ch}${o.below ? `<em class="below">${o.below}</em>` : ''}</span>`;
+}
+const groupW = (n, extra = 0) => { const g = geometry(); return n * (g.w + extra) + (n - 1) * g.gap; };
+/* the block row: printed once above the chromosomes */
+function blockRow(extra = 0) {
+  const c = cfgOf(), gm = geometry();
+  const lab = (b) => `<b>${b + 1}</b>`;
+  if (state.link === 'tight' || state.lstyle === 'B') {
+    return `<div class="blkhdr"><span class="lbl"><i>block</i></span><span class="blkrow" style="gap:${gm.bgap}px">${Array.from({ length: c.m }, (_, b) => `<span class="brk" style="width:${groupW(c.k, extra)}px">${c.k > 3 ? 'block ' : 'b'}${b + 1}</span>`).join('')}</span></div>`;
+  }
+  return `<div class="blkhdr"><span class="lbl"><i>block</i></span><span class="blkrow loose" style="gap:${gm.gap}px">${Array.from({ length: lengthOf(c) }, (_, g) => `<span style="width:${gm.w + extra}px" class="bn b${blockOf(g, c) % 2}">${lab(blockOf(g, c))}</span>`).join('')}</span></div>`;
+}
+/* one chromosome with optional cuts (1-based, genes after which a cut falls), sources and flipped genes; loose style B lists genes block by block */
+function chrom(bits, o = {}) {
+  const c = cfgOf(), gm = geometry(), cuts = o.cuts || [], flips = o.flips || [], src = o.src;
+  const one = (g) => cell(bits[g], { src: src && src[g], flip: flips.includes(g + 1), cut: cuts.includes(g + 1) && !(state.link === 'loose' && state.lstyle === 'B') });
+  if (state.link === 'tight') {
+    return `<span class="bits grp" style="gap:${gm.bgap}px">${Array.from({ length: c.m }, (_, b) => `<span class="blk" data-b="${b + 1}">${genesOf(b, c).map(one).join('')}</span>`).join('')}</span>`;
+  }
+  if (state.lstyle === 'B') { // grouped by block; the true positions printed under the genes
+    return `<span class="bits grp" style="gap:${gm.bgap}px">${Array.from({ length: c.m }, (_, b) => `<span class="blk">${genesOf(b, c).map((g) => cell(bits[g], { src: src && src[g], flip: flips.includes(g + 1), below: `<u>${g + 1}</u>` })).join('')}</span>`).join('')}</span>`;
+  }
+  return `<span class="bits" style="gap:${gm.gap}px">${[...bits].map((_, g) => one(g)).join('')}</span>`;
+}
+/* contributions under a chromosome: under each block (tight and loose-B) or as a line (loose-A) */
+function markOf(x) { return x.state === 'opt' ? `${OPT_MARK} ${x.score}` : x.state === 'att' ? `${ATT_MARK} ${x.score}` : `${x.score}`; }
+function contribLine(bits) {
+  const c = cfgOf(), gm = geometry(), bl = blocksOf(bits, c);
+  if (state.link === 'tight' || state.lstyle === 'B') return `<span class="cline grp" style="gap:${gm.bgap}px">${bl.map((x) => `<span class="cb ${x.state}" style="width:${groupW(c.k)}px">${markOf(x)}</span>`).join('')}</span>`;
+  return `<span class="cline text">${bl.map((x) => `<span class="cb ${x.state}">block ${x.b + 1}: <b>${markOf(x)}</b></span>`).join('')}</span>`;
+}
+const decoded = (bits) => blocksOf(bits, cfgOf()).map((x) => x.u).join(' · ');
+
+/* ---------- chrome ---------- */
+function topbar(cur, done, gen, line, menuOpen) {
+  const stages = ['Selection', 'Pairing', 'Crossover', 'Mutation', 'Evaluation', 'Replacement'], c = cfgOf();
+  const menu = menuOpen ? `<ul class="menulist" style="position:absolute;left:68px;top:62px;z-index:60"><li><span>&nbsp;</span> Goldberg x²</li><li><span>&nbsp;</span> Target string</li><li><span>&nbsp;</span> Knapsack</li><li class="cur"><span>✓</span> Trap</li></ul>` : '';
+  return `<div id="top"><div id="brand" style="position:relative"><span class="logo" aria-hidden="true">Tr</span><div><div class="trow"><h1 class="t" style="margin:0">Trap ▾</h1><span class="presetchip">${state.link === 'tight' ? 'tight' : 'loose'} linkage</span></div><div class="s">${c.m} blocks of ${c.k} · ${state.link} · optimum ${c.k * c.m}</div></div>${menu}</div>
+  <ol id="ribbon" style="list-style:none;margin:0">${stages.map((s, k) => `<li class="stage ${k < done ? 'done' : ''} ${k === cur ? 'cur' : ''}"><span class="n">${k < done ? '✓' : k + 1}</span><span>${s}</span></li>`).join('')}</ol>
+  <div id="gen"><div class="g">Generation ${gen}</div><div class="l">${line}</div></div></div>`;
+}
+function transport() {
+  return `<div id="transport"><button class="btn quiet">↺</button><button class="btn quiet">◂ Back <kbd>←</kbd></button><button class="btn primary">Micro-step ▸ <kbd>→</kbd></button><button class="btn quiet">◂◂</button><button class="btn">Stage ▸▸ <kbd>⇧→</kbd></button><button class="btn">Generation ⏭ <kbd>G</kbd></button><span class="vsep"></span><button class="btn">▶ Run <kbd>Space</kbd></button><button class="btn quiet">Run to stop</button><span class="vsep"></span>
+  <div id="tier"><div><input class="speed" type="range" min="0" max="3" value="0"><div class="labels" style="width:200px;margin-left:0"><span>Slow</span><span>Medium</span><span>Fast</span><span>Max</span></div></div></div><span class="vsep"></span>
+  <div id="seedbox">Seed <b>42</b> <button class="btn quiet" style="height:40px;padding:0 10px">↻ New</button></div><div id="statusline">Paused</div><span style="flex:1"></span><button class="btn quiet">◐</button><button class="btn quiet">⚙ Parameters</button><button class="btn quiet">A⁺</button></div>`;
+}
+const history = `<footer class="history"><div class="title"><b>Run history</b><span class="muted">recorded gens 0–5</span></div><div class="scrub"><svg viewBox="0 0 1440 66" width="1440" height="66"><rect x="0" y="14" width="1440" height="12" rx="6" class="track"/><rect x="0" y="14" width="1000" height="12" rx="6" class="fill"/><rect x="996" y="6" width="8" height="28" rx="3" class="thumb"/>${[0, 1, 2, 3, 4, 5].map((g) => `<text x="${(g + 0.5) * 240}" y="54" text-anchor="middle" class="${g === 4 ? 'current' : ''}">gen ${g}</text>`).join('')}</svg></div><button class="btn live" disabled>Return to live</button></footer>`;
+
+/* ---------- right-hand population table ---------- */
+function popPanel(title) {
+  const c = cfgOf(), rs = pop();
+  const head = `<tr><th>#</th><th>Chromosome${blockRow()}</th>${lengthOf(c) > 20 ? '' : '<th>Decoded<span class="colnote">1s per block</span></th>'}<th class="num">Fitness</th></tr>`;
+  const rows = rs.map((b, i) => `<tr><td>${i + 1}</td><td class="chr"><div>${chrom(b)}</div><div>${contribLine(b)}</div></td>${lengthOf(c) > 20 ? '' : `<td class="dec">${decoded(b)}</td>`}<td class="num strong">${fitnessOf(b, c)}</td></tr>`).join('');
+  const fits = rs.map((b) => fitnessOf(b, c));
+  return `<section class="panel abs" style="left:1136px;top:172px;width:760px;height:542px"><div class="ph"><h2>${title}</h2><span class="r">avg ${(sum(fits) / fits.length).toFixed(1)} · best ${Math.max(...fits)} of ${c.k * c.m}</span></div>
+  <div class="tablewrap" style="top:50px;padding:0 6px"><table class="ktable compact rt trap"><thead>${head}</thead><tbody>${rows}</tbody></table></div></section>
+  <div id="legend" style="left:1136px;top:722px;width:760px"><span><b>${OPT_MARK}</b> block all ones</span><span><b>${ATT_MARK}</b> block all zeros (attractor)</span><span><b>◆</b> parent</span><span><b>◇</b> offspring</span><span><b>✱</b> mutated gene</span></div>`;
+}
+
+/* ---------- bottom strip ---------- */
+function blockStates() {
+  const c = cfgOf(), rs = pop(), n = rs.length;
+  const rows = Array.from({ length: c.m }, (_, b) => {
+    const st = rs.map((bits) => blocksOf(bits, c)[b].state);
+    const o = st.filter((x) => x === 'opt').length, a = st.filter((x) => x === 'att').length, mid = n - o - a;
+    const seg = (cls, k) => (k ? `<i class="sg ${cls}" style="flex:${k}"></i>` : '');
+    return `<div class="bsrow"><b>block ${b + 1}</b><span class="bsbar">${seg('opt', o)}${seg('mid', mid)}${seg('att', a)}</span><span class="bsnum"><b>${OPT_MARK} ${o}</b> · ${mid} · <b>${ATT_MARK} ${a}</b></span></div>`;
+  }).join('');
+  return `<div class="bstates">${rows}<div class="bskey"><span><b>${OPT_MARK}</b> all ones</span><span>in between</span><span><b>${ATT_MARK}</b> all zeros</span><span class="muted">of ${n} individuals · now</span></div></div>`;
+}
+function strip() {
+  const c = cfgOf(), OPT = c.k * c.m;
+  const gens = [0, 1, 2, 3, 4, 5];
+  const best = [14, 15, 15, 16, 16, 16], avg = [10.5, 11.8, 12.4, 13, 13.5, 13.9], so = best;
+  const X = (g) => 66 + (780 - 66) * g / 15, Y = (v) => 138 - (138 - 28) * v / 24;
+  const path = (a) => a.map((v, k) => `${k ? 'L' : 'M'}${X(k)},${Y(v)}`).join(' ');
+  const ticks = [0, 8, 16, 24].map((v) => `<line class="gr" x1="66" x2="780" y1="${Y(v)}" y2="${Y(v)}"/><text x="58" y="${Y(v) + 6}" text-anchor="end">${v}</text>`).join('');
+  const xt = [0, 3, 6, 9, 12, 15].map((g) => `<text x="${X(g)}" y="160" text-anchor="middle">${g}</text>`).join('');
+  const att = c.m * (c.k - 1);
+  const fit = `<svg viewBox="0 0 800 188" width="100%"><g>${ticks}${xt}<line x1="66" x2="780" y1="${Y(OPT)}" y2="${Y(OPT)}" stroke="var(--ink2)" stroke-dasharray="2 5"/><text x="780" y="${Y(OPT) - 6}" text-anchor="end" style="font-size:16px">optimum ${OPT}</text><line x1="66" x2="780" y1="${Y(att)}" y2="${Y(att)}" stroke="var(--ink2)" stroke-dasharray="9 5"/><text x="780" y="${Y(att) + 20}" text-anchor="end" style="font-size:16px">all zeros ${att}</text>
+   <path d="${path(avg)}" fill="none" stroke="var(--s1)" stroke-width="2.5"/><path d="${path(so)}" fill="none" stroke="var(--s3)" stroke-width="2.5" stroke-dasharray="7 4"/><path d="${path(best)}" fill="none" stroke="var(--s2)" stroke-width="2.5"/>
+   ${gens.map((g) => `<circle cx="${X(g)}" cy="${Y(avg[g])}" r="5" fill="var(--s1)"/><rect x="${X(g) - 5}" y="${Y(best[g]) - 5}" width="10" height="10" fill="var(--s2)"/>`).join('')}
+   <line x1="${X(5)}" x2="${X(5)}" y1="28" y2="138" stroke="var(--ink)" stroke-width="2"/><text class="ink" x="${X(5)}" y="20" text-anchor="middle" style="font-weight:700;font-size:16px">now</text></g></svg>`;
+  const div = [0.52, 0.47, 0.43, 0.4, 0.36, 0.33];
+  const X2 = (g) => 56 + (500 - 56) * g / 15, Y2 = (v) => 138 - 110 * v;
+  const dv = `<svg viewBox="0 0 520 188" width="100%">${[0, 0.5, 1].map((v) => `<line class="gr" x1="56" x2="500" y1="${Y2(v)}" y2="${Y2(v)}"/><text x="48" y="${Y2(v) + 6}" text-anchor="end">${v}</text>`).join('')}${[0, 3, 6, 9, 12, 15].map((g) => `<text x="${X2(g)}" y="160" text-anchor="middle">${g}</text>`).join('')}
+   <path d="${div.map((v, k) => `${k ? 'L' : 'M'}${X2(k)},${Y2(v)}`).join(' ')}" fill="none" stroke="var(--s7)" stroke-width="2.5"/>${div.map((v, k) => `<circle cx="${X2(k)}" cy="${Y2(v)}" r="5" fill="var(--s7)"/>`).join('')}<line x1="${X2(5)}" x2="${X2(5)}" y1="28" y2="138" stroke="var(--ink)" stroke-width="2"/></svg>`;
+  return `<section class="panel plot abs" style="left:24px;top:758px;width:820px;height:244px"><div class="ph"><h2>Fitness</h2><span class="r legend"><b>●</b> average &nbsp;<b>■</b> best of gen. &nbsp;<b>▲</b> best so far</span></div>${fit}</section>
+  <section class="panel plot abs" style="left:860px;top:758px;width:540px;height:244px"><div class="ph"><h2>Diversity</h2><span class="r legend">mean pairwise Hamming, 0–1</span></div>${dv}</section>
+  <section class="panel plot abs" style="left:1416px;top:758px;width:480px;height:244px"><div class="ph"><h2>Block states</h2><span class="r legend">generation 4</span></div>${blockStates()}<p class="summary" style="margin:2px 16px 0;font-size:15px;color:var(--ink2)">blocks at all zeros, by generation 0–4: 6 · 9 · 13 · 17 · 19</p></section>
+  ${history}`;
+}
+
+/* ---------- stage views ---------- */
+const tabs = (cur) => `<div class="tabs"><span class="tab ${cur === 'stage' ? 'on' : ''}">Stage view</span><span class="tab ${cur === 'schema' ? 'on' : ''}">Schema tracker</span></div>`;
+function blockMarks(bits, src) {
+  const c = cfgOf(), gm = geometry();
+  const verdict = blocksOf(bits, c).map((x) => { const s = new Set(x.gs.map((g) => src[g])); return s.size > 1 ? 'split' : s.has('A') ? 'A' : 'B'; });
+  const sym = { A: '● A', B: '▨ B', split: '◧ split' };
+  const kept = verdict.filter((v) => v !== 'split').length;
+  const line = (state.link === 'tight' || state.lstyle === 'B')
+    ? `<span class="cline grp" style="gap:${gm.bgap}px">${verdict.map((v) => `<span class="cb v${v}" style="width:${groupW(c.k)}px">${sym[v]}</span>`).join('')}</span>`
+    : `<span class="cline text">${verdict.map((v, b) => `<span class="cb v${v}">block ${b + 1}: <b>${sym[v]}</b></span>`).join('')}</span>`;
+  return { line, kept, split: c.m - kept };
+}
+function crossoverScreen() {
+  const c = cfgOf(), p = pop(), n = lengthOf(c);
+  const cut = state.link === 'tight' ? Math.round(n / 2) - (c.k > 4 ? 3 : 0) + (c.k > 4 ? 0 : 0) : 9; // a cut inside a block for tight linkage, between genes 9 and 10 for loose
+  const cuts = [state.link === 'tight' ? (c.k > 4 ? 18 : 10) : (c.k > 4 ? 18 : 9)];
+  const a = p[2], b = p[4], x = cross(a, b, cuts);
+  const card = (pair, ra, rb, ch, pending) => {
+    if (pending) return `<section class="card ccard pending"><div class="thead"><b>Pair ${pair}</b><span class="muted">not processed yet</span></div></section>`;
+    const kids = ch.map((kid, i) => { const m = blockMarks(kid.bits, kid.src); return `<div class="crow2"><div class="chrow"><span class="who">O${i + 1}</span>${chrom(kid.bits, { cuts, src: kid.src })}</div><div class="chrow marks"><span class="who"></span>${m.line}<span class="badge ${m.split ? 'warn' : 'ok'}">${m.kept} whole${m.split ? ` · ${m.split} split` : ''}</span></div></div>`; }).join('');
+    return `<section class="card ccard current"><div class="thead"><b>Pair ${pair}</b><span class="badge ok"><span aria-hidden="true">✓</span> recombined</span><span class="muted">u = 0.41 &lt; pc 0.8 → cut after gene ${cuts[0]}</span></div>
+      <div class="cbody2"><div class="chrow ctarget"><span class="who"></span>${blockRow()}</div>
+      <div class="chrow"><span class="who">A · individual 3</span>${chrom(ra, { cuts })}</div><div class="chrow"><span class="who">B · individual 5</span>${chrom(rb, { cuts, src: [...rb].map(() => 'B') })}</div>
+      <div class="chead">Children</div>${kids}</div></section>`;
+  };
+  const body = `<div class="evaluation"><p class="expl">A block is <b>whole</b> when all its genes come from one parent, and <b>split</b> when the cut falls inside it.</p>
+  <div class="cgrid2">${card(1, a, b, [{ bits: x.c1, src: x.s1 }, { bits: x.c2, src: x.s2 }])}${card(2, p[0], p[1], [], true)}</div>
+  <p class="key">plain = A · <b>hatched</b> = B · <b>dashed</b> = cut · ● A, ▨ B = block whole from that parent · ◧ = split</p></div>`;
+  return `${topbar(2, 2, 5, 'being made · micro-step 1 of 3')}${transport()}<section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 3 · Crossover</h2></div>${tabs('stage')}<div id="stagebody" style="top:84px">${body}</div>
+  <div id="narr"><span class="m">Micro-step 1 of 3</span><span>Pair 1: cut after gene ${cuts[0]} → ${blockMarks(x.c1, x.s1).split} block${blockMarks(x.c1, x.s1).split === 1 ? '' : 's'} split, ${blockMarks(x.c1, x.s1).kept} taken whole</span></div></section>
+  ${popPanel('Parents · generation 4')}${strip()}`;
+}
+function mutationScreen() {
+  const c = cfgOf(), p = pop(), n = lengthOf(c);
+  const cuts = [state.link === 'tight' ? (c.k > 4 ? 18 : 10) : (c.k > 4 ? 18 : 9)];
+  const x = cross(p[2], p[4], cuts);
+  // O1: two flips that change contributions; O2: two flips inside one block that cancel (u unchanged)
+  const find = (bits, wantSame) => { // pick two flipped genes in one block: a 1 and a 0 (u unchanged) or two 0s
+    const bl = blocksOf(bits, c).find((x2) => x2.text.includes('1') && x2.text.includes('0') && x2.u !== c.k);
+    const ones = bl.gs.filter((g) => bits[g] === '1'), zeros = bl.gs.filter((g) => bits[g] === '0');
+    return wantSame ? [ones[0] + 1, zeros[0] + 1].sort((a, b) => a - b) : [zeros[0] + 1, zeros[1] + 1].sort((a, b) => a - b);
+  };
+  const rows = [x.c1, p[5]].map((bits, i) => {
+    const flips = find(bits, i === 1), after = [...bits].map((ch, g) => (flips.includes(g + 1) ? (ch === '1' ? '0' : '1') : ch)).join('');
+    const bb = blocksOf(bits, c), ba = blocksOf(after, c);
+    const changed = bb.filter((x2, b) => x2.score !== ba[b].score).map((x2, _, arr) => `block ${x2.b + 1}: ${x2.text} → ${ba[x2.b].text} · ${x2.score} → ${ba[x2.b].score}`);
+    const touched = [...new Set(flips.map((g) => blockOf(g - 1, c) + 1))];
+    const note = changed.length ? changed.map((t) => `<span class="badge flip">✱ ${t}</span>`).join('') : `<span class="badge quiet">flips inside block ${touched.join(', ')} cancel: ${touched.length === 1 ? `1s in the block unchanged (${bb[touched[0] - 1].u}), ` : ''}contribution unchanged</span>`;
+    const d = draws(n, flips).map((t, g) => (n > 20 && !flips.includes(g + 1) ? '' : t));
+    return { bits, after, flips, note, d, fit: [fitnessOf(bits, c), fitnessOf(after, c)] };
+  });
+  const gc = (r, g) => `<span class="gcell"><span class="bit g ${r.bits[g] === '1' ? 'one' : ''} ${r.flips.includes(g + 1) ? 'flip' : ''}" style="width:${geometry().w + 4}px;height:${geometry().h}px;font-size:${geometry().f}px">${r.bits[g]}</span><span class="under ${r.flips.includes(g + 1) ? 'flag' : ''}">${r.d[g].slice(1)}</span></span>`;
+  const mcells = (r) => (state.link === 'tight' ? Array.from({ length: c.m }, (_, b) => `<span class="blk">${genesOf(b, c).map((g) => gc(r, g)).join('')}</span>`).join('') : [...r.bits].map((_, g) => gc(r, g)).join(''));
+  const card = (r, i) => `<section class="card mcard ${i === 1 ? 'current' : ''}"><div class="crow"><span class="who">O${i + 1}</span><span class="bits ${state.link === 'tight' ? 'grp' : ''}" style="gap:${state.link === 'tight' ? geometry().bgap : 2}px">${mcells(r)}</span></div>
+    <div class="crow res"><span class="who sub">result</span>${chrom(r.after, { flips: r.flips })}<span class="muted">fitness ${r.fit[0]} → ${r.fit[1]}</span></div><div class="crow"><span class="who"></span>${r.note}</div></section>`;
+  const body = `<div class="mutation"><p class="expl">Every gene of every offspring gets its own draw u; the gene flips if u &lt; pm (0.05). A flip changes its block's contribution only if it changes how many genes of the block are 1.${n > 20 ? ` <i>With ${n} genes only the draws that flipped a gene are printed under it; every other draw was ≥ pm (see the history).</i>` : ''}</p>${blockRow(4)}<div class="mcards2">${rows.map(card).join('')}</div></div>`;
+  return `${topbar(3, 3, 5, 'being made · micro-step 2 of 6')}${transport()}<section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 4 · Mutation</h2></div>${tabs('stage')}<div id="stagebody" style="top:84px">${body}</div>
+  <div id="narr"><span class="m">Micro-step 2 of 6</span><span>Offspring 2: genes ${rows[1].flips.join(' and ')} drew below pm 0.05 → flipped; ${rows[1].note.includes('cancel') ? 'the block still has the same number of 1s, so fitness stays ' + rows[1].fit[0] : 'fitness ' + rows[1].fit[0] + ' → ' + rows[1].fit[1]}</span></div></section>
+  ${popPanel('Parents · generation 4')}${strip()}`;
+}
+function schemaScreen() {
+  const c = cfgOf();
+  const schema = '1111' + '*'.repeat(c.k * c.m - 4);
+  const counts = [1, 1, 2, 2, 3, 3], inst = [16, 16, 16.5, 17, 17.3, 17.3], popm = [10.5, 11.8, 12.4, 13, 13.5, 13.9];
+  const X = (g) => 70 + 520 * g / 5, Y = (v) => 170 - 140 * v / 20;
+  const bars = counts.map((v, g) => `<rect x="${X(g) - 22}" y="${170 - v * 24}" width="44" height="${v * 24}" fill="var(--seq3)"/><text x="${X(g)}" y="${164 - v * 24}" text-anchor="middle" style="font-size:18px;font-weight:700">${v}</text><text x="${X(g)}" y="192" text-anchor="middle" style="font-size:16px">${g}</text>`).join('');
+  const line = (a, st, dash) => `<path d="${a.map((v, k) => `${k ? 'L' : 'M'}${X(k)},${Y(v)}`).join(' ')}" fill="none" stroke="${st}" stroke-width="3" ${dash ? `stroke-dasharray="${dash}"` : ''}/>`;
+  const lines = `${[0, 10, 20].map((v) => `<line class="gr" x1="70" x2="590" y1="${Y(v)}" y2="${Y(v)}"/><text x="62" y="${Y(v) + 6}" text-anchor="end">${v}</text>`).join('')}${line(inst, 'var(--s2)')}${line(popm, 'var(--s1)', '7 4')}${[0, 1, 2, 3, 4, 5].map((g) => `<rect x="${X(g) - 5}" y="${Y(inst[g]) - 5}" width="10" height="10" fill="var(--s2)"/><circle cx="${X(g)}" cy="${Y(popm[g])}" r="5" fill="var(--s1)"/><text x="${X(g)}" y="192" text-anchor="middle" style="font-size:16px">${g}</text>`).join('')}`;
+  const body = `<div class="schema"><p class="expl">A schema fixes some genes and leaves the others free: <b>1</b> = the gene must be 1, <b>0</b> = it must be 0, <b>*</b> = anything. An individual is an <i>instance</i> of a schema if it matches every fixed gene.</p>
+   <div class="srow"><label for="sch">Schema (${lengthOf(c)} symbols)</label><input id="sch" type="text" value="${schema}" style="width:${lengthOf(c) * 15 + 20}px"><button class="btn quiet">Block 1 solved</button><button class="btn quiet">Block 2 solved</button><button class="btn quiet">…</button></div>
+   <div class="sfacts"><span><b>order</b> 4 <i>(fixed genes)</i></span><span><b>defining length</b> 3 <i>(distance between the outermost fixed genes)</i></span></div>
+   <div class="scharts"><div><h3>Instances in the population</h3><svg viewBox="0 0 620 210" width="520">${bars}</svg></div><div><h3>Mean fitness: <b style="color:var(--s2)">■</b> of instances · <b style="color:var(--s1)">●</b> whole population</h3><svg viewBox="0 0 620 210" width="520">${lines}</svg></div></div>
+   <p class="sum"><b>Generation 4:</b> 3 of 6 individuals are instances of <code>${schema}</code> (1 in generation 0). Their mean fitness is 17.3, above the population mean 13.9.</p>
+   <p class="caveat">One run illustrates a tendency; it proves nothing. Instances may become more common or rarer in the next run with another seed.</p></div>`;
+  return `${topbar(5, 5, 5, 'complete · limit 100')}${transport()}<section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Schema tracker</h2></div>${tabs('schema')}<div id="stagebody" style="top:84px">${body}</div></section>${popPanel('Population · generation 4')}${strip()}`;
+}
+
+/* ---------- drawer ---------- */
+function drawer() {
+  const c = cfgOf(), bad = state.bad;
+  const k = bad ? 8 : c.k, m = bad ? 6 : c.m;
+  return `<aside class="mockdrawer" id="drawer"><div class="dh"><h2>Parameters</h2><button class="btn quiet">✕ close</button></div>
+  <div class="sec" style="padding-top:4px"><h3>Run setup <span class="tag reset">↺ needs reset</span></h3>
+   <div class="ctl"><label>Block size k</label><span class="field"><input type="text" value="${k}"></span><p class="help">Genes per block, 2 to 8.</p></div>
+   <div class="ctl"><label>Number of blocks m</label><span class="field"><input type="text" value="${m}"></span><p class="help">1 to 10 blocks, at most 40 genes in all (${k} × ${m} = ${k * m}).</p></div>
+   <div class="ctl"><label>Linkage</label><span class="field"><select><option>${state.link === 'tight' ? 'Tight: a block’s genes sit side by side' : 'Loose: the blocks are interleaved'}</option></select></span><p class="help">${state.link === 'tight' ? 'Block 1 is genes 1–4, block 2 genes 5–8, …' : 'Block 1 is genes 1, 6, 11, 16; block 2 is genes 2, 7, 12, 17, …  A cut then falls inside almost every block.'}</p></div>
+   <div class="trapdef"><b>The trap.</b> With u = the number of 1s in a block of k genes, the block scores <b>k</b> when u = k and <b>k − 1 − u</b> otherwise (Deb and Goldberg’s k-bit trap): 1111 → 4, 0000 → 3, 1000 → 2, 1100 → 1, 1110 → 0. Every block pulls toward 0000 although 1111 is best. Optimum ${k * m}; all zeros scores ${m * (k - 1)}.</div>
+   ${bad ? `<p class="err">Block size × blocks: at most 40 genes in all (${k} × ${m} = ${k * m}).</p>` : ''}
+   <div class="applyreset"><button class="btn primary" ${bad ? 'disabled' : ''}>Apply and restart</button><span class="help">${bad ? 'Fix the highlighted fields first.' : 'No setup changes.'}</span></div></div></aside>`;
+}
+
+/* ---------- screens ---------- */
+const screens = {
+  cross: crossoverScreen,
+  mut: mutationScreen,
+  schema: schemaScreen,
+  menu() { return crossoverScreen().replace(/<div id="top"><div id="brand" style="position:relative">(.*?)<\/div><\/div>/, (m0) => m0).replace('<span class="logo"', `<ul class="menulist" style="position:absolute;left:68px;top:62px;z-index:60"><li><span>&nbsp;</span> Goldberg x²</li><li><span>&nbsp;</span> Target string</li><li><span>&nbsp;</span> Knapsack</li><li class="cur"><span>✓</span> Trap</li></ul><span class="logo"`); },
+  drawer() { return `${topbar(5, 5, 5, 'complete · limit 100')}${transport()}<section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 6 · Replacement</h2></div><div id="stagebody" style="top:56px"><p class="expl">(stage view as before)</p></div></section>${popPanel('Population · generation 5')}${strip()}${drawer()}`; },
+  table() { return `${topbar(5, 5, 5, 'complete · limit 100')}${transport()}<section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Population · generation 4</h2></div><div id="stagebody" style="top:56px"><div class="mwrap"><table class="mtable ktable trap wide"><thead><tr><th>#</th><th>Chromosome${blockRow()}</th><th>Decoded</th><th class="num">Fitness</th></tr></thead><tbody>${pop().map((b, i) => `<tr><td>${i + 1}</td><td class="chr"><div>${chrom(b)}</div><div>${contribLine(b)}</div></td><td class="dec">${decoded(b)}</td><td class="num strong">${fitnessOf(b, cfgOf())}</td></tr>`).join('')}</tbody></table></div></div></section>${popPanel('Population · generation 4')}${strip()}`; },
+};
+
+/* ---------- mock controls ---------- */
+let state = { s: 'cross', link: 'tight', lstyle: 'A', stress: '0', t: 'light', z: 'fit', p: '0', bad: false };
+function render() {
+  const el = document.getElementById('screen');
+  el.className = 'ls' + state.lstyle + (state.p === '1' ? ' projector' : '');
+  el.innerHTML = screens[state.s]();
+  document.documentElement.dataset.theme = state.t;
+  const sc = state.z === 'fit' ? Math.min(innerWidth / 1920, (innerHeight - 40) / 1080) : 1;
+  el.style.transform = `scale(${sc})`;
+  document.getElementById('stagewrap').style.height = 1080 * sc + 'px';
+  document.getElementById('stagewrap').style.width = 1920 * sc + 'px';
+  document.querySelectorAll('#mockbar button').forEach((b) => {
+    const d = b.dataset;
+    b.classList.toggle('on', d.s === state.s || d.l === state.link || d.ls === state.lstyle || d.x === state.stress || d.t === state.t || d.z === state.z || d.p === state.p || (d.bad && (d.bad === '1') === state.bad));
+  });
+}
+document.getElementById('mockbar').addEventListener('click', (e) => {
+  const d = e.target.dataset; if (!d) return;
+  if (d.s) state.s = d.s; if (d.l) state.link = d.l; if (d.ls) state.lstyle = d.ls; if (d.x) state.stress = d.x; if (d.t) state.t = d.t; if (d.z) state.z = d.z; if (d.p) state.p = d.p; if (d.bad) state.bad = d.bad === '1';
+  render();
+});
+addEventListener('resize', render);
+const q = new URLSearchParams(location.search);
+for (const k of ['s', 't', 'z', 'p']) if (q.get(k)) state[k] = q.get(k);
+if (q.get('l')) state.link = q.get('l'); if (q.get('ls')) state.lstyle = q.get('ls'); if (q.get('x')) state.stress = q.get('x');
+if (q.get('bad')) state.bad = q.get('bad') === '1';
+render();
+
+</script>
+</body>
+</html>
