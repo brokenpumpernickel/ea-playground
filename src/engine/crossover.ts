@@ -40,8 +40,9 @@ export interface CrossoverEvent {
   readonly children: readonly (Child & { readonly discarded: boolean })[];
 }
 
-const minimumGenes: Record<CrossoverOperator, number> = { 'one-point': 2, 'two-point': 3, uniform: 1 };
-const operatorName: Record<CrossoverOperator, string> = { 'one-point': 'One-point', 'two-point': 'Two-point', uniform: 'Uniform' };
+/** The fewest genes an operator can work on: one cut needs two genes, two cuts three. */
+export const minimumGenes: Record<CrossoverOperator, number> = { 'one-point': 2, 'two-point': 3, uniform: 1 };
+export const operatorName: Record<CrossoverOperator, string> = { 'one-point': 'One-point', 'two-point': 'Two-point', uniform: 'Uniform' };
 
 export function crossover(
   population: readonly Individual[],

@@ -176,12 +176,12 @@ export function decodeConfig(hash: string): Decoded {
   const config = json as unknown as RunConfig;
   const setup = setupOf(config);
   const problem = setup.problem;
-  const draft = draftOf(config.params, setup, config.seed);
-  const first = Object.values(validate(draft, problem, []).errors);
+  const draft = draftOf(config.params, setup, config.seed, config.options);
+  const first = Object.values(validate(draft, problem, [], entry).errors);
   if (first.length > 0) return { ok: false, problems: first as string[] };
   // the weight chain is checked against the fitness the run starts with, as the drawer does
   const start = createRun(gaAlgorithm, { setup, params: config.params, seed: config.seed }).snapshot(0).state.population.map((i) => i.fitness);
-  const full = Object.values(validate(draft, problem, start).errors);
+  const full = Object.values(validate(draft, problem, start, entry).errors);
   if (full.length > 0) return { ok: false, problems: full as string[] };
   return { ok: true, config };
 }

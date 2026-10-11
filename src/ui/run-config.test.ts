@@ -45,7 +45,7 @@ describe('round trip', () => {
   test('the default configuration and every preset', () => {
     roundTrip(base);
     expect(presets.length).toBeGreaterThan(0);
-    for (const preset of presets) roundTrip(configOf(preset.setup, preset.params, preset.seed));
+    for (const preset of presets) roundTrip(configOf(preset.setup, preset.params, preset.seed, preset.problem, preset.options));
   });
 
   test('also with the whole link given without its "#", as typed or pasted', () => {

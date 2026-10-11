@@ -1,5 +1,5 @@
 import type { ProblemEntry, ProblemOptions } from './problems';
-import { describeAlphabet, parseGenes, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
+import { describeAlphabet, minimumGenes, operatorName, parseGenes, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
 
 /**
  * What the parameter drawer edits. Numbers are kept as the text the user typed, so a half-typed or wrong entry can be
@@ -43,6 +43,7 @@ export type Field =
   | 'target'
   | 'tournamentSize'
   | 'chain'
+  | 'crossover.operator'
   | 'crossover.probability'
   | 'mutation.probability'
   | 'elites'
@@ -206,6 +207,10 @@ export function validate(draft: Draft, problem: Problem, sampleFitness: readonly
   }
 
   // operators
+  const needed = minimumGenes[draft.crossover.operator];
+  if (draft.crossover.enabled && problem.chromosomeLength < needed) {
+    errors['crossover.operator'] = `${operatorName[draft.crossover.operator]} crossover needs chromosomes of at least ${needed} genes, but this problem's have ${problem.chromosomeLength}. Choose another crossover type${draft.options ? ', switch crossover off or make the target longer' : ' or switch crossover off'}.`;
+  }
   const pc = numberOf(draft.crossover.probability);
   if (pc === undefined || pc < 0 || pc > 1) errors['crossover.probability'] = 'The crossover probability must be a number from 0 to 1.';
   const pm = numberOf(draft.mutation.probability);

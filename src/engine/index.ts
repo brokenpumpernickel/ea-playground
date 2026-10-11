@@ -18,6 +18,8 @@ export {
 } from './weights';
 export {
   crossover,
+  minimumGenes,
+  operatorName,
   type Child,
   type CrossoverConfig,
   type CrossoverEvent,

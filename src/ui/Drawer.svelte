@@ -42,7 +42,7 @@
   const errors = $derived(validation.errors);
 
   /** Operator edits are checked against the run as it is, not against setup edits that have not been applied yet. */
-  const operatorFields: Field[] = ['tournamentSize', 'chain', 'crossover.probability', 'mutation.probability', 'elites', 'truncation.lambda', 'stop.generationLimit', 'stop.target', 'stop.stagnation'];
+  const operatorFields: Field[] = ['tournamentSize', 'chain', 'crossover.operator', 'crossover.probability', 'mutation.probability', 'elites', 'truncation.lambda', 'stop.generationLimit', 'stop.target', 'stop.stagnation'];
   const commit = () => {
     const now = fresh();
     const candidate: Draft = { ...$state.snapshot(draft), init: now.init, size: now.size, chromosomes: now.chromosomes, seed: now.seed, ...(now.options ? { options: now.options } : {}) };
@@ -180,7 +180,7 @@
     <div class="applyreset">
       <button class="btn primary" onclick={applyReset} disabled={anyError || !setupChanges || setupChanges.length === 0} data-testid="apply-reset">Apply and restart</button>
       <span class="help">
-        {#if anyError}Fix the highlighted fields first.
+        {#if anyError}Fix the highlighted fields first.{#if errors['crossover.operator']} The crossover type does not fit the target (see Crossover).{/if}
         {:else if setupChanges && setupChanges.length > 0}Changed: {setupChanges.join(', ')}. Restarts the run from generation 0.{#if setupChanges.includes('Target fitness')} The stop at “target fitness reached” moves to the new target's length ({followed}).{/if}
         {:else}No setup changes.{/if}
       </span>
@@ -213,7 +213,7 @@
     <DrawerRow label="Crossover" id="crossover-on" pending={tag('Crossover on/off')} help="Off: selection still runs, but each pair of parents passes to the offspring as copies, with no recombination.">
       <label class="switch"><input id="crossover-on" type="checkbox" role="switch" checked={draft.crossover.enabled} onchange={(e) => { draft.crossover.enabled = e.currentTarget.checked; commit(); }} /> {draft.crossover.enabled ? 'ON' : 'OFF'}</label>
     </DrawerRow>
-    <DrawerRow label="Type" id="crossover-type" pending={tag('Crossover type')}>
+    <DrawerRow label="Type" id="crossover-type" error={errors['crossover.operator']} pending={tag('Crossover type')}>
       <select id="crossover-type" value={draft.crossover.operator} onchange={(e) => { draft.crossover.operator = e.currentTarget.value as Draft['crossover']['operator']; commit(); }}>
         <option value="one-point">One-point</option>
         <option value="two-point">Two-point</option>

@@ -118,6 +118,24 @@ describe('hand-edited strings against the typed alphabet', () => {
   });
 });
 
+describe('the crossover type must fit the target', () => {
+  test('a one-letter target with one-point crossover is an error on the type, in words, and any other combination is not', () => {
+    const one = withDraft((d) => (d.options!.target = 'H'));
+    const message = errorsOf(one)['crossover.operator'];
+    expect(message).toBe("One-point crossover needs chromosomes of at least 2 genes, but this problem's have 1. Choose another crossover type, switch crossover off or make the target longer.");
+    expect(errorsOf(withDraft((d) => ((d.options!.target = 'H'), (d.crossover.operator = 'uniform'))))['crossover.operator']).toBeUndefined();
+    expect(errorsOf(withDraft((d) => ((d.options!.target = 'H'), (d.crossover.enabled = false))))['crossover.operator']).toBeUndefined();
+    expect(errorsOf(withDraft((d) => ((d.options!.target = 'HE'), (d.crossover.operator = 'two-point'))))['crossover.operator']).toContain('at least 3 genes');
+    expect(errorsOf(fresh())['crossover.operator']).toBeUndefined();
+  });
+
+  test('the engine really would refuse, so the drawer must', () => {
+    const tiny = targetStringProblem({ alphabet: 'ab', target: 'a' });
+    const run = createRun(gaAlgorithm, { setup: { problem: tiny, init: { kind: 'random', size: 4 } }, params: params, seed: 1 });
+    expect(() => run.forwardCycle()).toThrow('One-point crossover needs chromosomes of at least 2 genes');
+  });
+});
+
 describe('what the draft changes', () => {
   test('the alphabet and the target need a reset, and are named', () => {
     expect(changes(withDraft((d) => (d.options!.alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')), current).reset).toEqual(['Alphabet']);
