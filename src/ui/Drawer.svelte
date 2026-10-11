@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { gaAlgorithm } from '../engine';
+  import { gaAlgorithm, itemName, knapsackLimits } from '../engine';
   import ChainEditor from './ChainEditor.svelte';
   import DrawerRow from './DrawerRow.svelte';
-  import { changes, chromosomePieces, draftOf, followedTargetFitness, problemOf, resetParams, toParams, toSetup, validate, type Draft, type Field } from './drawer-model';
+  import { changes, chromosomePieces, draftOf, followedTargetFitness, optionsOf, problemOf, resetParams, toParams, toSetup, validate, type Draft, type Field } from './drawer-model';
   import PopulationEditor from './PopulationEditor.svelte';
   import ShareLink from './ShareLink.svelte';
   import { presets as allPresets } from './presets';
@@ -45,14 +45,14 @@
   const operatorFields: Field[] = ['tournamentSize', 'chain', 'crossover.operator', 'crossover.probability', 'mutation.probability', 'elites', 'truncation.lambda', 'stop.generationLimit', 'stop.target', 'stop.stagnation'];
   const commit = () => {
     const now = fresh();
-    const candidate: Draft = { ...$state.snapshot(draft), init: now.init, size: now.size, chromosomes: now.chromosomes, seed: now.seed, ...(now.options ? { options: now.options } : {}) };
+    const candidate: Draft = { ...$state.snapshot(draft), init: now.init, size: now.size, chromosomes: now.chromosomes, seed: now.seed, ...(now.options ? { options: now.options } : {}), ...(now.knapsack ? { knapsack: now.knapsack } : {}) };
     const found = validate(candidate, runProblem, sampleFitness(), entry).errors;
     if (operatorFields.some((field) => found[field] !== undefined)) return;
     if (changes(candidate, effective()).operator.length === 0) return;
     session.changeParameters(toParams(candidate));
   };
 
-  const setupFields: Field[] = ['size', 'chromosomes', 'seed', 'alphabet', 'target'];
+  const setupFields: Field[] = ['size', 'chromosomes', 'seed', 'alphabet', 'target', 'items', 'capacity', 'handling', 'rho'];
   const setupChanges = $derived.by(() => {
     void session.version;
     return setupFields.some((f) => errors[f]) ? undefined : changes(draft, effective()).reset;
@@ -66,8 +66,23 @@
       seed: Number(draft.seed),
       params: resetParams(draft, runProblem),
       changed,
-      ...(draft.options ? { options: { alphabet: draft.options.alphabet, target: draft.options.target } } : {}),
+      ...(optionsOf(draft) ? { options: optionsOf(draft)! } : {}),
     });
+  };
+
+  // the knapsack's items: two columns of the typed weights and values, with add and remove
+  const maxItems = knapsackLimits.maxItems;
+  const itemCount = $derived(draft.knapsack?.items.length ?? 0);
+  const firstHalf = $derived(Math.ceil(itemCount / 2));
+  const addItem = () => draft.knapsack && draft.knapsack.items.length < maxItems && draft.knapsack.items.push({ weight: '5', value: '10' });
+  const removeItem = (k: number) => draft.knapsack && draft.knapsack.items.length > knapsackLimits.minItems && draft.knapsack.items.splice(k, 1);
+  const wholeIn = (text: string, max: number) => /^\s*\d+\s*$/.test(text) && Number(text) >= 1 && Number(text) <= max;
+  const totalWeight = $derived(draft.knapsack ? draft.knapsack.items.reduce((t, i) => t + (wholeIn(i.weight, knapsackLimits.maxWeight) ? Number(i.weight) : 0), 0) : 0);
+  const handlingHelp: Record<string, string> = {
+    decoder: 'Walks the items in order and packs each one that still fits. Always feasible; the chromosome is not changed.',
+    penalty: 'Overweight bags are allowed but lose ρ for every unit of excess weight.',
+    'repair-lamarckian': 'Drops the worst value-per-weight items until the bag fits, and writes that back into the chromosome.',
+    'repair-baldwinian': 'Drops the same items, but the chromosome keeps its genes: only the bag and the score are repaired.',
   };
 
   const followed = $derived(followedTargetFitness(draft, runProblem));
@@ -151,6 +166,47 @@
 
   <div class="sec" data-section="setup">
     <h3>Run setup <span class="tag reset"><span aria-hidden="true">↺</span> needs reset</span></h3>
+    {#if draft.knapsack}
+      <DrawerRow label="Constraint handling" id="handling" error={errors.handling} help={handlingHelp[draft.knapsack.handling]}>
+        <select id="handling" bind:value={draft.knapsack.handling} aria-describedby="handling-help">
+          <option value="decoder">First-fit decoder</option>
+          <option value="penalty">Penalty</option>
+          <option value="repair-lamarckian">Repair (Lamarckian)</option>
+          <option value="repair-baldwinian">Repair (Baldwinian)</option>
+        </select>
+      </DrawerRow>
+      {#if draft.knapsack.handling === 'penalty'}
+        <DrawerRow label="Penalty ρ" id="rho" error={errors.rho} help="Fitness lost per unit of weight above the capacity. Too small and an overweight bag can beat the optimum; too large and the search avoids the boundary.">
+          <input id="rho" type="text" inputmode="decimal" bind:value={draft.knapsack.rho} aria-invalid={errors.rho ? 'true' : undefined} aria-describedby={errors.rho ? 'rho-error' : 'rho-help'} />
+        </DrawerRow>
+      {/if}
+      <DrawerRow label="Capacity" id="capacity" error={errors.capacity} help={`How much the bag holds, at most the total weight (${totalWeight}).`}>
+        <input id="capacity" type="text" inputmode="numeric" bind:value={draft.knapsack.capacity} aria-invalid={errors.capacity ? 'true' : undefined} aria-describedby={errors.capacity ? 'capacity-error' : 'capacity-help'} />
+      </DrawerRow>
+      <div class="itemtable" data-field="items" class:bad={errors.items !== undefined}>
+        <div class="chead" id="items-heading">Items ({knapsackLimits.minItems} to {maxItems})</div>
+        <div class="itemgrid" role="group" aria-labelledby="items-heading" aria-describedby={errors.items ? 'items-error' : undefined}>
+          {#each [draft.knapsack.items.slice(0, firstHalf), draft.knapsack.items.slice(firstHalf)] as half, h (h)}
+            <table>
+              <thead><tr><th></th><th>Weight</th><th>Value</th><th></th></tr></thead>
+              <tbody>
+                {#each half as item, j (h * firstHalf + j)}
+                  {@const k = h * firstHalf + j}
+                  <tr>
+                    <td><b>{itemName(k)}</b></td>
+                    <td><input type="text" inputmode="numeric" id="item-weight-{k}" aria-label={`Item ${itemName(k)} weight`} bind:value={item.weight} aria-invalid={wholeIn(item.weight, knapsackLimits.maxWeight) ? undefined : 'true'} class:bad={!wholeIn(item.weight, knapsackLimits.maxWeight)} /></td>
+                    <td><input type="text" inputmode="numeric" id="item-value-{k}" aria-label={`Item ${itemName(k)} value`} bind:value={item.value} aria-invalid={wholeIn(item.value, knapsackLimits.maxValue) ? undefined : 'true'} class:bad={!wholeIn(item.value, knapsackLimits.maxValue)} /></td>
+                    <td><button class="btn quiet tiny" type="button" aria-label={`Remove item ${itemName(k)}`} disabled={itemCount <= knapsackLimits.minItems} onclick={() => removeItem(k)}><span aria-hidden="true">✕</span></button></td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          {/each}
+        </div>
+        <button class="btn" type="button" id="add-item" disabled={itemCount >= maxItems} onclick={addItem}>+ Add item</button>
+        {#if errors.items}<p class="err" role="alert" id="items-error">{errors.items}</p>{/if}
+      </div>
+    {/if}
     {#if draft.options}
       <DrawerRow label="Target" id="target" wide error={errors.target} help={`The string to evolve toward, at most 24 characters from the alphabet. ${[...draft.options.target].length} characters, so the best possible fitness is ${[...draft.options.target].length}.`}>
         <input id="target" class="textfield" type="text" spellcheck="false" autocomplete="off" bind:value={draft.options.target} aria-invalid={errors.target ? 'true' : undefined} aria-describedby={errors.target ? 'target-error' : 'target-help'} />
@@ -181,7 +237,7 @@
       <button class="btn primary" onclick={applyReset} disabled={anyError || !setupChanges || setupChanges.length === 0} data-testid="apply-reset">Apply and restart</button>
       <span class="help">
         {#if anyError}Fix the highlighted fields first.{#if errors['crossover.operator']} The crossover type does not fit the target (see Crossover).{/if}
-        {:else if setupChanges && setupChanges.length > 0}Changed: {setupChanges.join(', ')}. Restarts the run from generation 0.{#if setupChanges.includes('Target fitness')} The stop at “target fitness reached” moves to the new target's length ({followed}).{/if}
+        {:else if setupChanges && setupChanges.length > 0}Changed: {setupChanges.join(', ')}. Restarts the run from generation 0.{#if setupChanges.includes('Target fitness')} The stop at “target fitness reached” moves to the new {draft.options ? "target's length" : "instance's optimum"} ({followed}).{/if}
         {:else}No setup changes.{/if}
       </span>
     </div>

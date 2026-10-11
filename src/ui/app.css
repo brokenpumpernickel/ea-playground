@@ -638,3 +638,13 @@ table.tight .capbar { display:none; }
 .matchbar.chosen.dense .gene b { font-size:11px; }
 .matchbar.chosen.dense .gene span { font-size:14px; }
 .projector .matchbar.chosen.dense .gene b { font-size:12px; }
+
+/* the drawer's knapsack instance: two columns of items */
+#drawer .itemtable { margin:6px 0 4px; }
+#drawer .itemtable .itemgrid { display:flex; gap:26px; flex-wrap:wrap; }
+#drawer .itemtable table { border-collapse:collapse; width:auto; font-size:17px; }
+#drawer .itemtable th, #drawer .itemtable td { padding:0 8px 0 0; height:32px; border:none; text-align:left; }
+#drawer .itemtable th { font-size:13px; }
+#drawer .itemtable input[type=text] { width:64px; height:30px; padding:0 8px; font-size:17px; }
+#drawer .itemtable input.bad { border-color:var(--flip); background:var(--flip-bg); }
+#drawer .itemtable .btn.tiny { height:28px; padding:0 8px; }

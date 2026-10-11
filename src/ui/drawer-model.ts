@@ -1,5 +1,5 @@
-import { isStringOptions, type ProblemEntry, type ProblemOptions } from './problems';
-import { describeAlphabet, minimumGenes, operatorName, parseGenes, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
+import { isKnapsackOptions, isStringOptions, type ProblemEntry, type ProblemOptions } from './problems';
+import { describeAlphabet, handlings, minimumGenes, operatorName, optimalBag, parseGenes, validateKnapsack, type Handling, type KnapsackOptions, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
 
 /**
  * What the parameter drawer edits. Numbers are kept as the text the user typed, so a half-typed or wrong entry can be
@@ -21,6 +21,8 @@ export interface Draft {
   seed: string;
   /** The problem's own options as typed (the string problem's alphabet and target); absent for problems without any. */
   options?: { alphabet: string; target: string };
+  /** The knapsack's options as typed (every number as text, so a half-typed one can be explained); absent for the other problems. */
+  knapsack?: { items: { weight: string; value: string }[]; capacity: string; handling: Handling; rho: string };
   method: 'roulette' | 'tournament';
   tournamentSize: string;
   chain: ChainStepDraft[];
@@ -41,6 +43,10 @@ export type Field =
   | 'seed'
   | 'alphabet'
   | 'target'
+  | 'items'
+  | 'capacity'
+  | 'handling'
+  | 'rho'
   | 'tournamentSize'
   | 'chain'
   | 'crossover.operator'
@@ -73,6 +79,16 @@ export function draftOf(params: GaParams, setup: GaSetup, seed: number, options?
     chromosomes: setup.init.kind === 'explicit' ? setup.init.chromosomes.join('\n') : '',
     seed: String(seed),
     ...(options && isStringOptions(options) ? { options: { alphabet: options.alphabet, target: options.target } } : {}),
+    ...(options && isKnapsackOptions(options)
+      ? {
+          knapsack: {
+            items: options.items.map((item) => ({ weight: String(item.weight), value: String(item.value) })),
+            capacity: String(options.capacity),
+            handling: options.handling,
+            rho: String(options.rho),
+          },
+        }
+      : {}),
     method: selection.method,
     tournamentSize: selection.method === 'tournament' ? String(selection.size) : '2',
     chain:
@@ -157,8 +173,29 @@ const exampleChromosome = (problem: Problem): string => (problem.alphabet.length
  * or they are not valid (the messages then say why, and nothing is built from them).
  */
 export function problemOf(draft: Draft, entry: Pick<ProblemEntry, 'validateOptions' | 'create'>, current: Problem): Problem {
-  if (!draft.options || entry.validateOptions(draft.options).length > 0) return current;
-  return entry.create(draft.options);
+  const options = optionsOf(draft);
+  if (!options || entry.validateOptions(options).length > 0) return current;
+  return entry.create(options);
+}
+
+/** The problem options the draft describes, with every typed number read (text that is not a number becomes NaN, which validation explains). */
+export function optionsOf(draft: Draft): ProblemOptions | undefined {
+  if (draft.options) return { alphabet: draft.options.alphabet, target: draft.options.target };
+  if (draft.knapsack) {
+    const k = draft.knapsack;
+    const read = (text: string) => numberOf(text) ?? Number.NaN;
+    return { items: k.items.map((item) => ({ weight: read(item.weight), value: read(item.value) })), capacity: read(k.capacity), handling: k.handling, rho: read(k.rho) };
+  }
+  return undefined;
+}
+
+/** The best fitness the problem of the draft can have, when the draft's options are valid and the problem knows it. */
+export function optimumOf(draft: Draft): number | undefined {
+  const options = optionsOf(draft);
+  if (!options) return undefined;
+  if (isStringOptions(options)) return [...options.target].length;
+  if (validateKnapsack(options).length > 0) return undefined;
+  return optimalBag({ items: options.items, capacity: options.capacity }).value;
 }
 
 /**
@@ -168,12 +205,13 @@ export function problemOf(draft: Draft, entry: Pick<ProblemEntry, 'validateOptio
 export function validate(draft: Draft, problem: Problem, sampleFitness: readonly number[], entry?: Pick<ProblemEntry, 'validateOptionFields'>): Validation {
   const errors: Partial<Record<Field, string>> = {};
 
-  // the problem's own options (the alphabet and the target)
-  if (draft.options && entry) {
-    const found = entry.validateOptionFields(draft.options);
-    for (const field of ['alphabet', 'target'] as const) if (found[field]?.length) errors[field] = found[field]!.join(' ');
+  // the problem's own options (a string problem's alphabet and target, the knapsack's instance and handling)
+  const typed = optionsOf(draft);
+  if (typed && entry) {
+    const found = entry.validateOptionFields(typed);
+    for (const field of ['alphabet', 'target', 'items', 'capacity', 'handling', 'rho'] as const) if (found[field]?.length) errors[field] = found[field]!.join(' ');
   }
-  const optionsValid = errors.alphabet === undefined && errors.target === undefined;
+  const optionsValid = (['alphabet', 'target', 'items', 'capacity', 'handling', 'rho'] as const).every((field) => errors[field] === undefined);
 
   // run setup
   const seed = numberOf(draft.seed);
@@ -319,21 +357,30 @@ export function changes(draft: Draft, current: { params: GaParams; setup: GaSetu
     if (draft.options.alphabet !== current.options.alphabet) reset.push('Alphabet');
     if (draft.options.target !== current.options.target) reset.push('Target');
   }
+  if (draft.knapsack && current.options && isKnapsackOptions(current.options)) {
+    const was = current.options;
+    const k = draft.knapsack;
+    if (!same(k.items.map((i) => [i.weight, i.value]), was.items.map((i) => [String(i.weight), String(i.value)]))) reset.push('Items');
+    if (k.capacity !== String(was.capacity)) reset.push('Capacity');
+    if (k.handling !== was.handling) reset.push('Constraint handling');
+    // ρ only matters while the penalty is the method
+    if (k.handling === 'penalty' && was.handling === 'penalty' && k.rho !== String(was.rho)) reset.push('Penalty ρ');
+  }
   if (Number(draft.seed) !== current.seed) reset.push('Seed');
   if (followedTargetFitness(draft, current.setup.problem) !== undefined) reset.push('Target fitness');
   return { operator, reset };
 }
 
 /**
- * When the target changes length and the stop criterion "target fitness reached" is still the old target's length
- * (every position matching), the restart moves it to the new length, so the run does not report success at 5 matches
- * on a 12-letter target. Returns the new value, or undefined when the rule does not apply.
+ * When the problem's best possible fitness changes (a longer target, another knapsack) and the stop criterion "target
+ * fitness reached" is still the old best possible fitness, the restart moves it to the new one, so the run does not
+ * report success at 5 matches on a 12-letter target. Returns the new value, or undefined when the rule does not apply.
  */
 export function followedTargetFitness(draft: Draft, current: Problem): number | undefined {
-  if (!draft.options || current.knownOptimumFitness === undefined || !draft.stop.target.enabled) return undefined;
-  const length = [...draft.options.target].length;
-  if (length === current.knownOptimumFitness || numberOf(draft.stop.target.value) !== current.knownOptimumFitness) return undefined;
-  return length;
+  if (current.knownOptimumFitness === undefined || !draft.stop.target.enabled) return undefined;
+  const next = optimumOf(draft);
+  if (next === undefined || next === current.knownOptimumFitness || numberOf(draft.stop.target.value) !== current.knownOptimumFitness) return undefined;
+  return next;
 }
 
 /** The parameters a restart applies: the draft's, with the target fitness following a new target's length. */
