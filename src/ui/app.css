@@ -619,3 +619,12 @@ input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radi
 .projector .tablewrap:has(.bit.knap) td { font-size:20px; }
 .projector .tablewrap:has(.bit.knap) th { font-size:16px; }
 table.tight .capbar { display:none; }
+.etable td.why { font-size:15px; color:var(--ink2); white-space:nowrap; }
+.etable:has(.bit.knap) th { font-size:15px; letter-spacing:.02em; padding-left:5px; padding-right:5px; }
+.etable:has(.bit.knap) th .colnote { font-size:12px; }
+.etable:has(.bit.knap) td { padding-left:5px; padding-right:5px; }
+.projector .etable:has(.bit.knap) th { font-size:16px; }
+.etable:has(.bit.knap) .capbar { width:32px; }
+.etable:has(.bit.knap) td[data-col="id"] { font-size:15px; color:var(--ink2); }
+.projector .etable:has(.bit.knap) td { font-size:18px; }
+.projector .etable:has(.bit.knap) td.why { font-size:14px; }

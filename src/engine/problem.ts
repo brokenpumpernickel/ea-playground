@@ -58,6 +58,12 @@ export interface Problem {
   readonly scoreText?: (scores: Scores) => string;
   /** What the evaluation stage does, in a sentence, when the generic one (decode, score) would not say it. */
   readonly evaluationExplanation?: string;
+  /**
+   * What evaluation did to this chromosome, for the evaluation view's "What happened" column and the narration: a short
+   * `summary` for the table ("skipped F I J K L") and `details` for the narration, one sentence per step. Called with the
+   * chromosome as mutation left it, before any repair.
+   */
+  explainEvaluation?(chromosome: Chromosome): { readonly summary: string; readonly details: readonly string[] };
   /** The columns the evaluation view shows when it should differ from the table's (Goldberg also shows the objective value). */
   readonly evaluationColumns?: readonly ProblemColumn[];
   /** The best fitness any chromosome can have, when it is known; plots draw it as a reference line and stop criteria can aim at it. */

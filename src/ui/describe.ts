@@ -35,7 +35,9 @@ function describeWith(event: GaEvent, display: Display): string {
   switch (event.stage) {
     case 'setup': {
       const i = event.individual;
-      return `Individual ${i.id} (${formatBits(i.chromosome)}): ${scored(i, display)}fitness ${i.fitness}`;
+      const steps = (display.explainEvaluation?.(event.repairedFrom ?? i.chromosome).details ?? []).map((d) => `${d}; `).join('');
+      const chromosome = event.repairedFrom ? `${formatBits(event.repairedFrom)} repaired to ${formatBits(i.chromosome)}` : formatBits(i.chromosome);
+      return `Individual ${i.id} (${chromosome}): ${steps}${scored(i, display)}fitness ${i.fitness}`;
     }
 
     case 'selection':
@@ -106,7 +108,9 @@ function describeWith(event: GaEvent, display: Display): string {
 
     case 'evaluation': {
       const i = event.individual;
-      return `Offspring ${event.offspring}: ${formatBits(i.chromosome)} → ${scored(i, display, ' → ')}fitness ${i.fitness} (individual ${i.id})`;
+      const steps = (display.explainEvaluation?.(event.repairedFrom ?? i.chromosome).details ?? []).map((d) => `${d}; `).join('');
+      const chromosome = event.repairedFrom ? `${formatBits(event.repairedFrom)} → repaired to ${formatBits(i.chromosome)}` : formatBits(i.chromosome);
+      return `Offspring ${event.offspring}: ${chromosome} → ${steps}${scored(i, display, ' → ')}fitness ${i.fitness} (individual ${i.id})`;
     }
 
     case 'replacement': {

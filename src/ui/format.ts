@@ -19,6 +19,8 @@ export interface Display {
   /** How a score reads in a sentence; absent when sentences use the decoded value. */
   readonly scoreText?: (scores: Scores) => string;
   readonly evaluationExplanation?: string;
+  /** What evaluation did to a chromosome, in a short form for the table and in full for the narration (see `Problem.explainEvaluation`). */
+  readonly explainEvaluation?: Problem['explainEvaluation'];
 }
 
 export const displayOf = (problem: Problem): Display => ({
@@ -29,6 +31,7 @@ export const displayOf = (problem: Problem): Display => ({
   evaluationColumns: problem.evaluationColumns ?? problem.columns,
   ...(problem.scoreText ? { scoreText: problem.scoreText } : {}),
   ...(problem.evaluationExplanation ? { evaluationExplanation: problem.evaluationExplanation } : {}),
+  ...(problem.explainEvaluation ? { explainEvaluation: problem.explainEvaluation.bind(problem) } : {}),
 });
 
 /** Goldberg's display, which the models use when they are not given another (the binary problems all look like it). */

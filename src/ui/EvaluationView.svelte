@@ -27,6 +27,7 @@
         <tr>
           <th scope="col">Offspring</th>
           <th scope="col">Chromosome<TargetRow /><ItemRow /></th>
+          {#if model.explains}<th scope="col">What happened</th>{/if}
           {#each model.columns as column (column.header)}
             <th scope="col" class="num">{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>
           {/each}
@@ -39,12 +40,13 @@
             <td><span class="who">O{row.offspring}</span></td>
             <td><Bits chromosome={row.bits} small flipped={row.flipped} dropped={row.dropped ?? []} /></td>
             {#if row.revealed}
+              {#if model.explains}<td class="why" data-col="what happened">{row.why?.summary}</td>{/if}
               {#each model.columns as column, c (column.header)}
                 <td class="num" class:strong={c === model.columns.length - 1} data-col={column.header.toLowerCase()}>{#if row.meters?.[c]}<CapacityBar value={row.meters[c]!.value} limit={row.meters[c]!.limit} /> {/if}{row.cells?.[c]}</td>
               {/each}
               <td data-col="id">individual {row.id}</td>
             {:else}
-              <td class="muted" colspan={model.columns.length + 1}>not scored yet</td>
+              <td class="muted" colspan={model.columns.length + 1 + (model.explains ? 1 : 0)}>not scored yet</td>
             {/if}
           </tr>
         {/each}

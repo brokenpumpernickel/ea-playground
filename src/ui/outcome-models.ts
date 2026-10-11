@@ -29,12 +29,16 @@ export interface EvaluationRow {
   /** When evaluation repaired the chromosome: as mutation left it, and the 1-based genes repair changed. */
   readonly repairedFrom?: string;
   readonly dropped?: readonly number[];
+  /** What evaluation did, for the problems that explain it: a short form for the table and the steps in full. */
+  readonly why?: { readonly summary: string; readonly details: readonly string[] };
 }
 
 export interface EvaluationModel {
   readonly explanation: string;
   /** The headers (and notes) of the problem's evaluation columns. */
   readonly columns: readonly { readonly header: string; readonly note?: string }[];
+  /** True when the problem explains what evaluation did, so the view has a "What happened" column. */
+  readonly explains: boolean;
   readonly rows: readonly EvaluationRow[];
 }
 
@@ -58,6 +62,7 @@ export function evaluationModel(view: GaView, display: Display = goldbergDisplay
       fitness: i.fitness,
       cells: display.evaluationColumns.map((column) => column.show(i)),
       ...(display.evaluationColumns.some((c) => c.meter) ? { meters: display.evaluationColumns.map((column) => column.meter?.(i)) } : {}),
+      ...(display.explainEvaluation ? { why: display.explainEvaluation(event.repairedFrom ?? i.chromosome) } : {}),
       ...(event.repairedFrom
         ? { repairedFrom: formatBits(event.repairedFrom), dropped: event.repairedFrom.flatMap((g, k) => (g !== i.chromosome[k] ? [k + 1] : [])) }
         : {}),
@@ -65,6 +70,7 @@ export function evaluationModel(view: GaView, display: Display = goldbergDisplay
   });
   return {
     columns: display.evaluationColumns.map(({ header, note }) => ({ header, ...(note ? { note } : {}) })),
+    explains: display.explainEvaluation !== undefined,
     explanation: display.evaluationExplanation ?? 'Each finished offspring is decoded to a solution x, scored by the objective, and given its fitness and a new individual number.',
     rows,
   };

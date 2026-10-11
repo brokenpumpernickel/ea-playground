@@ -3,6 +3,7 @@ import { binaryAlphabet } from './chromosome';
 import { handleBag, handlings, type BagOutcome, type Handling } from './knapsack-handling';
 import {
   builtInKnapsack,
+  itemName,
   optimalBag,
   validateKnapsackInstanceFields,
   type KnapsackInstance,
@@ -108,6 +109,23 @@ export function knapsackProblem(options: KnapsackOptions): KnapsackProblem {
       return `${bag}: weight ${weight} of ${instance.capacity}, value ${scores.objective}${over > 0 ? `, over by ${over} → penalty ${fmt(penalty)}` : ''}`;
     },
     evaluationExplanation: explanations[handling](rho),
+    explainEvaluation(chromosome) {
+      const r = handleBag(instance, handling, rho, chromosome);
+      const names = (items: readonly { item: number }[]) => items.map((x) => itemName(x.item)).join(' ');
+      if (handling === 'decoder') {
+        return {
+          summary: r.skipped.length > 0 ? `skipped ${names(r.skipped)}` : 'everything fits',
+          details: r.skipped.map((s) => `skipped ${itemName(s.item)}: ${s.weight} > ${s.room} left`),
+        };
+      }
+      if (handling === 'penalty') {
+        return { summary: r.excess > 0 ? `over by ${r.excess} (${fmt(rho)} × ${r.excess})` : 'fits: no penalty', details: [] };
+      }
+      return {
+        summary: r.dropped.length > 0 ? `dropped ${names(r.dropped)}` : 'everything fits',
+        details: r.dropped.map((d) => `dropped ${itemName(d.item)}: ${instance.items[d.item]!.value}/${instance.items[d.item]!.weight} = ${d.ratio.toFixed(2)} per weight`),
+      };
+    },
     evaluate: (chromosome) => handleBag(instance, handling, rho, chromosome).scores,
     outcomeOf: (chromosome) => handleBag(instance, handling, rho, chromosome),
   };
