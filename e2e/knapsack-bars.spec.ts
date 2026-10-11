@@ -23,6 +23,27 @@ const open = async (page: Page, s: ReturnType<typeof setupOf>, projector = false
   if (projector) await page.getByRole('button', { name: 'Projector mode' }).click();
 };
 const SCALE = 72;
+/** A seed whose first generation has an overweight offspring under the penalty, found by running the engine (the default seed need not have one). */
+const repairSeed = () => {
+  for (let seed = 1; seed < 200; seed++) {
+    const s = setupOf('repair-lamarckian', undefined, seed);
+    const run = createRun(gaAlgorithm, { setup: s.setup, params: s.params, seed });
+    run.forwardCycle();
+    if (run.events(1).some((e) => e.stage === 'evaluation' && e.repairedFrom)) return seed;
+  }
+  throw new Error('no seed found');
+};
+const overweightSeed = () => {
+  for (let seed = 1; seed < 200; seed++) {
+    const s = setupOf('penalty', undefined, seed);
+    const run = createRun(gaAlgorithm, { setup: s.setup, params: s.params, seed });
+    run.forwardCycle();
+    const initial = run.snapshot(0).state.population.some((i) => s.problem.outcomeOf(i.chromosome).excess > 0);
+    const offspring = run.events(1).some((e) => e.stage === 'evaluation' && s.problem.outcomeOf(e.individual.chromosome).excess > 0);
+    if (initial && offspring) return seed;
+  }
+  throw new Error('no seed found');
+};
 
 for (const handling of handlings) {
   test(`${handling}: every bar in the table is the engine’s weight against the capacity, filled and hatched in proportion`, async ({ page }) => {
@@ -92,9 +113,10 @@ test('Lamarckian repair: the ✂ marks are exactly the genes repair rewrote, and
 });
 
 test('penalty: the bar of the offspring being scored hatches what is over the capacity, and says how much', async ({ page }) => {
-  const s = setupOf('penalty', undefined, 42);
+  const seed = overweightSeed();
+  const s = setupOf('penalty', undefined, seed);
   await open(page, s);
-  const run = createRun(gaAlgorithm, { setup: s.setup, params: s.params, seed: 42 });
+  const run = createRun(gaAlgorithm, { setup: s.setup, params: s.params, seed });
   run.forwardCycle();
   await page.keyboard.press('ArrowRight');
   for (let k = 0; k < 4; k++) await page.keyboard.press('Shift+ArrowRight');
@@ -118,7 +140,7 @@ test('penalty: the bar of the offspring being scored hatches what is over the ca
 });
 
 test('nothing here depends on colour alone: the excess is hatched, a skipped gene is dashed, a repaired gene is dotted with ✂, and the numbers are in the text', async ({ page }) => {
-  await open(page, setupOf('penalty'));
+  await open(page, setupOf('penalty', undefined, overweightSeed()));
   await page.keyboard.press('g');
   await page.keyboard.press('g');
   const hatch = await page.locator('.capbar .over').first().evaluate((el) => getComputedStyle(el).backgroundImage);
@@ -128,11 +150,11 @@ test('nothing here depends on colour alone: the excess is hatched, a skipped gen
   for (let g = 0; g < 3; g++) await page.keyboard.press('g');
   const skip = await page.locator('.bit.skip').first().evaluate((el) => ({ style: getComputedStyle(el).borderTopStyle, text: el.textContent }));
   expect(skip).toEqual({ style: 'dashed', text: '✕' });
-  await open(page, setupOf('repair-lamarckian'));
+  await open(page, setupOf('repair-lamarckian', undefined, repairSeed()));
   await page.keyboard.press('ArrowRight');
   for (let k = 0; k < 4; k++) await page.keyboard.press('Shift+ArrowRight');
   await page.keyboard.press('ArrowRight');
-  for (let k = 0; k < 12; k++) await page.keyboard.press('ArrowRight');
+  for (let k = 0; k < 8; k++) await page.keyboard.press('ArrowRight'); // every offspring scored
   const cut = await page.locator('.bit.cut').first().evaluate((el) => ({ style: getComputedStyle(el).borderTopStyle, mark: getComputedStyle(el, '::after').content }));
   expect(cut.style).toBe('dotted');
   expect(cut.mark).toContain('✂');

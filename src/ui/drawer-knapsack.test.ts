@@ -22,7 +22,7 @@ const errorsOf = (d: Draft) => validate(d, problemOf(d, entry, problem), [], ent
 describe('the knapsack draft', () => {
   test('carries the options as typed text, and is valid as it opens', () => {
     const d = fresh();
-    expect(d.knapsack).toMatchObject({ capacity: '48', handling: 'decoder', rho: '4' });
+    expect(d.knapsack).toMatchObject({ capacity: '48', handling: 'decoder', rho: '8' });
     expect(d.knapsack!.items).toHaveLength(12);
     expect(d.knapsack!.items[1]).toEqual({ weight: '12', value: '20' });
     expect(d.options).toBeUndefined();

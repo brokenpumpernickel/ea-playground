@@ -45,7 +45,7 @@ test('the run setup has the handling, the capacity and every item with its weigh
   }
   await expect(page.getByTestId('apply-reset')).toBeDisabled();
   await page.locator('#handling').selectOption('penalty');
-  await expect(page.locator('#rho')).toHaveValue('4');
+  await expect(page.locator('#rho')).toHaveValue('8');
   await expect(field(page, 'handling')).toContainText('lose ρ for every unit of excess weight');
   await page.keyboard.press('Escape');
   await page.getByTestId('problem-button').click();
@@ -153,7 +153,7 @@ test('another instance moves “target fitness reached” to its optimum, and sa
 
 test('operator settings still work beside a staged instance, and the staged instance does not leak into them', async ({ page }) => {
   await page.locator('#item-weight-0').fill('8');
-  await page.locator('#mutation-probability').fill('0.05');
+  await page.locator('#mutation-probability').fill('0.1');
   await page.locator('#mutation-probability').press('Enter');
   await expect(page.getByTestId('pending-mutation-probability')).toBeVisible();
   await expect(page.locator('#item-weight-0')).toHaveValue('8');

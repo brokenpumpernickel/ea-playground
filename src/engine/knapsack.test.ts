@@ -104,6 +104,27 @@ describe('validation says what is wrong in words, under the field it concerns', 
   });
 });
 
+describe('the measured defaults (approved by the instructor, ticket 13)', () => {
+  test('are a population of 8, tournaments of 2, one-point crossover 0.8, per-gene mutation 0.05, no elites, and stop at 100 generations, the optimum 123 or 50 without improvement', () => {
+    expect(knapsackDefaults.populationSize).toBe(8);
+    expect(knapsackDefaults.params).toEqual({
+      selection: { method: 'tournament', size: 2 },
+      crossover: { enabled: true, operator: 'one-point', probability: 0.8 },
+      mutation: { enabled: true, mode: 'per-gene', probability: 0.05 },
+      elites: 0,
+      stop: { generationLimit: 100, targetFitness: 123, stagnationWindow: 50 },
+    });
+  });
+
+  test('use the first-fit decoder, and a penalty ρ of 8, just above the best value per weight (7, item C: 21 for weight 3)', () => {
+    expect(knapsackDefaults.options.handling).toBe('decoder');
+    expect(knapsackDefaults.options.rho).toBe(8);
+    const ratios = builtInKnapsack.items.map((item) => item.value / item.weight);
+    expect(Math.max(...ratios)).toBe(7);
+    expect(knapsackDefaults.options.rho).toBeGreaterThan(Math.max(...ratios));
+  });
+});
+
 describe('the defaults', () => {
   test('are valid, use the built-in instance and the first-fit decoder, and aim at the known optimum', () => {
     expect(validateKnapsack(knapsackDefaults.options)).toEqual([]);

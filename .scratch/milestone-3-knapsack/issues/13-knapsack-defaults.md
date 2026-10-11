@@ -1,6 +1,6 @@
 # 13 Defaults by measurement
 
-Status: claimed (waiting for approval)
+Status: resolved
 Type: task (needs instructor approval)
 Blocked by: 06
 Spec: ../spec.md
@@ -53,3 +53,9 @@ Over 200 seeds with these settings: the optimum is reached within 30 generations
 Below ρ = 3 overweight bags beat the optimum (the "cheat"); from 3 up they never did in 100 × 100 generations. The best value per weight is 7 (item C: 21 for weight 3), so any ρ above 7 guarantees an overweight bag is never worth its extra weight. **Proposed default ρ = 8** (just above 7, explainable in one sentence: "more than any item earns per unit of weight"). The "too small" preset would use ρ = 1 (100% of seeds score above the optimum and end with nothing but infeasible bags).
 
 **Finding that changes ticket 14:** a penalty that is *too large* does not do visible harm on this instance. Even at ρ = 50 every run ends with a feasible bag worth at least 112 (median 123); the only effect is that fewer runs reach 123 within 100 generations (58% against 86% at ρ = 3). So the preset "Penalty too large" with the text in the spec ("settles on a poor feasible bag") is not true. I propose to keep it only if a seed shows something specific and measured (for example "at ρ = 50 this seed has not found 123 after 100 generations, while ρ = 3 finds it in generation N"), and otherwise to drop it, as the spec allows.
+
+## Answer
+
+Approved by the instructor as proposed, and set in `knapsackDefaults` (`src/engine/knapsack.ts`, with the reasoning in its comment): first-fit decoder, population 8, tournament size 2, one-point crossover 0.8, per-gene mutation 0.05, no elites, seed 42, stop at 100 generations, the optimum 123 (best feasible) or 50 generations without improvement, penalty ρ = 8. `knapsack.test.ts` pins the numbers and checks that ρ is above the best value per weight (7). Tests that assumed the placeholders were updated (population of 8, ρ 8); tests that need an overweight offspring or a repair in the first generation now find such a seed by running the engine instead of relying on the default seed. The decision about the "Penalty too large" preset is carried to ticket 14.
+
+State: 1204 unit tests, `npm run check` clean, 219 Playwright tests passing.

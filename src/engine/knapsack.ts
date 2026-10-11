@@ -133,22 +133,26 @@ export function knapsackProblem(options: KnapsackOptions): KnapsackProblem {
 }
 
 /**
- * The setup the knapsack opens with, as plain data. The population, parameters and the penalty are placeholders until
- * ticket 13 measures them.
+ * The setup the knapsack opens with, as plain data, chosen by measurement (ticket 13; the table of results is in
+ * `.scratch/milestone-3-knapsack/issues/13-knapsack-defaults.md`). A population of 8 with tournaments of 2 and no elites
+ * is the setting where the run takes a few dozen generations to find the optimum and a few runs fall short (66% of
+ * 200 seeds within 30 generations, 96% within 100); larger populations find it in about ten. The penalty ρ = 8 is just
+ * above the best value per weight on the built-in instance (7), so an overweight bag never pays for its extra weight.
+ * The stagnation window of 50 is the 95th percentile of the longest stretch without improvement before success.
  */
 export const knapsackDefaults: {
   readonly options: KnapsackOptions;
   readonly populationSize: number;
   readonly params: GaParams;
 } = {
-  options: { items: builtInKnapsack.items, capacity: builtInKnapsack.capacity, handling: 'decoder', rho: 4 },
-  populationSize: 12,
+  options: { items: builtInKnapsack.items, capacity: builtInKnapsack.capacity, handling: 'decoder', rho: 8 },
+  populationSize: 8,
   params: {
-    selection: { method: 'tournament', size: 3 },
+    selection: { method: 'tournament', size: 2 },
     crossover: { enabled: true, operator: 'one-point', probability: 0.8 },
-    mutation: { enabled: true, mode: 'per-gene', probability: 0.08 },
+    mutation: { enabled: true, mode: 'per-gene', probability: 0.05 },
     elites: 0,
-    stop: { generationLimit: 60, targetFitness: 123, stagnationWindow: 30 },
+    stop: { generationLimit: 100, targetFitness: 123, stagnationWindow: 50 },
   },
 };
 

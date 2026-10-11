@@ -57,9 +57,9 @@ test('the stats line says how many of the individuals are feasible, as the metri
         run.forwardCycle();
       }
       const m = metricsOf(run.snapshot(g).state);
-      await expect(page.getByTestId('summary')).toContainText(`feasible ${m.feasible!.count} of 12`);
+      await expect(page.getByTestId('summary')).toContainText(`feasible ${m.feasible!.count} of 8`);
     }
-    if (handling === 'decoder') await expect(page.getByTestId('summary')).toContainText('feasible 12 of 12');
+    if (handling === 'decoder') await expect(page.getByTestId('summary')).toContainText('feasible 8 of 8');
   }
 });
 
