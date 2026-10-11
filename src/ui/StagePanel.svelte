@@ -75,5 +75,5 @@
       </ol>
     {/if}
   </div>
-  <div id="narr" data-testid="narration" aria-live="polite"><span class="m">{narration.label}</span><span>{narration.text}</span></div>
+  <div id="narr" data-testid="narration" data-long={narration.text.length > 150 ? 2 : narration.text.length > 100 ? 1 : undefined} aria-live="polite"><span class="m">{narration.label}</span><span>{narration.text}</span></div>
 </section>

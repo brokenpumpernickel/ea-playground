@@ -185,3 +185,28 @@ for (const [width, height] of [
     });
   }
 }
+
+for (const [width, height] of [
+  [1920, 1080],
+  [1366, 768],
+] as const) {
+  for (const [handling, items] of [...handlings.map((h) => [h, 12] as const), ['penalty', 20] as const]) {
+    test(`at ${width}×${height} in projector mode, ${handling} with ${items} items: the narration stays inside its box at every micro-step of two generations`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await open(page, setupOf(handling, { items, seed: 7 }));
+      await page.getByRole('button', { name: 'Projector mode' }).click();
+      const outside = () =>
+        page.evaluate(() => {
+          const box = document.querySelector('#narr')!.getBoundingClientRect();
+          return [...document.querySelectorAll('#narr > *')]
+            .map((el) => ({ text: el.textContent!.slice(0, 60), rect: el.getBoundingClientRect() }))
+            .filter(({ rect }) => rect.top < box.top - 1 || rect.bottom > box.bottom + 1 || rect.right > box.right + 1)
+            .map(({ text }) => text);
+        });
+      for (let k = 0; k < 2 * 40; k++) {
+        await page.keyboard.press('ArrowRight');
+        expect(await outside(), `micro-step ${k + 1}`).toEqual([]);
+      }
+    });
+  }
+}

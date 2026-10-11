@@ -449,6 +449,11 @@ input[type=range].speed { width:200px; accent-color:var(--acc); }
 .projector .bit.sm { font-size:24px; }
 .projector .expl, .projector .note, .projector .key, .projector .cutnote { font-size:21px; }
 .projector #narr { font-size:23px; }
+/* the knapsack's evaluation sentences are long (repair, penalty): smaller type in steps so two lines always fit the box */
+#narr[data-long="1"] { font-size:18px; }
+#narr[data-long="2"] { font-size:15px; }
+.projector #narr[data-long="1"] { font-size:20px; }
+.projector #narr[data-long="2"] { font-size:17px; }
 .projector #legend { font-size:21px; }
 .projector .badge { font-size:20px; border-width:2.5px; }
 .projector .plot svg text { font-size:20px; }

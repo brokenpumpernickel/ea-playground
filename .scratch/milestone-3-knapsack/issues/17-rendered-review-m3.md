@@ -1,6 +1,6 @@
 # 17 Rendered review and sign-off
 
-Status: open
+Status: claimed
 Type: review (needs instructor)
 Blocked by: 14, 15, 16
 Spec: ../spec.md

@@ -38,6 +38,6 @@
   </div>
   <span class="legend2">
     {letters.length === 0 ? 'nothing packed' : `${letters.length} ${letters.length === 1 ? 'item' : 'items'}`} · weight {outcome.weight} of {bag.capacity}{#if outcome.excess > 0}
-      · <b>{outcome.excess} over (hatched)</b>{/if}{#if was !== undefined} · repaired from {was}{/if}
+      · <b>{outcome.excess} over (hatched)</b>{/if}{#if was !== undefined}{' · '}repaired from {was}{/if}
   </span>
 </div>
