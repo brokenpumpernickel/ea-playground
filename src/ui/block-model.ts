@@ -1,0 +1,75 @@
+import type { BlockState } from '../engine';
+import type { BlockInfo } from './block-context';
+
+/** The note printed under one block of one chromosome. */
+export interface BlockNote {
+  /** 1-based. */
+  readonly block: number;
+  readonly text: string;
+  readonly state: BlockState;
+}
+
+/** One label of the block row, with the 1-based genes it stands for. */
+export interface BlockRowLabel {
+  readonly text: string;
+  readonly genes: readonly number[];
+}
+
+/** The genes of a chromosome text, or nothing when it is not a chromosome of this trap (another length, other symbols). */
+function genesOf(info: BlockInfo, chromosome: string): number[] | undefined {
+  if (!/^[01]+$/.test(chromosome) || chromosome.length !== info.blockSize * info.blocks) return undefined;
+  return [...chromosome].map(Number);
+}
+
+const MARK: Record<BlockState, string> = { optimum: '✓ ', attractor: '▽ ', between: '' };
+
+/** For each block: ✓ and its score when all its genes are 1, ▽ and its score when all are 0, just the score otherwise. */
+export function blockNotes(info: BlockInfo, chromosome: string): BlockNote[] {
+  const genes = genesOf(info, chromosome);
+  if (!genes) return [];
+  return info.outcomeOf(genes).blocks.map((b) => ({ block: b.index + 1, text: `${MARK[b.state]}${b.contribution}`, state: b.state }));
+}
+
+const blocksText = (numbers: readonly number[]): string =>
+  numbers.length === 1 ? `block ${numbers[0]}` : `blocks ${numbers.slice(0, -1).join(', ')} and ${numbers[numbers.length - 1]}`;
+
+/** A chromosome's blocks in a sentence, for the screen reader and the narration. */
+export function blockSentence(info: BlockInfo, chromosome: string): string {
+  const genes = genesOf(info, chromosome);
+  if (!genes) return '';
+  const { blocks } = info.outcomeOf(genes);
+  const where = (state: BlockState) => blocks.filter((b) => b.state === state).map((b) => b.index + 1);
+  const ones = where('optimum');
+  const zeros = where('attractor');
+  return [
+    `ones per block ${blocks.map((b) => b.ones).join(', ')}`,
+    `scores ${blocks.map((b) => b.contribution).join(', ')}`,
+    ones.length > 0 ? `all ones in ${blocksText(ones)}` : 'no block is all ones',
+    zeros.length > 0 ? `all zeros in ${blocksText(zeros)}` : 'no block is all zeros',
+  ].join('; ');
+}
+
+/**
+ * What the block row prints above the genes. Tight linkage: one label per block, "block n" when the block is wide enough
+ * (4 genes or more) and just "n" otherwise. Loose linkage: one label per gene, the number of the block that owns it.
+ */
+export function blockRowLabels(info: BlockInfo): BlockRowLabel[] {
+  if (info.linkage === 'tight') {
+    return info.blockGenes.map((genes, b) => ({ text: info.blockSize >= 4 ? `block ${b + 1}` : String(b + 1), genes: genes.map((g) => g + 1) }));
+  }
+  const owner: number[] = [];
+  info.blockGenes.forEach((genes, b) => genes.forEach((g) => (owner[g] = b)));
+  return owner.map((b, g) => ({ text: String(b + 1), genes: [g + 1] }));
+}
+
+/** Which genes, as a phrase: "1 to 4" for a run, otherwise "1, 3, 5 and 7". */
+function genesPhrase(genes: readonly number[]): string {
+  const run = genes.length >= 3 && genes.every((g, k) => k === 0 || g === genes[k - 1]! + 1);
+  if (run) return `${genes[0]} to ${genes[genes.length - 1]}`;
+  return genes.length === 1 ? String(genes[0]) : `${genes.slice(0, -1).join(', ')} and ${genes[genes.length - 1]}`;
+}
+
+/** The block row in one sentence for a screen reader: which genes each block owns. */
+export function blockRowSentence(info: BlockInfo): string {
+  return `Blocks: ${info.blockGenes.map((genes, b) => `block ${b + 1} is genes ${genesPhrase(genes.map((g) => g + 1))}`).join('; ')}`;
+}

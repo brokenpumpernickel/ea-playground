@@ -2,7 +2,7 @@ import { gaAlgorithm, metricsOf, type KnapsackProblem, type TrapProblem, type Pr
 import { createPlayback, createRun, type AnimationFlags, type Playback, type PlaybackStatus, type Position, type Run, type Scheduler, type Tier, type View } from '../run';
 import { defaultParams, defaultSeed, defaultSetup } from './config';
 import type { BagInfo } from './bag-context';
-import type { BlockInfo } from './block-context';
+import { blockInfoOf, type BlockInfo } from './block-context';
 import { changes, draftOf } from './drawer-model';
 import { displayOf, type Display } from './format';
 import { entryOf, type ProblemEntry, type ProblemOptions } from './problems';
@@ -211,9 +211,7 @@ export function createSession(options: SessionOptions) {
     get blocks(): BlockInfo | undefined {
       void version;
       const p = run.setup.problem as Partial<TrapProblem>;
-      return p.blockGenes && p.options && p.outcomeOf
-        ? { blockSize: p.options.blockSize, blocks: p.options.blocks, linkage: p.options.linkage, blockGenes: p.blockGenes, optimum: p.knownOptimumFitness!, attractor: p.attractorFitness!, outcomeOf: p.outcomeOf.bind(p) }
-        : undefined;
+      return p.blockGenes && p.options && p.outcomeOf ? blockInfoOf(run.setup.problem as TrapProblem) : undefined;
     },
     get problemEntry(): ProblemEntry {
       return entryOf(problemId)!;

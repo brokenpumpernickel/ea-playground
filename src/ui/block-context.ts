@@ -1,4 +1,4 @@
-import type { Linkage, TrapOutcome } from '../engine';
+import type { Linkage, TrapOutcome, TrapProblem } from '../engine';
 
 /**
  * Where a view finds the trap it is drawing chromosomes for: which genes make each block, and how any chromosome scores
@@ -21,3 +21,14 @@ export interface BlockInfo {
 }
 
 export type BlockGetter = () => BlockInfo | undefined;
+
+/** The block info of a running trap problem. */
+export const blockInfoOf = (problem: TrapProblem): BlockInfo => ({
+  blockSize: problem.options.blockSize,
+  blocks: problem.options.blocks,
+  linkage: problem.options.linkage,
+  blockGenes: problem.blockGenes,
+  optimum: problem.knownOptimumFitness,
+  attractor: problem.attractorFitness,
+  outcomeOf: problem.outcomeOf.bind(problem),
+});
