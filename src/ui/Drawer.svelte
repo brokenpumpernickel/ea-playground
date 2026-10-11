@@ -3,7 +3,7 @@
   import { gaAlgorithm } from '../engine';
   import ChainEditor from './ChainEditor.svelte';
   import DrawerRow from './DrawerRow.svelte';
-  import { changes, chromosomePieces, draftOf, toParams, toSetup, validate, type Draft, type Field } from './drawer-model';
+  import { changes, chromosomePieces, draftOf, followedTargetFitness, problemOf, resetParams, toParams, toSetup, validate, type Draft, type Field } from './drawer-model';
   import PopulationEditor from './PopulationEditor.svelte';
   import ShareLink from './ShareLink.svelte';
   import { presets as allPresets } from './presets';
@@ -12,13 +12,17 @@
   let { session, onclose }: { session: Session; onclose: () => void } = $props();
 
   const run = $derived(session.run);
-  const problem = $derived(run.setup.problem);
+  const entry = $derived(session.problemEntry);
+  /** The problem the run has now. */
+  const runProblem = $derived(session.problem);
 
   /** What the run uses now (or will, once pending changes apply): the starting point and the thing to compare with. */
-  const effective = () => ({ params: run.parameters, setup: run.setup, seed: run.seed });
-  const fresh = () => draftOf(run.parameters, run.setup, run.seed);
+  const effective = () => ({ params: run.parameters, setup: run.setup, seed: run.seed, ...(session.problemOptions ? { options: session.problemOptions } : {}) });
+  const fresh = () => draftOf(run.parameters, run.setup, run.seed, session.problemOptions);
 
   let draft = $state<Draft>(fresh());
+  /** The problem the draft describes: the typed alphabet and target, once they are valid (hand-edited strings are read against it). */
+  const problem = $derived(problemOf(draft, entry, runProblem));
   let root: HTMLElement | undefined = $state();
 
   // reread the run when it was replaced wholesale (reset, new seed, a cancelled change)
@@ -33,7 +37,7 @@
   const sampleFitness = () => run.snapshot(run.lastCycle).state.population.map((i) => i.fitness);
   const validation = $derived.by(() => {
     void session.version;
-    return validate(draft, problem, sampleFitness());
+    return validate(draft, problem, sampleFitness(), entry);
   });
   const errors = $derived(validation.errors);
 
@@ -41,14 +45,14 @@
   const operatorFields: Field[] = ['tournamentSize', 'chain', 'crossover.probability', 'mutation.probability', 'elites', 'truncation.lambda', 'stop.generationLimit', 'stop.target', 'stop.stagnation'];
   const commit = () => {
     const now = fresh();
-    const candidate: Draft = { ...$state.snapshot(draft), init: now.init, size: now.size, chromosomes: now.chromosomes, seed: now.seed };
-    const found = validate(candidate, problem, sampleFitness()).errors;
+    const candidate: Draft = { ...$state.snapshot(draft), init: now.init, size: now.size, chromosomes: now.chromosomes, seed: now.seed, ...(now.options ? { options: now.options } : {}) };
+    const found = validate(candidate, runProblem, sampleFitness(), entry).errors;
     if (operatorFields.some((field) => found[field] !== undefined)) return;
     if (changes(candidate, effective()).operator.length === 0) return;
     session.changeParameters(toParams(candidate));
   };
 
-  const setupFields: Field[] = ['size', 'chromosomes', 'seed'];
+  const setupFields: Field[] = ['size', 'chromosomes', 'seed', 'alphabet', 'target'];
   const setupChanges = $derived.by(() => {
     void session.version;
     return setupFields.some((f) => errors[f]) ? undefined : changes(draft, effective()).reset;
@@ -57,13 +61,21 @@
   const applyReset = () => {
     if (anyError) return;
     const changed = changes(draft, effective()).reset;
-    session.requestReset({ setup: toSetup(draft, problem), seed: Number(draft.seed), params: toParams(draft), changed });
+    session.requestReset({
+      setup: toSetup(draft, problem),
+      seed: Number(draft.seed),
+      params: resetParams(draft, runProblem),
+      changed,
+      ...(draft.options ? { options: { alphabet: draft.options.alphabet, target: draft.options.target } } : {}),
+    });
   };
+
+  const followed = $derived(followedTargetFitness(draft, runProblem));
 
   // "was → now" for settings that are pending
   const applied = $derived.by(() => {
     void session.version;
-    return draftOf(run.snapshot(run.lastCycle).params, run.setup, run.seed);
+    return draftOf(run.snapshot(run.lastCycle).params, run.setup, run.seed, session.problemOptions);
   });
   const isPending = (label: string) => session.pending.includes(label);
   const pendingFor = (label: string, was: string, now: string) => (isPending(label) ? `${was} → ${now}` : undefined);
@@ -139,6 +151,14 @@
 
   <div class="sec" data-section="setup">
     <h3>Run setup <span class="tag reset"><span aria-hidden="true">↺</span> needs reset</span></h3>
+    {#if draft.options}
+      <DrawerRow label="Target" id="target" wide error={errors.target} help={`The string to evolve toward, at most 24 characters from the alphabet. ${[...draft.options.target].length} characters, so the best possible fitness is ${[...draft.options.target].length}.`}>
+        <input id="target" class="textfield" type="text" spellcheck="false" autocomplete="off" bind:value={draft.options.target} aria-invalid={errors.target ? 'true' : undefined} aria-describedby={errors.target ? 'target-error' : 'target-help'} />
+      </DrawerRow>
+      <DrawerRow label="Alphabet" id="alphabet" wide error={errors.alphabet} help={`Every symbol a gene can take, in order, each once. ${[...draft.options.alphabet].length} symbols. A space (shown as ␣) counts as a symbol.`}>
+        <input id="alphabet" class="textfield" type="text" spellcheck="false" autocomplete="off" bind:value={draft.options.alphabet} aria-invalid={errors.alphabet ? 'true' : undefined} aria-describedby={errors.alphabet ? 'alphabet-error' : 'alphabet-help'} />
+      </DrawerRow>
+    {/if}
     <DrawerRow label="Initialization" id="init" help="Random draws every gene from the seeded generator. Hand-edited lets you type the starting chromosomes.">
       <select id="init" value={draft.init} onchange={(e) => (draft.init = e.currentTarget.value as Draft['init'])}>
         <option value="random">Random (seeded)</option>
@@ -161,7 +181,7 @@
       <button class="btn primary" onclick={applyReset} disabled={anyError || !setupChanges || setupChanges.length === 0} data-testid="apply-reset">Apply and restart</button>
       <span class="help">
         {#if anyError}Fix the highlighted fields first.
-        {:else if setupChanges && setupChanges.length > 0}Changed: {setupChanges.join(', ')}. Restarts the run from generation 0.
+        {:else if setupChanges && setupChanges.length > 0}Changed: {setupChanges.join(', ')}. Restarts the run from generation 0.{#if setupChanges.includes('Target fitness')} The stop at “target fitness reached” moves to the new target's length ({followed}).{/if}
         {:else}No setup changes.{/if}
       </span>
     </div>

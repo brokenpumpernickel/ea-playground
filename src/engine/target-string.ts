@@ -18,33 +18,40 @@ export const targetStringLimits = { minAlphabet: 2, maxAlphabet: 40, minTarget: 
 /** How a character is named in a message: a space would otherwise be invisible. */
 const named = (character: string): string => (character === ' ' ? 'a space' : `"${character}"`);
 
-/** Everything wrong with these options, in words, or an empty list. */
-export function validateTargetString(options: TargetStringOptions): string[] {
-  const problems: string[] = [];
+/** What is wrong with the alphabet and with the target, in words, each under the field it concerns. */
+export function validateTargetStringFields(options: TargetStringOptions): { readonly alphabet: string[]; readonly target: string[] } {
+  const alphabetProblems: string[] = [];
+  const targetProblems: string[] = [];
   const { minAlphabet, maxAlphabet, minTarget, maxTarget } = targetStringLimits;
   const symbols = [...options.alphabet];
 
-  if (symbols.length < minAlphabet) problems.push(`The alphabet needs at least ${minAlphabet} symbols, so that a gene has something to change into.`);
-  if (symbols.length > maxAlphabet) problems.push(`The alphabet can have at most ${maxAlphabet} symbols (it has ${symbols.length}).`);
+  if (symbols.length < minAlphabet) alphabetProblems.push(`The alphabet needs at least ${minAlphabet} symbols, so that a gene has something to change into.`);
+  if (symbols.length > maxAlphabet) alphabetProblems.push(`The alphabet can have at most ${maxAlphabet} symbols (it has ${symbols.length}).`);
   const control = symbols.filter((s) => s.codePointAt(0)! < 32);
-  if (control.length > 0) problems.push('The alphabet may only contain visible characters and spaces.');
+  if (control.length > 0) alphabetProblems.push('The alphabet may only contain visible characters and spaces.');
   const seen = new Set<string>();
   const repeated = new Set<string>();
   for (const s of symbols) (seen.has(s) ? repeated : seen).add(s);
-  for (const s of repeated) problems.push(`The alphabet contains ${named(s)} more than once.`);
+  for (const s of repeated) alphabetProblems.push(`The alphabet contains ${named(s)} more than once.`);
 
   const target = [...options.target];
-  if (target.length < minTarget) problems.push('The target must not be empty.');
-  if (target.length > maxTarget) problems.push(`The target can have at most ${maxTarget} characters (it has ${target.length}).`);
+  if (target.length < minTarget) targetProblems.push('The target must not be empty.');
+  if (target.length > maxTarget) targetProblems.push(`The target can have at most ${maxTarget} characters (it has ${target.length}).`);
   const outside: string[] = [];
   target.forEach((c) => {
     if (!seen.has(c) && !outside.includes(c)) outside.push(c);
   });
   for (const c of outside) {
     const place = target.indexOf(c) + 1;
-    problems.push(`The target contains ${named(c)} (position ${place}), which is not in the alphabet. Add it to the alphabet or remove it from the target.`);
+    targetProblems.push(`The target contains ${named(c)} (position ${place}), which is not in the alphabet. Add it to the alphabet or remove it from the target.`);
   }
-  return problems;
+  return { alphabet: alphabetProblems, target: targetProblems };
+}
+
+/** Everything wrong with these options, in words, or an empty list. */
+export function validateTargetString(options: TargetStringOptions): string[] {
+  const { alphabet, target } = validateTargetStringFields(options);
+  return [...alphabet, ...target];
 }
 
 export type TargetStringProblem = Problem & { readonly knownOptimumFitness: number; readonly options: TargetStringOptions };

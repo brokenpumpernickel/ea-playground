@@ -1,3 +1,4 @@
+import type { ProblemEntry, ProblemOptions } from './problems';
 import { describeAlphabet, parseGenes, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
 
 /**
@@ -18,6 +19,8 @@ export interface Draft {
   /** Hand-edited chromosomes: one per line, or separated by spaces or commas. */
   chromosomes: string;
   seed: string;
+  /** The problem's own options as typed (the string problem's alphabet and target); absent for problems without any. */
+  options?: { alphabet: string; target: string };
   method: 'roulette' | 'tournament';
   tournamentSize: string;
   chain: ChainStepDraft[];
@@ -36,6 +39,8 @@ export type Field =
   | 'size'
   | 'chromosomes'
   | 'seed'
+  | 'alphabet'
+  | 'target'
   | 'tournamentSize'
   | 'chain'
   | 'crossover.probability'
@@ -59,13 +64,14 @@ export const defaultStep = (step: StepName): ChainStepDraft => ({
 
 const textOf = (v: number | undefined, fallback: number): string => String(v ?? fallback);
 
-export function draftOf(params: GaParams, setup: GaSetup, seed: number): Draft {
+export function draftOf(params: GaParams, setup: GaSetup, seed: number, options?: ProblemOptions): Draft {
   const selection = params.selection;
   return {
     init: setup.init.kind,
     size: setup.init.kind === 'random' ? String(setup.init.size) : String(setup.init.chromosomes.length),
     chromosomes: setup.init.kind === 'explicit' ? setup.init.chromosomes.join('\n') : '',
     seed: String(seed),
+    ...(options ? { options: { alphabet: options.alphabet, target: options.target } } : {}),
     method: selection.method,
     tournamentSize: selection.method === 'tournament' ? String(selection.size) : '2',
     chain:
@@ -141,9 +147,31 @@ export function parseChromosomes(text: string, problem: Problem): ChromosomeRow[
 
 /* ------------------------------------------------------------------ validation */
 
-/** `sampleFitness` is the fitness of the population the chain will next be applied to, so its messages are real. */
-export function validate(draft: Draft, problem: Problem, sampleFitness: readonly number[]): Validation {
+/** A chromosome of this problem, for the hint under an empty hand-edited population. */
+const exampleChromosome = (problem: Problem): string => (problem.alphabet.length === 2 ? '01101' : [...Array(problem.chromosomeLength)].map((_, k) => problem.alphabet[k % problem.alphabet.length]).join(''));
+
+/**
+ * The problem the draft describes: the entry's problem built from the typed options, or `current` when there are none
+ * or they are not valid (the messages then say why, and nothing is built from them).
+ */
+export function problemOf(draft: Draft, entry: Pick<ProblemEntry, 'validateOptions' | 'create'>, current: Problem): Problem {
+  if (!draft.options || entry.validateOptions(draft.options).length > 0) return current;
+  return entry.create(draft.options);
+}
+
+/**
+ * `sampleFitness` is the fitness of the population the chain will next be applied to, so its messages are real.
+ * `problem` is the one the draft describes (see `problemOf`); `entry` is needed to check typed options.
+ */
+export function validate(draft: Draft, problem: Problem, sampleFitness: readonly number[], entry?: Pick<ProblemEntry, 'validateOptionFields'>): Validation {
   const errors: Partial<Record<Field, string>> = {};
+
+  // the problem's own options (the alphabet and the target)
+  if (draft.options && entry) {
+    const found = entry.validateOptionFields(draft.options);
+    for (const field of ['alphabet', 'target'] as const) if (found[field]?.length) errors[field] = found[field]!.join(' ');
+  }
+  const optionsValid = errors.alphabet === undefined && errors.target === undefined;
 
   // run setup
   const seed = numberOf(draft.seed);
@@ -156,8 +184,9 @@ export function validate(draft: Draft, problem: Problem, sampleFitness: readonly
     const rows = parseChromosomes(draft.chromosomes, problem);
     size = rows.length;
     const bad = rows.find((r) => r.error);
-    if (rows.length === 0) errors.chromosomes = 'Type at least one chromosome, for example 01101.';
-    else if (bad) errors.chromosomes = bad.error!;
+    // while the alphabet or target is wrong the strings cannot be checked against them
+    if (rows.length === 0) errors.chromosomes = `Type at least one chromosome, for example ${exampleChromosome(problem)}.`;
+    else if (bad && optionsValid) errors.chromosomes = bad.error!;
   }
 
   // selection
@@ -257,7 +286,7 @@ export interface Changes {
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 /** What the draft would change compared with the run as it stands. The draft must be valid. */
-export function changes(draft: Draft, current: { params: GaParams; setup: GaSetup; seed: number }): Changes {
+export function changes(draft: Draft, current: { params: GaParams; setup: GaSetup; seed: number; options?: ProblemOptions }): Changes {
   const next = toParams(draft);
   const p = current.params;
   const operator: string[] = [];
@@ -280,6 +309,30 @@ export function changes(draft: Draft, current: { params: GaParams; setup: GaSetu
   if (setup.init.kind !== was.kind) reset.push('Initialization');
   else if (setup.init.kind === 'random' && was.kind === 'random' && setup.init.size !== was.size) reset.push('Population size');
   else if (setup.init.kind === 'explicit' && !same(setup.init, was)) reset.push('Hand-edited population');
+  if (draft.options && current.options) {
+    if (draft.options.alphabet !== current.options.alphabet) reset.push('Alphabet');
+    if (draft.options.target !== current.options.target) reset.push('Target');
+  }
   if (Number(draft.seed) !== current.seed) reset.push('Seed');
+  if (followedTargetFitness(draft, current.setup.problem) !== undefined) reset.push('Target fitness');
   return { operator, reset };
+}
+
+/**
+ * When the target changes length and the stop criterion "target fitness reached" is still the old target's length
+ * (every position matching), the restart moves it to the new length, so the run does not report success at 5 matches
+ * on a 12-letter target. Returns the new value, or undefined when the rule does not apply.
+ */
+export function followedTargetFitness(draft: Draft, current: Problem): number | undefined {
+  if (!draft.options || current.knownOptimumFitness === undefined || !draft.stop.target.enabled) return undefined;
+  const length = [...draft.options.target].length;
+  if (length === current.knownOptimumFitness || numberOf(draft.stop.target.value) !== current.knownOptimumFitness) return undefined;
+  return length;
+}
+
+/** The parameters a restart applies: the draft's, with the target fitness following a new target's length. */
+export function resetParams(draft: Draft, current: Problem): GaParams {
+  const params = toParams(draft);
+  const followed = followedTargetFitness(draft, current);
+  return followed === undefined ? params : { ...params, stop: { ...params.stop, targetFitness: followed } };
 }

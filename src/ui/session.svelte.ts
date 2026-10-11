@@ -44,6 +44,8 @@ export interface PendingReset {
   readonly changed: readonly string[];
   /** Set when the reset loads a preset, by name. */
   readonly preset?: string;
+  /** Set when the reset changes the running problem's own options (the string problem's alphabet and target). */
+  readonly options?: ProblemOptions;
   /** Set when the reset switches to another problem. */
   readonly problem?: { readonly id: string; readonly options: ProblemOptions | undefined };
 }
@@ -287,6 +289,8 @@ export function createSession(options: SessionOptions) {
       if (reset.problem) {
         problemId = reset.problem.id;
         problemOptions = reset.problem.options;
+      } else if (reset.options) {
+        problemOptions = reset.options;
       }
       reset = undefined;
       act(() => {

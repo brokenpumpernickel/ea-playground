@@ -566,3 +566,6 @@ input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radi
 .mcards > .crow.ctarget { padding-bottom:2px; }
 /* the column titles (and the target above the strings) stay in view while the offspring scroll */
 .mtable thead th { position:sticky; top:0; z-index:2; background:var(--surface); }
+
+/* the string problem's own fields: text, left-aligned and wide enough for a target or an alphabet */
+#drawer input[type=text].textfield { width:100%; text-align:left; font-family:ui-monospace,Consolas,monospace; letter-spacing:.06em; font-variant-numeric:normal; }

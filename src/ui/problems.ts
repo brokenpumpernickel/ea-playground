@@ -3,6 +3,7 @@ import {
   targetStringDefaults,
   targetStringProblem,
   validateTargetString,
+  validateTargetStringFields,
   type GaParams,
   type Initialization,
   type Problem,
@@ -35,6 +36,8 @@ export interface ProblemEntry {
   defaultOptions(): ProblemOptions | undefined;
   /** Why these options are not valid, in words (empty when they are). They may be anything: they came from a link. */
   validateOptions(options: unknown): string[];
+  /** The same check, sorted by the option each message is about (what the drawer shows under each field). */
+  validateOptionFields(options: ProblemOptions): Readonly<Record<string, readonly string[]>>;
   /** The engine problem for these options. */
   create(options: ProblemOptions | undefined): Problem;
   /** How a fresh run of this problem starts: population, parameters and seed. */
@@ -53,6 +56,7 @@ const goldbergEntry: ProblemEntry = {
   hasOptions: false,
   defaultOptions: () => undefined,
   validateOptions: (options) => (options === undefined ? [] : ['This problem takes no options.']),
+  validateOptionFields: () => ({}),
   create: () => goldberg,
   defaults: { init: { kind: 'random', size: 6 }, params: defaultParams, seed: defaultSeed },
 };
@@ -77,6 +81,7 @@ const targetStringEntry: ProblemEntry = {
     if (problems.length > 0) return problems;
     return validateTargetString(options as unknown as TargetStringOptions);
   },
+  validateOptionFields: (options) => validateTargetStringFields(options),
   create: (options) => targetStringProblem(options ?? targetStringDefaults.options),
   defaults: { init: { kind: 'random', size: targetStringDefaults.populationSize }, params: targetStringDefaults.params, seed: defaultSeed },
 };
