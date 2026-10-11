@@ -24,13 +24,13 @@ export interface LandscapeModel {
   readonly size: number;
 }
 
-export function landscapeModel(landscape: Landscape, population: readonly { readonly decoded: number; readonly fitness: number }[]): LandscapeModel {
+export function landscapeModel(landscape: Landscape, population: readonly { readonly decoded: number | string; readonly fitness: number }[]): LandscapeModel {
   const [lo, hi] = landscape.domain;
   const curve = Array.from({ length: hi - lo + 1 }, (_, k) => ({ x: lo + k, y: landscape.fitnessAt(lo + k) }));
   const yMax = niceCeiling(Math.max(...curve.map((p) => p.y)));
   const best = Math.max(...population.map((i) => i.fitness));
   const counts = new Map<number, number>();
-  for (const i of population) counts.set(i.decoded, (counts.get(i.decoded) ?? 0) + 1);
+  for (const i of population) counts.set(Number(i.decoded), (counts.get(Number(i.decoded)) ?? 0) + 1);
   const marks = [...counts.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([x, count]): LandscapeMark => ({ x, count, fitness: landscape.fitnessAt(x), best: landscape.fitnessAt(x) === best }));

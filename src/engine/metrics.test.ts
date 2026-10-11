@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { formatBits } from './chromosome';
+import { binaryAlphabet, formatBits } from './chromosome';
+import { fitnessColumn } from './problem';
 import { gaAlgorithm, type GaParams } from './algorithm';
 import { goldberg } from './goldberg';
 import { runGeneration, startRun, type GenerationConfig, type RunState } from './generation';
@@ -70,7 +71,7 @@ describe('diversity (mean pairwise Hamming distance, normalised to 0–1)', () =
   });
 
   test('the linear-time calculation equals comparing every pair, for random populations of many sizes and lengths', () => {
-    const longer = { chromosomeLength: 13, evaluate: (c: readonly number[]) => ({ decoded: 0, objective: 0, fitness: c.length }) };
+    const longer = { chromosomeLength: 13, alphabet: binaryAlphabet, columns: [fitnessColumn], evaluate: (c: readonly number[]) => ({ decoded: 0, objective: 0, fitness: c.length }) };
     for (let trial = 0; trial < 60; trial++) {
       const rng = createRng(1000 + trial);
       const size = 1 + Math.floor(rng.next() * 40);
@@ -96,7 +97,7 @@ describe('distinct chromosomes', () => {
 
   test('chromosomes with the same fitness are still different chromosomes', () => {
     // a flat problem gives every chromosome the same fitness, so the count must come from the genes alone
-    const flat = { chromosomeLength: 3, evaluate: () => ({ decoded: 0, objective: 0, fitness: 1 }) };
+    const flat = { chromosomeLength: 3, alphabet: binaryAlphabet, columns: [fitnessColumn], evaluate: () => ({ decoded: 0, objective: 0, fitness: 1 }) };
     const state = startRun(flat, { kind: 'explicit', chromosomes: ['000', '001', '010'] }, scripted()).state;
     expect(metricsOf(state).distinct).toBe(3);
   });

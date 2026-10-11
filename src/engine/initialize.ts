@@ -1,4 +1,4 @@
-import { parseBits, type Bit, type Chromosome } from './chromosome';
+import { parseGenes, type Chromosome } from './chromosome';
 import type { Problem, Scores } from './problem';
 import type { Rng } from '../run/rng';
 
@@ -54,19 +54,26 @@ export function initialize(
 
 function randomChromosomes(problem: Problem, size: number, rng: Rng): Chromosome[] {
   if (!Number.isInteger(size) || size < 1) throw new Error('Population size must be a whole number of at least 1');
-  return Array.from({ length: size }, () =>
-    Array.from({ length: problem.chromosomeLength }, (): Bit => (rng.next() < 0.5 ? 1 : 0)),
-  );
+  const k = problem.alphabet.length;
+  // the symbol index is k − 1 − ⌊u·k⌋, which for the binary alphabet is the original rule: a gene is 1 when its draw is below 0.5
+  return Array.from({ length: size }, () => Array.from({ length: problem.chromosomeLength }, () => k - 1 - Math.floor(rng.next() * k)));
 }
 
 function explicitChromosomes(problem: Problem, texts: readonly string[]): Chromosome[] {
   if (texts.length === 0) throw new Error('The initial population needs at least one chromosome');
   return texts.map((text, k) => {
     const label = `Chromosome ${k + 1}`;
-    if (!/^[01]*$/.test(text)) throw new Error(`${label} ("${text}") may only contain the characters 0 and 1`);
+    const genes = parseGenes(text, problem.alphabet);
+    if (!genes) throw new Error(`${label} ("${text}") may only contain the characters ${describeAlphabet(problem.alphabet)}`);
     if (text.length !== problem.chromosomeLength) {
       throw new Error(`${label} has ${text.length} genes, but this problem needs ${problem.chromosomeLength}`);
     }
-    return parseBits(text);
+    return genes;
   });
+}
+
+/** "0 and 1", "a, b and c", or for a long alphabet just how many symbols it has. */
+function describeAlphabet(alphabet: readonly string[]): string {
+  if (alphabet.length > 8) return `of the alphabet (${alphabet.length} symbols)`;
+  return alphabet.length < 2 ? alphabet.join('') : `${alphabet.slice(0, -1).join(', ')} and ${alphabet[alphabet.length - 1]}`;
 }

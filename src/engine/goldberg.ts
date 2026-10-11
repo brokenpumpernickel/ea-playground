@@ -1,5 +1,5 @@
-import type { Chromosome } from './chromosome';
-import type { Problem, Scores } from './problem';
+import { binaryAlphabet, type Chromosome } from './chromosome';
+import { fitnessColumn, type Problem, type Scores } from './problem';
 
 /**
  * Goldberg's introductory example: maximise f(x) = x² for integer x in [0, 31].
@@ -7,6 +7,8 @@ import type { Problem, Scores } from './problem';
  */
 export const goldberg: Problem & { readonly knownOptimumFitness: number } = {
   chromosomeLength: 5,
+  alphabet: binaryAlphabet,
+  columns: [{ header: 'x', show: (scores) => String(scores.decoded) }, fitnessColumn],
   knownOptimumFitness: 31 * 31,
   landscape: { label: 'f(x) = x²', domain: [0, 31], fitnessAt: (x) => x * x },
   evaluate(chromosome: Chromosome): Scores {

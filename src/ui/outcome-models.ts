@@ -19,7 +19,7 @@ export interface EvaluationRow {
   readonly flipped: readonly number[];
   /** Known once this offspring has been scored. */
   readonly id?: number;
-  readonly decoded?: number;
+  readonly decoded?: number | string;
   readonly objective?: number;
   readonly fitness?: number;
 }

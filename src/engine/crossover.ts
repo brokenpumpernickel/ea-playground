@@ -1,4 +1,4 @@
-import type { Bit, Chromosome } from './chromosome';
+import type { Chromosome, Gene } from './chromosome';
 import type { Individual } from './initialize';
 import type { Pair } from './pairing';
 import type { Rng } from '../run/rng';
@@ -129,7 +129,7 @@ function makeChildren(
 ): [{ chromosome: Chromosome; sources: Source[] }, { chromosome: Chromosome; sources: Source[] }] {
   const source1: Source[] = swapped.map((s) => (s ? 'B' : 'A'));
   const source2: Source[] = swapped.map((s) => (s ? 'A' : 'B'));
-  const pick = (sources: Source[]): Bit[] => sources.map((s, g) => (s === 'A' ? a[g]! : b[g]!));
+  const pick = (sources: Source[]): Gene[] => sources.map((s, g) => (s === 'A' ? a[g]! : b[g]!));
   return [
     { chromosome: pick(source1), sources: source1 },
     { chromosome: pick(source2), sources: source2 },

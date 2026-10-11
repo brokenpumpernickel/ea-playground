@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'vitest';
+import { binaryAlphabet } from './chromosome';
+import { fitnessColumn } from './problem';
 import { goldberg } from './goldberg';
 import { initialize, type Individual } from './initialize';
 import { createRng } from '../run/rng';
@@ -145,7 +147,7 @@ describe('random draws', () => {
 
 describe('fitness is compared directly', () => {
   test('negative fitness needs no weights, no chain and no automatic switch', () => {
-    const negative = { chromosomeLength: 3, evaluate: (c: readonly number[]) => ({ decoded: 0, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 5 }) };
+    const negative = { chromosomeLength: 3, alphabet: binaryAlphabet, columns: [fitnessColumn], evaluate: (c: readonly number[]) => ({ decoded: 0, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 5 }) };
     const population = initialize(negative, { kind: 'explicit', chromosomes: ['000', '111', '010'] }, scripted()).population; // −5, −2, −4
     const { pool, events } = tournamentSelect(population, 2, 1, scripted(0.0, 0.5)); // positions 0 and 1
     expect(pool).toEqual([2]);

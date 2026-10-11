@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { formatBits } from './chromosome';
+import { binaryAlphabet, formatBits } from './chromosome';
+import { fitnessColumn } from './problem';
 import { crossover, type CrossoverConfig } from './crossover';
 import { goldberg } from './goldberg';
 import { initialize, type Individual } from './initialize';
@@ -207,7 +208,7 @@ describe('validation', () => {
   const attempt = (config: CrossoverConfig, population = textbook(), p = pairs) => () => crossover(population, p, config, createRng(1));
   const tiny = (length: number): Individual[] =>
     initialize(
-      { chromosomeLength: length, evaluate: () => ({ decoded: 0, objective: 0, fitness: 0 }) },
+      { chromosomeLength: length, alphabet: binaryAlphabet, columns: [fitnessColumn], evaluate: () => ({ decoded: 0, objective: 0, fitness: 0 }) },
       { kind: 'explicit', chromosomes: ['0'.repeat(length), '1'.repeat(length)] },
       createRng(1),
     ).population;

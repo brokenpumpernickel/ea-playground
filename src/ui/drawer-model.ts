@@ -103,7 +103,7 @@ const isWhole = (v: number | undefined, min: number): v is number => v !== undef
 export interface ChromosomeRow {
   readonly text: string;
   readonly error?: string;
-  readonly decoded?: number;
+  readonly decoded?: number | string;
   readonly fitness?: number;
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { formatBits } from './chromosome';
+import { binaryAlphabet, formatBits } from './chromosome';
+import { fitnessColumn } from './problem';
 import { goldberg } from './goldberg';
 import { generationalReplacement, runGeneration, startRun, stopReasons, type GenerationConfig, type ReplacementStrategy, type RunState } from './generation';
 import { createRng } from '../run/rng';
@@ -245,7 +246,7 @@ describe('configuration errors', () => {
   });
 
   test('negative fitness runs through the automatic switch to Shift, which the events record', () => {
-    const negative = { chromosomeLength: 5, evaluate: (c: readonly number[]) => ({ decoded: c.length, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 3 }) };
+    const negative = { chromosomeLength: 5, alphabet: binaryAlphabet, columns: [fitnessColumn], evaluate: (c: readonly number[]) => ({ decoded: c.length, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 3 }) };
     const rng = createRng(4);
     const { state } = startRun(negative, { kind: 'random', size: 6 }, rng);
     expect(Math.min(...state.population.map((i) => i.fitness))).toBeLessThan(0);
@@ -593,7 +594,7 @@ describe('tournament selection in the generation loop', () => {
   });
 
   test('negative fitness works with no chain and no automatic switch', () => {
-    const negative = { chromosomeLength: 5, evaluate: (c: readonly number[]) => ({ decoded: c.length, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 3 }) };
+    const negative = { chromosomeLength: 5, alphabet: binaryAlphabet, columns: [fitnessColumn], evaluate: (c: readonly number[]) => ({ decoded: c.length, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 3 }) };
     const rng = createRng(4);
     const { state } = startRun(negative, { kind: 'random', size: 6 }, rng);
     expect(Math.min(...state.population.map((i) => i.fitness))).toBeLessThan(0);

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { gaAlgorithm, goldberg, type GaEvent, type GaParams, type GaSetup, type RunState } from '../engine';
+import { binaryAlphabet, fitnessColumn, gaAlgorithm, goldberg, type GaEvent, type GaParams, type GaSetup, type RunState } from '../engine';
 import { createRun, type Run } from '../run';
 import { pairingModel, selectionModel, tournamentModel } from './selection-models';
 
@@ -86,7 +86,7 @@ describe('selection model (roulette)', () => {
 
   test('an automatic switch to Shift is reported with its reason, and there is none otherwise', () => {
     expect(selectionModel(at(make(), 0, 0)).autoSwitch).toBeUndefined();
-    const negative = { chromosomeLength: 5, evaluate: (c: readonly number[]) => ({ decoded: 0, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 3 }) };
+    const negative = { chromosomeLength: 5, alphabet: binaryAlphabet, columns: [fitnessColumn], evaluate: (c: readonly number[]) => ({ decoded: 0, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 3 }) };
     const run = make({}, { problem: negative, init: { kind: 'explicit', chromosomes: ['00000', '11111', '01010', '10000'] } });
     const model = selectionModel(at(run, 0, 0));
     expect(model.autoSwitch).toContain('Fitness is negative');

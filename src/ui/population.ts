@@ -4,7 +4,7 @@ import type { Position, StageLayout, View } from '../run';
 export interface PopulationRow {
   readonly id: number;
   readonly chromosome: string;
-  readonly decoded: number;
+  readonly decoded: number | string;
   readonly fitness: number;
   /** Selection weight and probability, once the selection stage has been entered (roulette only). */
   readonly weight?: number;

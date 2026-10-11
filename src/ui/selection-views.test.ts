@@ -1,6 +1,6 @@
 import { render } from 'svelte/server';
 import { describe, expect, test } from 'vitest';
-import { gaAlgorithm, goldberg, type GaEvent, type GaParams, type GaSetup, type RunState } from '../engine';
+import { binaryAlphabet, fitnessColumn, gaAlgorithm, goldberg, type GaEvent, type GaParams, type GaSetup, type RunState } from '../engine';
 import { createRun, type Run } from '../run';
 import PairingView from './PairingView.svelte';
 import RouletteView from './RouletteView.svelte';
@@ -79,7 +79,7 @@ describe('roulette view', () => {
 
   test('an automatic switch is shown as a labelled notice, and is absent otherwise', () => {
     expect(html(RouletteView, { model: selectionModel(at(make(), 0, 0)), animate: false })).not.toContain('data-testid="auto-switch"');
-    const negative = { chromosomeLength: 5, evaluate: (c: readonly number[]) => ({ decoded: 0, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 3 }) };
+    const negative = { chromosomeLength: 5, alphabet: binaryAlphabet, columns: [fitnessColumn], evaluate: (c: readonly number[]) => ({ decoded: 0, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 3 }) };
     const run = make({}, { problem: negative, init: { kind: 'explicit', chromosomes: ['00000', '11111', '01010', '10000'] } });
     const markup = html(RouletteView, { model: selectionModel(at(run, 0, 0)), animate: false });
     expect(markup).toContain('data-testid="auto-switch"');

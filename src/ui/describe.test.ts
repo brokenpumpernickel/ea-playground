@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { goldberg, runGeneration, startRun, type GaEvent, type GenerationConfig } from '../engine';
+import { binaryAlphabet, fitnessColumn, goldberg, runGeneration, startRun, type GaEvent, type GenerationConfig } from '../engine';
 import { scripted } from '../engine/test-support';
 import { describeEvent, stageTitle } from './describe';
 
@@ -53,7 +53,7 @@ describe('setup and selection', () => {
   });
 
   test('an automatic switch to Shift is explained', () => {
-    const negative = { chromosomeLength: 5, evaluate: (c: readonly number[]) => ({ decoded: 0, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 3 }) };
+    const negative = { chromosomeLength: 5, alphabet: binaryAlphabet, columns: [fitnessColumn], evaluate: (c: readonly number[]) => ({ decoded: 0, objective: 0, fitness: c.reduce((n, b) => n + b, 0) - 3 }) };
     const state = startRun(negative, { kind: 'explicit', chromosomes: ['00000', '11111', '01010', '10000'] }, scripted()).state;
     const events = runGeneration(state, { ...config, problem: negative }, scripted(...Array<number>(40).fill(0.5))).events;
     const [chain] = lines(events, (e) => e.stage === 'selection' && e.kind === 'weight-chain');

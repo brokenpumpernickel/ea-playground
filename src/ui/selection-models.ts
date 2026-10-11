@@ -160,7 +160,7 @@ export function tournamentModel(view: GaView): TournamentModel {
 export interface Parent {
   readonly id: number;
   readonly bits: string;
-  readonly x: number;
+  readonly x: number | string;
 }
 
 export interface PairCard {

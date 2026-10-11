@@ -42,7 +42,7 @@ describe('random initialization', () => {
     expect(population.map((i) => i.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     for (const i of population) {
       expect(i.chromosome).toHaveLength(5);
-      expect(i.fitness).toBe(i.decoded ** 2);
+      expect(i.fitness).toBe(Number(i.decoded) ** 2);
     }
   });
 

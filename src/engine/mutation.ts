@@ -1,4 +1,4 @@
-import type { Bit, Chromosome } from './chromosome';
+import type { Chromosome, Gene } from './chromosome';
 import type { Rng } from '../run/rng';
 
 export type MutationMode = 'per-gene' | 'per-individual';
@@ -58,7 +58,7 @@ export function mutate(
       : config.mode === 'per-gene'
         ? drawPerGene(input.chromosome, config, rng)
         : drawPerIndividual(input.chromosome, config, rng);
-    const after: Bit[] = input.chromosome.map((bit, k) => (draws.flipped.includes(k + 1) ? (bit === 0 ? 1 : 0) : bit));
+    const after: Gene[] = input.chromosome.map((gene, k) => (draws.flipped.includes(k + 1) ? (gene === 0 ? 1 : 0) : gene));
     mutated.push({ offspring: input.offspring, chromosome: after, flipped: draws.flipped });
     events.push({
       stage: 'mutation',
