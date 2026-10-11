@@ -79,7 +79,11 @@ export function recordGolden(c: GoldenCase, seed: number): GoldenRun {
       seed,
       populations: states.map((s) => s.population.map((i) => `${i.id}:${formatBits(i.chromosome)}:${i.fitness}`)),
       events: Object.fromEntries(goldenEventGenerations.map((g) => [String(g), run.events(g)])),
-      metrics: states.map((s) => metricsOf(s)),
+      // the metrics as they were when the fixtures were recorded (later additions are tested on their own)
+      metrics: states.map((s) => {
+        const { generation, best, worst, average, bestSoFar, evaluations, diversity, distinct, alleleFrequencies } = metricsOf(s);
+        return { generation, best, worst, average, bestSoFar, evaluations, diversity, distinct, alleleFrequencies };
+      }),
     }),
   ) as GoldenRun;
 }

@@ -93,7 +93,7 @@ export function createSession(options: SessionOptions) {
   const isEnd = () => atCycleEnd(run.layout(run.cursor.cycle), run.cursor);
   const shownMetrics = () => {
     const view = currentView();
-    return metricsOf(view.position.cycle === 0 || isEnd() ? view.after : view.before!);
+    return metricsOf(view.position.cycle === 0 || isEnd() ? view.after : view.before!, run.setup.problem.alphabet.length);
   };
 
   return {
