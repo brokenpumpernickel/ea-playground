@@ -98,6 +98,28 @@ _Avoid_: Fix, correction
 A decoding rule that makes every chromosome feasible by construction: walk the items in order, include an item if its gene is 1 and it still fits, otherwise skip it and continue. Genes set to 1 but skipped stay visible.
 _Avoid_: Greedy decoder, repair decoder
 
+### Building blocks
+
+**Block**:
+A fixed group of genes that the fitness function scores together. The trap problem's chromosome is divided into equal blocks, and the individual's fitness is the sum of its blocks' contributions.
+_Avoid_: Segment, chunk, module
+
+**Trap function**:
+The score of one block as a function of how many of its genes are 1: the best score when all are 1, but otherwise a score that rises as genes are turned to 0. Every block therefore pulls the search toward all zeros, away from its optimum.
+_Avoid_: Deceptive function (a trap is one kind of deceptive function)
+
+**Deceptive attractor**:
+The block setting a trap function leads toward, all zeros, which is locally best but not the optimum.
+_Avoid_: Local optimum (all zeros in one block is a local optimum of that block only)
+
+**Linkage**:
+How close together a block's genes sit on the chromosome. Tight linkage puts a block's genes side by side; loose linkage spreads them out. It decides how often a crossover cut falls inside a block and splits it.
+_Avoid_: Epistasis (a related but wider idea), locality
+
+**Schema**:
+A pattern over the chromosome that fixes some genes and leaves the others free (written with `*`), such as `1111****`. An individual is an instance of a schema when it matches every fixed gene.
+_Avoid_: Template, mask (a crossover mask is a different thing)
+
 ### Selection and variation
 
 **Mating pool**:
