@@ -19,6 +19,7 @@
    * - With a knapsack in the screen's context, the cells are narrower, and a gene that is 1 but whose item is not in the
    *   bag (the first-fit decoder skipped it, or Baldwinian repair dropped it) is drawn as a ✕ in a dashed plain cell, with
    *   the description saying which items are packed, which are not, and the weight against the capacity.
+   * - `dropped`: 1-based genes that Lamarckian repair rewrote to 0, marked with ✂ and a dotted outline.
    * - `unders`: a short text under each gene (the mutation view's draws), with the genes it flags marked.
    * A space is drawn as `␣` so it is visible.
    */
@@ -28,6 +29,7 @@
     sources,
     cuts = [],
     flipped = [],
+    dropped = [],
     marks,
     unders,
   }: {
@@ -36,6 +38,8 @@
     sources?: readonly ('A' | 'B')[];
     cuts?: readonly number[];
     flipped?: readonly number[];
+    /** 1-based genes that repair rewrote from 1 to 0 (Lamarckian repair): marked with ✂ and a dotted outline. */
+    dropped?: readonly number[];
     marks?: readonly boolean[];
     unders?: readonly { readonly text: string; readonly flag: boolean; readonly value?: number }[];
   } = $props();
@@ -70,6 +74,7 @@
       fromB.length > 0 ? `${geneList(fromB)} from parent B` : '',
       cuts.length > 0 ? `cut after ${geneList(cuts)}` : '',
       flipped.length > 0 ? `${geneList(flipped)} flipped` : '',
+      dropped.length > 0 ? `${geneList(dropped)} dropped by repair, rewritten to 0` : '',
     ]
       .filter(Boolean)
       .join(', ')
@@ -77,7 +82,7 @@
   );
 </script>
 
-{#snippet cell(bit: string, k: number)}<b class="bit" class:knap={knap} class:skip={skippedAt.includes(k)} class:one={marks ? marks[k] : matched ? matched[k] : bit === '1' && !skippedAt.includes(k)} class:match={matched?.[k] === true} class:miss={matched?.[k] === false} class:letter={letters} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{skippedAt.includes(k) ? '✕' : bit === ' ' ? '␣' : bit}</b>{/snippet}
+{#snippet cell(bit: string, k: number)}<b class="bit" class:knap={knap} class:skip={skippedAt.includes(k)} class:one={marks ? marks[k] : matched ? matched[k] : bit === '1' && !skippedAt.includes(k)} class:match={matched?.[k] === true} class:miss={matched?.[k] === false} class:letter={letters} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cut={dropped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{skippedAt.includes(k) ? '✕' : bit === ' ' ? '␣' : bit}</b>{/snippet}
 
 <span
   class="bits"
@@ -88,4 +93,5 @@
   data-matches={matchCount}
   data-sources={sources ? sources.join('') : undefined}
   data-cuts={cuts.length > 0 ? cuts.join(',') : undefined}
-  data-flipped={flipped.length > 0 ? flipped.join(',') : undefined}>{#each [...chromosome] as bit, k (k)}{#if unders}<span class="gcell">{@render cell(bit, k)}<span class="under" class:flag={unders[k]?.flag} data-gene={k + 1} data-u={unders[k]?.value} aria-hidden="true">{unders[k]?.text ?? ''}</span></span>{:else}{@render cell(bit, k)}{/if}{/each}</span>
+  data-flipped={flipped.length > 0 ? flipped.join(',') : undefined}
+  data-dropped={dropped.length > 0 ? dropped.join(',') : undefined}>{#each [...chromosome] as bit, k (k)}{#if unders}<span class="gcell">{@render cell(bit, k)}<span class="under" class:flag={unders[k]?.flag} data-gene={k + 1} data-u={unders[k]?.value} aria-hidden="true">{unders[k]?.text ?? ''}</span></span>{:else}{@render cell(bit, k)}{/if}{/each}</span>

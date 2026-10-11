@@ -25,6 +25,10 @@ export interface EvaluationRow {
   readonly fitness?: number;
   /** The problem's evaluation columns for this offspring, in order, once it has been scored. */
   readonly cells?: readonly string[];
+  readonly meters?: readonly ({ readonly value: number; readonly limit: number } | undefined)[];
+  /** When evaluation repaired the chromosome: as mutation left it, and the 1-based genes repair changed. */
+  readonly repairedFrom?: string;
+  readonly dropped?: readonly number[];
 }
 
 export interface EvaluationModel {
@@ -53,6 +57,10 @@ export function evaluationModel(view: GaView, display: Display = goldbergDisplay
       objective: i.objective,
       fitness: i.fitness,
       cells: display.evaluationColumns.map((column) => column.show(i)),
+      ...(display.evaluationColumns.some((c) => c.meter) ? { meters: display.evaluationColumns.map((column) => column.meter?.(i)) } : {}),
+      ...(event.repairedFrom
+        ? { repairedFrom: formatBits(event.repairedFrom), dropped: event.repairedFrom.flatMap((g, k) => (g !== i.chromosome[k] ? [k + 1] : [])) }
+        : {}),
     };
   });
   return {

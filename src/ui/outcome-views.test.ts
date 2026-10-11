@@ -51,7 +51,7 @@ describe('evaluation view', () => {
     const scored = events(run).flatMap((e) => (e.stage === 'evaluation' ? [e] : []));
     const markup = html(EvaluationView, { model: evaluationModel(at(run, 'evaluation', scored.length)) });
     expect(attrValues(markup, 'data-flipped').length).toBeGreaterThan(0);
-    const fitnesses = [...markup.matchAll(/data-col="fitness"[^>]*>(\d+)</g)].map((m) => Number(m[1]));
+    const fitnesses = [...markup.matchAll(/data-col="fitness"[^>]*>(?:<!--.*?-->)*(\d+)</g)].map((m) => Number(m[1]));
     expect(fitnesses).toEqual(scored.map((e) => e.individual.fitness));
   });
 });

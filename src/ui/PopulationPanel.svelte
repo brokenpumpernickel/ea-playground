@@ -1,5 +1,6 @@
 <script lang="ts">
   import Bits from './Bits.svelte';
+  import CapacityBar from './CapacityBar.svelte';
   import ItemRow from './ItemRow.svelte';
   import TargetRow from './TargetRow.svelte';
   import type { Session } from './session.svelte';
@@ -18,6 +19,9 @@
    */
   const knapsack = $derived(session.bag !== undefined);
   const showSelection = $derived(!knapsack || table.rows.some((r) => r.weight !== undefined || r.probability !== undefined));
+  /** With the selection columns on show beside the knapsack's own, the bars and the optional columns make way. */
+  const tight = $derived(knapsack && showSelection);
+  const columns = $derived(display.columns.map((column, c) => ({ column, c })).filter(({ column }) => !(tight && column.optional)));
 </script>
 
 <section class="panel" style="left:1136px;top:172px;width:760px;height:542px" aria-labelledby="pop-heading">
@@ -26,12 +30,12 @@
     <span class="r">Σ fitness {total} · avg {average} · best {best}</span>
   </div>
   <div class="tablewrap">
-    <table aria-labelledby="pop-heading">
+    <table aria-labelledby="pop-heading" class:tight>
       <thead>
         <tr>
           <th scope="col">#</th>
           <th scope="col">Chromosome<TargetRow /><ItemRow /></th>
-          {#each display.columns as column (column.header)}
+          {#each columns as { column } (column.header)}
             <th scope="col" class="num">{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>
           {/each}
           {#if showSelection}
@@ -46,8 +50,8 @@
           <tr>
             <td data-col="id"><span class="sym" title={row.elite ? 'Elite: carried over unchanged' : undefined}>{row.elite ? '★' : ''}</span>{row.id}{#if knapsack && row.parentCount}<span class="parentmark" title="selected as a parent {row.parentCount} {row.parentCount === 1 ? 'time' : 'times'}" data-col="parent"><span class="sym" aria-hidden="true">◆</span>×{row.parentCount}</span>{/if}</td>
             <td><Bits chromosome={row.chromosome} small /></td>
-            {#each display.columns as column, c (column.header)}
-              <td class="num" data-col={column.header.toLowerCase()}>{row.cells[c]}</td>
+            {#each columns as { column, c } (column.header)}
+              <td class="num" data-col={column.header.toLowerCase()}>{#if row.meters?.[c]}<CapacityBar value={row.meters[c]!.value} limit={row.meters[c]!.limit} /> {/if}{row.cells[c]}</td>
             {/each}
             {#if showSelection}
               <td class="num" data-col="weight">{row.weight ?? '—'}</td>

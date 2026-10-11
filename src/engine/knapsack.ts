@@ -82,13 +82,14 @@ export function knapsackProblem(options: KnapsackOptions): KnapsackProblem {
     {
       header: 'Bag weight',
       note: `of ${instance.capacity}`,
+      meter: (scores) => ({ value: weightOf(scores), limit: instance.capacity }),
       show: (scores) => {
         const weight = weightOf(scores);
         const over = weight - instance.capacity;
         return `${weight}/${instance.capacity} ${over > 0 ? `✗ +${over}` : '✓'}`;
       },
     },
-    { header: 'Value', show: (scores) => String(scores.objective) },
+    { header: 'Value', optional: true, show: (scores) => String(scores.objective) },
     ...(handling === 'penalty' ? [{ header: 'Penalty', show: (scores: Scores) => (scores.objective === scores.fitness ? '0' : `−${fmt(scores.objective - scores.fitness)}`) }] : []),
     { header: 'Fitness', show: (scores) => fmt(scores.fitness) },
   ];

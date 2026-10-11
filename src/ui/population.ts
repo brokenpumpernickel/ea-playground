@@ -9,6 +9,8 @@ export interface PopulationRow {
   readonly fitness: number;
   /** The problem's columns for this individual, in order (Goldberg: x, fitness). */
   readonly cells: readonly string[];
+  /** For each column that is a quantity against a limit, its value and limit (undefined for the others), in the order of the columns. */
+  readonly meters?: readonly ({ readonly value: number; readonly limit: number } | undefined)[];
   /** Selection weight and probability, once the selection stage has been entered (roulette only). */
   readonly weight?: number;
   readonly probability?: number;
@@ -60,6 +62,7 @@ export function populationTable(view: View<RunState, GaEvent>, atEnd: boolean, d
       decoded: i.decoded,
       fitness: i.fitness,
       cells: display.columns.map((column) => column.show(i)),
+      ...(display.columns.some((c) => c.meter) ? { meters: display.columns.map((column) => column.meter?.(i)) } : {}),
       ...(shares.has(i.id) ? { weight: shares.get(i.id)!.weight, probability: shares.get(i.id)!.probability } : {}),
       ...(sawPick ? { parentCount: picks.filter((p) => p === i.id).length } : {}),
       elite: showNew && eliteIds.has(i.id),

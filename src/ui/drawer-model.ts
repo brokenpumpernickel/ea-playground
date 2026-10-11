@@ -114,6 +114,7 @@ export interface ChromosomeRow {
   readonly fitness?: number;
   /** The problem's table columns for this chromosome, in order (Goldberg: x, fitness). */
   readonly cells?: readonly string[];
+  readonly meters?: readonly ({ readonly value: number; readonly limit: number } | undefined)[];
 }
 
 /**
@@ -142,7 +143,7 @@ export function parseChromosomes(text: string, problem: Problem): ChromosomeRow[
       return { text: piece, error: `Chromosome ${k + 1} has ${genes.length} genes, but this problem needs ${problem.chromosomeLength}.` };
     }
     const scores = problem.evaluate(genes);
-    return { text: piece, decoded: scores.decoded, fitness: scores.fitness, cells: problem.columns.map((column) => column.show(scores)) };
+    return { text: piece, decoded: scores.decoded, fitness: scores.fitness, cells: problem.columns.map((column) => column.show(scores)), ...(problem.columns.some((c) => c.meter) ? { meters: problem.columns.map((column) => column.meter?.(scores)) } : {}) };
   });
 }
 

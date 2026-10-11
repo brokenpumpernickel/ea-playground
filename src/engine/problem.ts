@@ -36,6 +36,13 @@ export interface ProblemColumn {
   readonly header: string;
   readonly note?: string;
   readonly show: (scores: Scores) => string;
+  /**
+   * When the column is a quantity measured against a limit (the knapsack's weight against its capacity), the views draw
+   * a small bar of it beside the text. The text always says the same thing, so the bar is never the only carrier.
+   */
+  readonly meter?: (scores: Scores) => { readonly value: number; readonly limit: number };
+  /** A column the population table may leave out when the selection columns need the room (what it shows is also in the evaluation view). */
+  readonly optional?: boolean;
 }
 
 /** The one column every problem can offer: its fitness. */

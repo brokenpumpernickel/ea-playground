@@ -592,3 +592,30 @@ input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radi
 .projector .itemrow b { font-size:17px; }
 .projector .itemrow u, .projector .itemrow s { font-size:15px; }
 .parentmark { margin-left:6px; font-size:15px; color:var(--ink2); white-space:nowrap; }
+
+/* ---------- the knapsack: capacity bars and the repair mark ---------- */
+.capbar { position:relative; display:inline-block; width:40px; height:14px; border:2px solid var(--ink2); border-radius:3px; vertical-align:middle; background:var(--surface); margin-right:4px; }
+.capbar i { position:absolute; top:0; bottom:0; }
+.capbar .fill { left:0; background:var(--seq4); }
+.capbar .over { background:repeating-linear-gradient(135deg, var(--flip) 0 3px, transparent 3px 6px); }
+.capbar .cap { width:2px; background:var(--ink); top:-5px; bottom:-5px; }
+.bit.cut { border-style:dotted; border-color:var(--flip); border-width:3px; }
+.bit.cut::after { content:"✂"; position:absolute; top:-17px; left:50%; transform:translateX(-50%); color:var(--flip); font-size:17px; }
+.bagwrap { display:flex; align-items:center; gap:14px; margin-top:34px; flex:none; }
+.bagwrap .lbl { font-weight:700; white-space:nowrap; }
+.bagwrap .legend2 { white-space:nowrap; font-size:18px; color:var(--ink2); }
+.bigbar { position:relative; flex:1; height:34px; border:2px solid var(--ink2); border-radius:6px; background:var(--surface); }
+.bigbar .seg { position:absolute; top:0; bottom:0; background:var(--seq3); border-right:2px solid var(--surface); display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; overflow:hidden; font-style:normal; }
+.bigbar .seg.ov { background:repeating-linear-gradient(135deg, var(--flip) 0 4px, var(--surface) 4px 8px); color:var(--ink); }
+.bigbar .capline { position:absolute; top:-9px; bottom:-9px; width:3px; background:var(--ink); }
+.bigbar .captxt { position:absolute; top:-32px; transform:translateX(-50%); font-size:15px; color:var(--ink2); white-space:nowrap; }
+.tablewrap td .capbar { margin-right:2px; }
+.tablewrap:has(.bit.knap) th, .tablewrap:has(.bit.knap) td { padding-left:7px; padding-right:7px; }
+.tablewrap:has(.bit.knap) th { font-size:15px; letter-spacing:.02em; }
+.tablewrap:has(.bit.knap) th .colnote { font-size:12px; }
+.tablewrap:has(.bit.knap) td { font-size:18px; }
+.tablewrap:has(.bit.knap) th, .tablewrap:has(.bit.knap) td { padding-left:5px; padding-right:5px; }
+.tablewrap:has(.bit.knap) td[data-col="id"] .sym { display:inline-block; width:.9em; }
+.projector .tablewrap:has(.bit.knap) td { font-size:20px; }
+.projector .tablewrap:has(.bit.knap) th { font-size:16px; }
+table.tight .capbar { display:none; }

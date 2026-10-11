@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Problem } from '../engine';
   import Bits from './Bits.svelte';
+  import CapacityBar from './CapacityBar.svelte';
   import ItemRow from './ItemRow.svelte';
   import { parseChromosomes } from './drawer-model';
 
@@ -29,7 +30,7 @@
           {:else}
             <td><Bits chromosome={row.text} small /></td>
             {#each problem.columns as column, c (column.header)}
-              <td class="num" data-col={column.header.toLowerCase()}>{row.cells?.[c]}</td>
+              <td class="num" data-col={column.header.toLowerCase()}>{#if row.meters?.[c]}<CapacityBar value={row.meters[c]!.value} limit={row.meters[c]!.limit} /> {/if}{row.cells?.[c]}</td>
             {/each}
           {/if}
         </tr>
