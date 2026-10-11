@@ -129,9 +129,12 @@ export function trapProblem(options: TrapOptions): TrapProblem {
 }
 
 /**
- * The setup the trap opens with, as plain data. PROVISIONAL: these are placeholders until ticket 10 measures them and
- * the instructor approves (the tournament, one-point crossover and per-gene mutation of 1/20 are the usual textbook
- * settings; the population and the stop settings are guesses). The target is the known optimum, k × m.
+ * The setup the trap opens with, as plain data, chosen by measurement (ticket 10; the table of results is in
+ * `.scratch/milestone-4-deceptive-trap/issues/10-trap-defaults.md`). With a population of 12, tournaments of 2, one-point
+ * crossover 0.8, per-gene mutation 0.05 (one flip per chromosome on average) and no elites, 2 of 100 seeds reach the
+ * optimum within 100 generations, so most runs show the deception; larger populations, elitism and a larger tournament
+ * visibly change that. The stagnation window of 70 is more than the longest stretch without improvement before any
+ * success at these sizes (55). The target is the known optimum, k × m.
  */
 export const trapDefaults: {
   readonly options: TrapOptions;
@@ -145,6 +148,6 @@ export const trapDefaults: {
     crossover: { enabled: true, operator: 'one-point', probability: 0.8 },
     mutation: { enabled: true, mode: 'per-gene', probability: 0.05 },
     elites: 0,
-    stop: { generationLimit: 100, targetFitness: trapDefaultOptions.blockSize * trapDefaultOptions.blocks, stagnationWindow: 50 },
+    stop: { generationLimit: 100, targetFitness: trapDefaultOptions.blockSize * trapDefaultOptions.blocks, stagnationWindow: 70 },
   },
 };

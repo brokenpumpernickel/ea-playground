@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "problem": "trap",
+  "name": "Bigger population",
+  "lesson": "A large enough population keeps some individuals whose blocks are all ones, so the same operators that failed with a small population can solve the trap.",
+  "lookFor": "With this seed and 200 individuals the optimum 20 is found in generation 11, while 12 individuals with the same seed and settings end at 17 after 100 generations. Over seeds 1 to 100, 83 runs with 200 individuals find 20 against 2 with 12. A larger population is not a guarantee: 17 of those 100 runs still miss it.",
+  "seed": 42,
+  "options": {"blockSize": 4, "blocks": 5, "linkage": "tight"},
+  "setup": {"init": {"kind": "random", "size": 200}},
+  "params": {
+    "selection": {"method": "tournament", "size": 2},
+    "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
+    "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.05},
+    "elites": 0,
+    "stop": {"generationLimit": 100, "targetFitness": 20, "stagnationWindow": 70}
+  }
+}

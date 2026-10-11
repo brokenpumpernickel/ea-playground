@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { binaryAlphabet, parseBits } from './chromosome';
-import { trapContribution, trapDefaultOptions, trapLimits, trapProblem, validateTrap, validateTrapFields, type TrapOptions } from './trap';
+import { trapContribution, trapDefaultOptions, trapDefaults, trapLimits, trapProblem, validateTrap, validateTrapFields, type TrapOptions } from './trap';
 
 const options = (blockSize: number, blocks: number, linkage: TrapOptions['linkage'] = 'tight'): TrapOptions => ({ blockSize, blocks, linkage });
 const genes = (bits: string) => [...bits.replace(/ /g, '')].map(Number);
@@ -198,5 +198,23 @@ describe('validation', () => {
   test('a total of genes is only reported when both sizes are themselves valid, so a bad size is named once', () => {
     expect(validateTrapFields(options(9, 20)).genes).toEqual([]);
     expect(validateTrap(options(9, 20))).toHaveLength(2);
+  });
+});
+
+describe('the defaults', () => {
+  test('are the measured ones: 5 blocks of 4 tight, a population of 12, tournaments of 2, one-point crossover 0.8, per-gene mutation 0.05, no elites, stop at generation 100, at the optimum 20 and after 70 generations without improvement', () => {
+    expect(trapDefaults.options).toEqual({ blockSize: 4, blocks: 5, linkage: 'tight' });
+    expect(trapDefaults.populationSize).toBe(12);
+    expect(trapDefaults.params).toEqual({
+      selection: { method: 'tournament', size: 2 },
+      crossover: { enabled: true, operator: 'one-point', probability: 0.8 },
+      mutation: { enabled: true, mode: 'per-gene', probability: 0.05 },
+      elites: 0,
+      stop: { generationLimit: 100, targetFitness: 20, stagnationWindow: 70 },
+    });
+  });
+
+  test('the stop target is the optimum of the default trap', () => {
+    expect(trapDefaults.params.stop.targetFitness).toBe(trapProblem(trapDefaults.options).knownOptimumFitness);
   });
 });

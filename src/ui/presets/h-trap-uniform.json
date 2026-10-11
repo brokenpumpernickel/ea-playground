@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "problem": "trap",
+  "name": "Uniform crossover",
+  "lesson": "Uniform crossover takes every gene from either parent at random, so it ignores where a block's genes sit and breaks blocks as readily as it passes them on.",
+  "lookFor": "In the crossover view most blocks of a child are split between its parents. With this seed and 100 individuals Run until stop pauses at generation 73 for stagnation with the best so far at 17, and it is still 17 at generation 100; the same seed with one-point crossover finds 20 in generation 20. Over seeds 1 to 100 uniform crossover finds 20 in none of the runs and one-point crossover in 43.",
+  "seed": 10,
+  "options": {"blockSize": 4, "blocks": 5, "linkage": "tight"},
+  "setup": {"init": {"kind": "random", "size": 100}},
+  "params": {
+    "selection": {"method": "tournament", "size": 2},
+    "crossover": {"enabled": true, "operator": "uniform", "probability": 0.8},
+    "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.05},
+    "elites": 0,
+    "stop": {"generationLimit": 100, "targetFitness": 20, "stagnationWindow": 70}
+  }
+}

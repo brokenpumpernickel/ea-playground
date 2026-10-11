@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "problem": "trap",
+  "name": "No mutation",
+  "lesson": "Without mutation selection and crossover can only recombine what is already in the population, so it collapses to copies of one chromosome that can never improve.",
+  "lookFor": "With this seed all 12 individuals are the same chromosome by generation 100 and the best fitness stays at 14: stepping a generation changes nothing, and Run until stop pauses at generation 72 for stagnation. Over seeds 1 to 100 no run finds 20 and every run ends with identical individuals. The run is expected to stall.",
+  "seed": 42,
+  "options": {"blockSize": 4, "blocks": 5, "linkage": "tight"},
+  "setup": {"init": {"kind": "random", "size": 12}},
+  "params": {
+    "selection": {"method": "tournament", "size": 2},
+    "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
+    "mutation": {"enabled": false, "mode": "per-gene", "probability": 0.05},
+    "elites": 0,
+    "stop": {"generationLimit": 100, "targetFitness": 20, "stagnationWindow": 70}
+  }
+}

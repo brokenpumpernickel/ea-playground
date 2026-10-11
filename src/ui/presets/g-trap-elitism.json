@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "problem": "trap",
+  "name": "Elitism",
+  "lesson": "Keeping the best individual unchanged stops crossover and mutation from losing a solution that has just been found, which matters when most blocks are being pulled the wrong way.",
+  "lookFor": "With this seed and 100 individuals one elite is enough to find 20 in generation 17, while the same seed without an elite ends at 19 after 100 generations. Over seeds 1 to 100, 94 runs with one elite find 20 against 43 without.",
+  "seed": 42,
+  "options": {"blockSize": 4, "blocks": 5, "linkage": "tight"},
+  "setup": {"init": {"kind": "random", "size": 100}},
+  "params": {
+    "selection": {"method": "tournament", "size": 2},
+    "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
+    "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.05},
+    "elites": 1,
+    "stop": {"generationLimit": 100, "targetFitness": 20, "stagnationWindow": 70}
+  }
+}

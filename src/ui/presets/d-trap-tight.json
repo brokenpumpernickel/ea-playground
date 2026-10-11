@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "problem": "trap",
+  "name": "Tight blocks",
+  "lesson": "Every block of the trap scores best at 1111 but is rewarded for turning genes to 0, so a small population is drawn toward all zeros and rarely finds the optimum.",
+  "lookFor": "In the Block states panel the bars fill with the hatched all-zeros part while few blocks reach all ones. With this seed Run until stop pauses at generation 86 because 70 generations have passed without a better individual (best so far 16); stepping on, the run reaches generation 100 without ever finding 20: the best so far is 17 and the average fitness of the last population is 13, below the 15 that all zeros would score. With these settings 2 runs in 100 (seeds 1 to 100) find 20. A run that does not find the optimum is the expected result here, not a mistake.",
+  "seed": 42,
+  "options": {"blockSize": 4, "blocks": 5, "linkage": "tight"},
+  "setup": {"init": {"kind": "random", "size": 12}},
+  "params": {
+    "selection": {"method": "tournament", "size": 2},
+    "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
+    "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.05},
+    "elites": 0,
+    "stop": {"generationLimit": 100, "targetFitness": 20, "stagnationWindow": 70}
+  }
+}

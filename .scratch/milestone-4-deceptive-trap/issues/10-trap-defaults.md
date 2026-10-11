@@ -1,6 +1,6 @@
 # 10 Trap defaults by measurement
 
-Status: awaiting approval
+Status: resolved
 Type: measurement, review (needs instructor approval)
 Blocked by: 03
 Spec: ../spec.md
@@ -60,3 +60,7 @@ Measure, over at least 20 seeds (more where it matters), candidate defaults for 
 **Presets this suggests** (each to be verified on a real seed in ticket 11): *Trap, tight blocks* (the defaults); *Trap, loose blocks* (the same with loose linkage, population 50: 0 reached against 32 for tight); *Bigger population* (population 200: 83 reached against 2 at 12 with the same seed settings; or population 100 with one elite: 94); *Uniform crossover* (population 50 or 100: 0 reached, and why: it ignores linkage); *No mutation* (population 12: the population converges on the lucky best or on the attractor, none reach the optimum).
 
 Waiting for approval before setting the stagnation window and the defaults test; ticket 11 (presets) is blocked on it.
+
+### Approved and set
+
+2026-10-11: the instructor approved the proposal ("Approved, set those defaults and continue"). `trapDefaults` in `src/engine/trap.ts` is now: population 12, tournament 2, one-point crossover 0.8, per-gene mutation 0.05, no elites, stop at generation 100, at fitness 20 and after 70 generations without improvement (the one change from the provisional values: the window, 50 → 70). A test in `trap.test.ts` pins every value and the target.

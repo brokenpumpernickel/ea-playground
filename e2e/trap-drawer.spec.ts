@@ -50,7 +50,7 @@ test('changing the options restarts under the new trap, says what changed and wh
   await page.locator('#linkage').selectOption('loose');
   await page.locator('#blocks').fill('4');
   await expect(page.getByText('Changed: Number of blocks, Linkage, Target fitness.')).toBeVisible();
-  await expect(page.locator('.applyreset .help')).toContainText('The stop at “target fitness reached” moves to the new optimum, k × m (16).');
+  await expect(page.locator('[data-section="setup"] .applyreset .help')).toContainText('The stop at “target fitness reached” moves to the new optimum, k × m (16).');
   await page.getByTestId('apply-reset').click();
   await expect(page.getByTestId('reset-notice')).toHaveText('Changing the number of blocks, the linkage and the target fitness restarts the run from generation 0. Nothing recorded will be lost.');
   await page.getByRole('button', { name: 'Restart and apply' }).click();
@@ -78,7 +78,7 @@ for (const [name, size, blocks, field, message] of [
     await expect(page.locator(`#${field}-error`)).toHaveText(message);
     await expect(page.locator(`#${field}`)).toHaveAttribute('aria-invalid', 'true');
     await expect(page.getByTestId('apply-reset')).toBeDisabled();
-    await expect(page.locator('.applyreset .help')).toContainText('Fix the highlighted fields first.');
+    await expect(page.locator('[data-section="setup"] .applyreset .help')).toContainText('Fix the highlighted fields first.');
   });
 }
 

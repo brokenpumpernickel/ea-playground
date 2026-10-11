@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "problem": "trap",
+  "name": "Loose blocks",
+  "lesson": "When a block's genes are spread over the chromosome, one-point crossover cuts through its blocks far more often, so good blocks are broken faster than they can be assembled.",
+  "lookFor": "In the crossover view a cut anywhere between gene 5 and gene 15 splits all five blocks (11 of the 19 possible cuts). With this seed and 50 individuals the run ends without finding 20 (best so far 17); the same seed with tight blocks finds 20 in generation 74. Over seeds 1 to 100, tight blocks find 20 in 32 runs and loose blocks in none.",
+  "seed": 44,
+  "options": {"blockSize": 4, "blocks": 5, "linkage": "loose"},
+  "setup": {"init": {"kind": "random", "size": 50}},
+  "params": {
+    "selection": {"method": "tournament", "size": 2},
+    "crossover": {"enabled": true, "operator": "one-point", "probability": 0.8},
+    "mutation": {"enabled": true, "mode": "per-gene", "probability": 0.05},
+    "elites": 0,
+    "stop": {"generationLimit": 100, "targetFitness": 20, "stagnationWindow": 70}
+  }
+}
