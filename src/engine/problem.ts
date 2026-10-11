@@ -36,6 +36,10 @@ export interface Problem {
   readonly alphabet: readonly string[];
   /** The columns the population table and the evaluation view show for this problem, besides the chromosome. */
   readonly columns: readonly ProblemColumn[];
+  /** How a score reads in a sentence, such as "4 of 5 positions match"; without it sentences use the decoded value (x = 13). */
+  readonly scoreText?: (scores: Scores) => string;
+  /** What the evaluation stage does, in a sentence, when the generic one (decode, score) would not say it. */
+  readonly evaluationExplanation?: string;
   /** The columns the evaluation view shows when it should differ from the table's (Goldberg also shows the objective value). */
   readonly evaluationColumns?: readonly ProblemColumn[];
   /** The best fitness any chromosome can have, when it is known; plots draw it as a reference line and stop criteria can aim at it. */

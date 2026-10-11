@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { getContext } from 'svelte';
   import { geneList } from './format';
+  import { targetContextKey, type TargetGetter } from './target-context';
 
   /**
    * A chromosome drawn as one cell per gene. The whole thing is one image for screen readers, and carries its bit string
@@ -10,6 +12,8 @@
    * - `flipped`: 1-based genes marked as flipped by mutation.
    * - `marks`: which genes are drawn filled and bold. By default that is every `1` (the binary problems); other problems
    *   say which genes, for example the ones that match a target.
+   * - With a target string in the screen's context, each gene is compared with it: matching genes are filled with a
+   *   heavy baseline, the others have a dashed outline (shape, not colour), and the description says how many match.
    * A space is drawn as `␣` so it is visible.
    */
   let {
@@ -29,11 +33,17 @@
   } = $props();
 
   const letters = $derived(!/^[01]*$/.test(chromosome));
+  const getTarget = getContext<TargetGetter | undefined>(targetContextKey);
+  const target = $derived(getTarget?.());
+  /** Which genes match the target, when there is one (and no explicit marks were given). */
+  const matched = $derived(!marks && target ? [...chromosome].map((c, k) => c === target[k]) : undefined);
+  const matchCount = $derived(matched ? matched.filter(Boolean).length : undefined);
 
   const fromB = $derived(sources ? [...sources].flatMap((s, k) => (s === 'B' ? [k + 1] : [])) : []);
   const label = $derived(
     [
       `Chromosome ${chromosome}`,
+      matchCount !== undefined ? `${matchCount} of ${chromosome.length} positions match the target` : '',
       fromB.length > 0 ? `${geneList(fromB)} from parent B` : '',
       cuts.length > 0 ? `cut after ${geneList(cuts)}` : '',
       flipped.length > 0 ? `${geneList(flipped)} flipped` : '',
@@ -48,6 +58,7 @@
   role="img"
   aria-label={label}
   data-bits={chromosome}
+  data-matches={matchCount}
   data-sources={sources ? sources.join('') : undefined}
   data-cuts={cuts.length > 0 ? cuts.join(',') : undefined}
-  data-flipped={flipped.length > 0 ? flipped.join(',') : undefined}>{#each [...chromosome] as bit, k (k)}<b class="bit" class:one={marks ? marks[k] : bit === '1'} class:letter={letters} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{bit === ' ' ? '␣' : bit}</b>{/each}</span>
+  data-flipped={flipped.length > 0 ? flipped.join(',') : undefined}>{#each [...chromosome] as bit, k (k)}<b class="bit" class:one={marks ? marks[k] : matched ? matched[k] : bit === '1'} class:match={matched?.[k] === true} class:miss={matched?.[k] === false} class:letter={letters} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{bit === ' ' ? '␣' : bit}</b>{/each}</span>

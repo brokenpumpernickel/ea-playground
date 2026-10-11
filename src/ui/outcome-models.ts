@@ -57,7 +57,7 @@ export function evaluationModel(view: GaView, display: Display = goldbergDisplay
   });
   return {
     columns: display.evaluationColumns.map(({ header, note }) => ({ header, ...(note ? { note } : {}) })),
-    explanation: 'Each finished offspring is decoded to a solution x, scored by the objective, and given its fitness and a new individual number.',
+    explanation: display.evaluationExplanation ?? 'Each finished offspring is decoded to a solution x, scored by the objective, and given its fitness and a new individual number.',
     rows,
   };
 }

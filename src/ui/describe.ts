@@ -28,7 +28,7 @@ function describeWith(event: GaEvent, display: Display): string {
   switch (event.stage) {
     case 'setup': {
       const i = event.individual;
-      return `Individual ${i.id} (${formatBits(i.chromosome)}): ${typeof i.decoded === 'number' ? `x = ${i.decoded}, ` : ''}fitness ${i.fitness}`;
+      return `Individual ${i.id} (${formatBits(i.chromosome)}): ${scored(i, display)}fitness ${i.fitness}`;
     }
 
     case 'selection':
@@ -99,7 +99,7 @@ function describeWith(event: GaEvent, display: Display): string {
 
     case 'evaluation': {
       const i = event.individual;
-      return `Offspring ${event.offspring}: ${formatBits(i.chromosome)} → ${typeof i.decoded === 'number' ? `x = ${i.decoded} → ` : ''}fitness ${i.fitness} (individual ${i.id})`;
+      return `Offspring ${event.offspring}: ${formatBits(i.chromosome)} → ${scored(i, display, ' → ')}fitness ${i.fitness} (individual ${i.id})`;
     }
 
     case 'replacement': {
@@ -111,4 +111,10 @@ function describeWith(event: GaEvent, display: Display): string {
       return `Next population: individuals ${ids.join(', ')}${tail}`;
     }
   }
+}
+
+/** The part of a sentence that says what a chromosome scored before its fitness: "x = 13, " or "4 of 5 positions match, ". */
+function scored(i: { readonly decoded: number | string; readonly objective: number; readonly fitness: number }, display: Display, separator = ', '): string {
+  if (display.scoreText) return display.scoreText(i) + separator;
+  return typeof i.decoded === 'number' ? `x = ${i.decoded}${separator}` : '';
 }

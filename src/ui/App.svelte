@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, setContext } from 'svelte';
   import DiscardNotice from './DiscardNotice.svelte';
   import Drawer from './Drawer.svelte';
   import HistoryStrip from './HistoryStrip.svelte';
@@ -10,6 +10,7 @@
   import { setupOf } from './run-config';
   import { createSession } from './session.svelte';
   import { startupOf } from './share-link';
+  import { targetContextKey, type TargetGetter } from './target-context';
   import { shortcutFor } from './shortcuts';
   import StagePanel from './StagePanel.svelte';
   import TopBar from './TopBar.svelte';
@@ -33,6 +34,9 @@
     scheduler: { setTimeout: (callback, ms) => window.setTimeout(callback, ms), clearTimeout: (handle) => window.clearTimeout(handle as number) },
     reducedMotion,
   });
+
+  // views that draw chromosomes compare them with the running problem's target, when it has one
+  setContext<TargetGetter>(targetContextKey, () => session.problemOptions?.target);
 
   // The screen is designed once, at 1920×1080, and scaled to fit the window.
   let scale = $state(1);

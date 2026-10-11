@@ -109,13 +109,13 @@ describe('what the models show for a problem over letters', () => {
 });
 
 describe('describing events for a problem over letters', () => {
-  test('the sentences use the letters and say fitness, not x', () => {
+  test('the sentences use the letters and say how many positions match, not x', () => {
     const run = make();
     const describe_ = describer(display);
     const lines = run.events(0).map(describe_);
-    expect(lines[0]).toBe('Individual 1 (HELLO): fitness 5');
+    expect(lines[0]).toBe('Individual 1 (HELLO): 5 of 5 positions match, fitness 5');
     const evaluation = run.events(1).filter((e) => e.stage === 'evaluation').map(describe_);
-    expect(evaluation[0]).toMatch(/^Offspring 1: [A-Z ]{5} → fitness \d \(individual \d+\)$/);
+    expect(evaluation[0]).toMatch(/^Offspring 1: [A-Z ]{5} → \d of 5 positions match → fitness \d \(individual \d+\)$/);
   });
 });
 

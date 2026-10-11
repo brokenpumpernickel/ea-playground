@@ -1,5 +1,6 @@
 <script lang="ts">
   import Bits from './Bits.svelte';
+  import TargetRow from './TargetRow.svelte';
   import type { Session } from './session.svelte';
 
   let { session }: { session: Session } = $props();
@@ -21,7 +22,7 @@
       <thead>
         <tr>
           <th scope="col">#</th>
-          <th scope="col">Chromosome</th>
+          <th scope="col">Chromosome<TargetRow /></th>
           {#each display.columns as column (column.header)}
             <th scope="col" class="num">{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>
           {/each}

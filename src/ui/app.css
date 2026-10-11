@@ -521,3 +521,16 @@ input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radi
 .matchbar .gene b { display:block; font-size:17px; }
 .matchbar .gene span { font-size:21px; font-weight:700; font-family:ui-monospace,Consolas,monospace; }
 .projector .matchbar .gene b { font-size:19px; }
+
+/* marking matches against a target string, by shape and not colour: matches are filled with a heavy baseline, the
+   others have a dashed outline; the target is printed once above the columns */
+.bit.match { box-shadow:0 5px 0 -1px var(--acc-ink); }
+.bit.miss { border-style:dashed; }
+.bits:has(.bit.letter) { gap:3px; }
+.bits:has(.bit.letter.cutafter) .bit.cutafter { margin-right:10px; }
+.tgtheader { position:relative; display:flex; align-items:center; margin:2px 0 0; text-transform:none; letter-spacing:0; font-weight:700; }
+/* the label hangs to the left, so the letters line up exactly with the cells below them */
+.tgtlabel { position:absolute; right:100%; margin-right:6px; top:50%; transform:translateY(-50%); font-size:14px; font-weight:400; color:var(--ink2); white-space:nowrap; }
+.tgtrow { display:inline-flex; gap:3px; color:var(--ink2); font-family:ui-monospace,Consolas,monospace; }
+.tgtrow span { width:26px; text-align:center; font-size:19px; }
+.rtarget { padding-left:calc(1.8em + 8px); min-height:24px; }

@@ -1,4 +1,4 @@
-import { formatGenes, goldberg, type Chromosome, type Problem, type ProblemColumn } from '../engine';
+import { formatGenes, goldberg, type Chromosome, type Problem, type ProblemColumn, type Scores } from '../engine';
 
 /** Numbers as the screen shows them: up to three decimals, with no trailing zeros (0.8, 0.144, 576). */
 export const num = (v: number): string => String(Math.round(v * 1000) / 1000);
@@ -12,12 +12,17 @@ export interface Display {
   readonly show: (chromosome: Chromosome) => string;
   readonly columns: readonly ProblemColumn[];
   readonly evaluationColumns: readonly ProblemColumn[];
+  /** How a score reads in a sentence; absent when sentences use the decoded value. */
+  readonly scoreText?: (scores: Scores) => string;
+  readonly evaluationExplanation?: string;
 }
 
 export const displayOf = (problem: Problem): Display => ({
   show: (chromosome) => formatGenes(chromosome, problem.alphabet),
   columns: problem.columns,
   evaluationColumns: problem.evaluationColumns ?? problem.columns,
+  ...(problem.scoreText ? { scoreText: problem.scoreText } : {}),
+  ...(problem.evaluationExplanation ? { evaluationExplanation: problem.evaluationExplanation } : {}),
 });
 
 /** Goldberg's display, which the models use when they are not given another (the binary problems all look like it). */

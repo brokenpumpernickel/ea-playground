@@ -64,6 +64,8 @@ export function targetStringProblem(options: TargetStringOptions): TargetStringP
     alphabet,
     columns,
     knownOptimumFitness: length,
+    scoreText: (scores) => `${scores.objective} of ${length} positions match`,
+    evaluationExplanation: 'Each finished offspring is compared with the target position by position: the objective is how many positions match, and fitness is the same number.',
     evaluate(chromosome) {
       let matches = 0;
       for (let k = 0; k < length; k++) if (chromosome[k] === wanted[k]) matches++;
