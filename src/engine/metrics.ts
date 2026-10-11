@@ -22,6 +22,16 @@ export interface GenerationMetrics {
   readonly alleleFrequencies: readonly number[];
   /** For each gene position, how many individuals have each symbol there: `symbolCounts[gene][symbol]`. */
   readonly symbolCounts: readonly (readonly number[])[];
+  /**
+   * Only for a problem that reports feasibility: how many individuals of the population are feasible, the best fitness
+   * among them (null when there is none), and the best feasible fitness seen in any generation so far.
+   */
+  readonly feasible?: { readonly count: number; readonly best: number | null; readonly bestSoFar: number | null };
+}
+
+function feasibleMetrics(state: RunState): NonNullable<GenerationMetrics['feasible']> {
+  const feasible = state.population.filter((i) => i.feasible !== false);
+  return { count: feasible.length, best: feasible.length === 0 ? null : Math.max(...feasible.map((i) => i.fitness)), bestSoFar: state.feasibility!.bestSoFar };
 }
 
 const cache = new WeakMap<RunState, { readonly alphabetSize: number; readonly metrics: GenerationMetrics }>();
@@ -68,6 +78,7 @@ export function metricsOf(state: RunState, alphabetSize = 2): GenerationMetrics 
     distinct: new Set(population.map((i) => i.chromosome.join(','))).size,
     alleleFrequencies: symbolCounts.map((counts) => (counts[1] ?? 0) / size),
     symbolCounts,
+    ...(state.feasibility ? { feasible: feasibleMetrics(state) } : {}),
   };
   cache.set(state, { alphabetSize, metrics });
   return metrics;

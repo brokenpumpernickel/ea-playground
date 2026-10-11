@@ -23,6 +23,13 @@ export interface RunState {
   readonly bestFitnessSoFar: number;
   /** The last generation in which best-so-far strictly improved (0 = the initial population). */
   readonly lastImprovementGeneration: number;
+  /**
+   * Only for a problem that reports feasibility (its individuals carry a `feasible` flag): the best fitness among
+   * feasible individuals so far (null until there is one) and the generation it last improved. The stop criteria use
+   * these instead of the overall best, so an infeasible individual never counts as success. Absent otherwise, and
+   * then the criteria use `bestFitnessSoFar` exactly as before (ADR 0005).
+   */
+  readonly feasibility?: { readonly bestSoFar: number | null; readonly lastImprovement: number };
 }
 
 export type SelectionConfig =
@@ -64,8 +71,10 @@ export function stopReasons(state: RunState, stop: StopConfig): StopReason[] {
   }
   const reasons: StopReason[] = [];
   if (state.generation >= stop.generationLimit) reasons.push('generation-limit');
-  if (stop.targetFitness !== undefined && state.bestFitnessSoFar >= stop.targetFitness) reasons.push('target-reached');
-  if (stop.stagnationWindow !== undefined && state.generation - state.lastImprovementGeneration >= stop.stagnationWindow) {
+  const best = state.feasibility ? state.feasibility.bestSoFar : state.bestFitnessSoFar;
+  const lastImprovement = state.feasibility ? state.feasibility.lastImprovement : state.lastImprovementGeneration;
+  if (stop.targetFitness !== undefined && best !== null && best >= stop.targetFitness) reasons.push('target-reached');
+  if (stop.stagnationWindow !== undefined && state.generation - lastImprovement >= stop.stagnationWindow) {
     reasons.push('stagnation');
   }
   return reasons;
@@ -185,6 +194,22 @@ function bestFirst(population: readonly Individual[]): Individual[] {
   return [...population].sort((a, b) => b.fitness - a.fitness);
 }
 
+function nextFeasibility(
+  was: { readonly bestSoFar: number | null; readonly lastImprovement: number },
+  offspring: readonly Individual[],
+  generation: number,
+): { readonly bestSoFar: number | null; readonly lastImprovement: number } {
+  const best = bestFeasible(offspring);
+  const improved = best !== null && (was.bestSoFar === null || best > was.bestSoFar);
+  return improved ? { bestSoFar: best, lastImprovement: generation } : was;
+}
+
+/** The best fitness among the feasible individuals (an absent flag means feasible), or null when there is none. */
+function bestFeasible(individuals: readonly Individual[]): number | null {
+  const feasible = individuals.filter((i) => i.feasible !== false);
+  return feasible.length === 0 ? null : Math.max(...feasible.map((i) => i.fitness));
+}
+
 export function startRun(
   problem: Problem,
   init: Initialization,
@@ -192,6 +217,7 @@ export function startRun(
 ): { state: RunState; events: SetupEvent[] } {
   const { population, events } = initialize(problem, init, rng);
   const best = Math.max(...population.map((i) => i.fitness));
+  const reportsFeasibility = population.some((i) => i.feasible !== undefined);
   return {
     state: {
       generation: 0,
@@ -200,6 +226,7 @@ export function startRun(
       evaluations: population.length,
       bestFitnessSoFar: best,
       lastImprovementGeneration: 0,
+      ...(reportsFeasibility ? { feasibility: { bestSoFar: bestFeasible(population), lastImprovement: 0 } } : {}),
     },
     events,
   };
@@ -280,6 +307,7 @@ export function runGeneration(
     evaluations: state.evaluations + offspring.length,
     bestFitnessSoFar: improved ? best : state.bestFitnessSoFar,
     lastImprovementGeneration: improved ? generation : state.lastImprovementGeneration,
+    ...(state.feasibility ? { feasibility: nextFeasibility(state.feasibility, offspring, generation) } : {}),
   };
   return { state: next, events, stops: stopReasons(next, config.stop) };
 }
