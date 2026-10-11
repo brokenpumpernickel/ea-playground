@@ -28,6 +28,7 @@
     document.getElementById('open-params')?.focus();
   };
 
+  let showFunction = $state(false);
   let projector = $state(false);
   const setProjector = (on: boolean) => {
     projector = on;
@@ -70,6 +71,7 @@
     else if (action === 'stageForward') session.stepStage();
     else if (action === 'stageBack') session.backStage();
     else if (action === 'generation') session.stepGeneration();
+    else if (action === 'function') showFunction = !showFunction;
     else session.toggle();
   };
 
@@ -107,7 +109,7 @@
     <Transport {session} {theme} toggleTheme={() => applyTheme(theme === 'light' ? 'dark' : 'light')} {drawerOpen} toggleDrawer={() => (drawerOpen ? closeDrawer() : (drawerOpen = true))} {projector} toggleProjector={() => setProjector(!projector)} />
     <StagePanel {session} />
     <PopulationPanel {session} />
-    <MetricsPanel {session} />
+    <MetricsPanel {session} {showFunction} toggleFunction={() => (showFunction = !showFunction)} />
     <HistoryStrip {session} />
     {#if drawerOpen}<Drawer {session} onclose={closeDrawer} />{/if}
     {#if session.pendingChange}<DiscardNotice {session} />{/if}

@@ -4,11 +4,12 @@
  *   →          next micro-step         ←          back one micro-step
  *   Shift →    to the end of the stage Shift ←    to the end of the previous stage
  *   G          next generation         Space      run / pause
+ *   F          show the function plot instead of diversity and gene shares (and back)
  *
  * The keys are labelled on the buttons. They are ignored while typing, while a control that uses the same key has
  * the focus (a slider uses the arrows, a button uses Space), and while a dialog is open.
  */
-export type Shortcut = 'microForward' | 'microBack' | 'stageForward' | 'stageBack' | 'generation' | 'toggle';
+export type Shortcut = 'microForward' | 'microBack' | 'stageForward' | 'stageBack' | 'generation' | 'toggle' | 'function';
 
 /** How each key is written on screen. */
 export const shortcutLabels: Record<Shortcut, string> = {
@@ -18,6 +19,7 @@ export const shortcutLabels: Record<Shortcut, string> = {
   stageBack: '⇧←',
   generation: 'G',
   toggle: 'Space',
+  function: 'F',
 };
 
 export interface KeyInfo {
@@ -51,6 +53,7 @@ export function shortcutFor(event: KeyInfo, target: KeyTarget): Shortcut | undef
   }
   if (event.shiftKey) return undefined;
   if (key === 'g') return usesArrows.has(target.tag) ? undefined : 'generation';
+  if (key === 'f') return usesArrows.has(target.tag) ? undefined : 'function';
   if (key === ' ') return usesSpace.has(target.tag) || target.role === 'slider' || target.role === 'switch' ? undefined : 'toggle';
   return undefined;
 }

@@ -21,14 +21,16 @@ describe('the key bindings', () => {
     ['g', {}, 'generation'],
     ['G', {}, 'generation'],
     [' ', {}, 'toggle'],
+    ['f', {}, 'function'],
+    ['F', {}, 'function'],
   ] as const)('%s %j does %s', (k, extra, expected) => {
     expect(shortcutFor(key(k, extra), page)).toBe(expected);
   });
 
   test('every shortcut is labelled for the screen, and the labels are distinct', () => {
     const labels = Object.values(shortcutLabels);
-    expect(labels).toHaveLength(6);
-    expect(new Set(labels).size).toBe(6);
+    expect(labels).toHaveLength(7);
+    expect(new Set(labels).size).toBe(7);
   });
 
   test('other keys, and keys with Ctrl, Alt or Meta (browser and system shortcuts), do nothing', () => {
@@ -45,6 +47,7 @@ describe('where the keys do not apply', () => {
   test('not while typing in a field', () => {
     for (const tag of ['INPUT', 'TEXTAREA', 'SELECT']) {
       expect(shortcutFor(key('g'), on(tag))).toBeUndefined();
+      expect(shortcutFor(key('f'), on(tag))).toBeUndefined();
       expect(shortcutFor(key(' '), on(tag))).toBeUndefined();
       expect(shortcutFor(key('ArrowRight'), on(tag))).toBeUndefined();
     }

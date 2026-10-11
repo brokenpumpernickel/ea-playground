@@ -8,6 +8,7 @@ import type { Problem, Scores } from './problem';
 export const goldberg: Problem & { readonly knownOptimumFitness: number } = {
   chromosomeLength: 5,
   knownOptimumFitness: 31 * 31,
+  landscape: { label: 'f(x) = x²', domain: [0, 31], fitnessAt: (x) => x * x },
   evaluate(chromosome: Chromosome): Scores {
     const x = chromosome.reduce<number>((value, bit) => value * 2 + bit, 0);
     return { decoded: x, objective: x * x, fitness: x * x };
