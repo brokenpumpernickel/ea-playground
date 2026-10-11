@@ -1,6 +1,6 @@
 # 19 Rendered review and sign-off
 
-Status: claimed
+Status: resolved
 Type: review (needs instructor)
 Blocked by: 15, 16, 17, 18
 Spec: ../spec.md
@@ -43,3 +43,7 @@ All ten criteria have recorded evidence, the instructor has signed off, and any 
 **Spec and glossary:** the spec's "To decide during implementation" list is now filled in. `CONTEXT.md` already carries Alphabet, Share link, Preset and Reset; no term changed meaning.
 
 State: 1019 unit tests, `npm run check` clean, 160 Playwright tests passing.
+
+## Sign-off
+
+Ticket 18 is done (see its answer); criterion 10's published-site check passed. The instructor stepped through the interface and reported it looks fine; no legibility problems were raised. The string defaults' stagnation window was raised from 15 to 70 at the instructor's request after measuring plateaus (see the spec). Resolved.

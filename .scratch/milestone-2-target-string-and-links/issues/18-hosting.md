@@ -1,6 +1,6 @@
 # 18 Publish to GitHub Pages
 
-Status: open
+Status: resolved
 Type: task (needs instructor go-ahead)
 Blocked by: 04
 Spec: ../spec.md
@@ -21,3 +21,7 @@ A documented build-and-publish workflow so a copied link opens for anyone: a Git
 ## Notes (not started: waiting for the instructor)
 
 This repository has no git remote yet (`git remote -v` is empty; the only branch is `master`, while the brief names `main`). Before I add a workflow or push anything I need: which GitHub repository (new or existing, and under which account or organisation), its visibility (public or private; Pages from a private repository needs a paid plan), and which branch to publish from. The workflow itself is small (install, `npm run check`, `npm run build`, upload `dist/` as the Pages artifact, deploy), and the README note would say that links use the published address while opening `dist/index.html` from a folder still works and gives links valid on that machine only.
+
+## Answer
+
+With the instructor's go-ahead (new public repository, GitHub CLI authorised): the repository is https://github.com/brokenpumpernickel/ea-playground (public; the local branch `master` was renamed `main`). `.github/workflows/pages.yml` installs, runs the unit tests, the layering and type checks and the build, and deploys `dist/index.html` to GitHub Pages on every push to `main` (or by hand). The first run was green. The published page is https://brokenpumpernickel.github.io/ea-playground/ and a share link built for that address, opened in a fresh browser, gave the same run as the engine's (checked against the live site, three generations; Copy link there carries no "only on this computer" note). `README.md` explains the site, the share links, that opening `dist/index.html` from a folder still works with links valid on that computer only, and how publishing works. The browser tests are not run in CI (they use Edge); that is stated in the README.
