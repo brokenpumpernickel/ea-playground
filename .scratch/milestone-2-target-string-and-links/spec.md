@@ -107,7 +107,7 @@ The second goal is the first real test of the promise made in milestone 1: that 
 
 ## To decide during implementation (record the choice here when made)
 
-- Exactly how a match is marked without colour (decided by the mock in step 1).
+- ~~Exactly how a match is marked without colour.~~ **Decided (ticket 01):** the target is shown once above the columns; matching cells are filled with a heavy baseline and mismatching cells have a dashed outline. The space symbol stays `␣`. Layouts: one merged fitness column in the population table, per-gene draws under each letter in the mutation view, and a two-column replacement view that leaves the old population to the table.
 - The seeds for the three target-string presets (found by search and verified, as in milestone 1).
 - Names of the new engine interfaces (the alphabet declaration, the problem's column declaration).
 - Whether to write an ADR for "genes are alphabet indices" when the engine ticket lands. It is hard to reverse, surprising without context, and the result of a real trade-off, so it probably should be.

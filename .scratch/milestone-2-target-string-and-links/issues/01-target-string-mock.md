@@ -1,6 +1,6 @@
 # 01 Throwaway visual mock of the target-string screens
 
-Status: claimed
+Status: resolved
 Type: prototype (needs instructor review)
 Blocked by: none
 Spec: ../spec.md
@@ -31,7 +31,7 @@ The instructor has reviewed the mock and chosen how matches are marked, and the 
 
 ## Comments
 
-## Answer (mock built; waiting for the instructor's choices)
+## Answer
 
 Open `mock/index.html` in a browser (it is a single page using the app's own stylesheet; the bar at the top switches screen, marking variant, theme and projector mode). Screenshots of every state are in `mock/screenshots/`.
 
@@ -61,3 +61,11 @@ Selection, crossover, mutation, evaluation and replacement for the default confi
 1. Marking: A, B, or B with A's ✓ in the crossover cards only?
 2. Is `␣` legible enough at projector size, or should the space symbol change?
 3. Do the three layout changes above (one fitness column, draws under cells in the mutation view, two-column replacement) look acceptable?
+
+### Instructor's decisions
+
+1. **Marking: B.** The target is printed once, aligned above the columns; matches are filled with a heavy baseline, mismatches have a dashed outline. No ✓ or target letter under cells (not even in the crossover cards).
+2. **`␣` is legible enough** at projector size; the space symbol stays `␣`.
+3. **The three layout changes are accepted**: one merged fitness column ("7 of 11", "= matches" under the header), draws under each letter with the result row below in the mutation view, and a two-column replacement view that leaves the old population to the table on the right.
+
+Tickets 11 and 12 follow these decisions.
