@@ -3,6 +3,7 @@ import { createPlayback, createRun, type AnimationFlags, type Playback, type Pla
 import { defaultParams, defaultSeed, defaultSetup } from './config';
 import { changes, draftOf } from './drawer-model';
 import { displayOf, type Display } from './format';
+import { entryOf, type ProblemEntry, type ProblemOptions } from './problems';
 import { configOf, type RunConfig } from './run-config';
 import { plotModel, type PlotModel } from './plot-models';
 import { atCycleEnd, populationTable, type PopulationTable } from './population';
@@ -14,7 +15,7 @@ export interface SessionOptions {
   scheduler: Scheduler;
   seed?: number;
   /** Start from this configuration (a share link) instead of the defaults. */
-  config?: { readonly setup: GaSetup; readonly params: GaParams; readonly seed: number };
+  config?: { readonly setup: GaSetup; readonly params: GaParams; readonly seed: number; readonly problem?: string; readonly options?: ProblemOptions };
   reducedMotion?: boolean;
   /** Where "New seed" gets its number from. */
   drawSeed?: () => number;
@@ -43,6 +44,8 @@ export interface PendingReset {
   readonly changed: readonly string[];
   /** Set when the reset loads a preset, by name. */
   readonly preset?: string;
+  /** Set when the reset switches to another problem. */
+  readonly problem?: { readonly id: string; readonly options: ProblemOptions | undefined };
 }
 
 const settingPhrase = (label: string) => `the ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
@@ -62,6 +65,9 @@ export function createSession(options: SessionOptions) {
   /** Parameters waiting for the user to confirm discarding the generations after the cursor. */
   let change = $state<PendingChange | undefined>(undefined);
 
+  /** Which problem is running, and the options it was set up with (an alphabet and a target, say). */
+  let problemId = $state(options.config?.problem ?? 'goldberg');
+  let problemOptions = $state<ProblemOptions | undefined>(options.config?.options);
   let reset = $state<PendingReset | undefined>(undefined);
   /** The preset the run was started from, until a setting is changed by hand. */
   let presetName = $state<string | undefined>(undefined);
@@ -175,14 +181,35 @@ export function createSession(options: SessionOptions) {
     },
     get resetNotice(): string | undefined {
       if (!reset) return undefined;
-      const what = reset.preset ? `Loading the preset “${reset.preset}” restarts the run from generation 0.` : `Changing ${joinWords(reset.changed.map(settingPhrase))} restarts the run from generation 0.`;
+      const switched = reset.problem ? entryOf(reset.problem.id)?.name : undefined;
+      const what = switched ? `Switching to the problem ${switched} restarts the run from generation 0.` : reset.preset ? `Loading the preset “${reset.preset}” restarts the run from generation 0.` : `Changing ${joinWords(reset.changed.map(settingPhrase))} restarts the run from generation 0.`;
       const n = run.lastCycle;
       return n === 0 ? `${what} Nothing recorded will be lost.` : `${what.slice(0, -1)} and discards the ${n} recorded ${n === 1 ? 'generation' : 'generations'} (${n === 1 ? '1' : `1–${n}`}).`;
     },
     /** The configuration the run has now, with any pending parameters applied: what a share link carries. */
     get shareConfig(): RunConfig {
       void version;
-      return configOf(run.setup, run.parameters, run.seed);
+      return configOf(run.setup, run.parameters, run.seed, problemId, problemOptions);
+    },
+    get problemEntry(): ProblemEntry {
+      return entryOf(problemId)!;
+    },
+    get problemOptions(): ProblemOptions | undefined {
+      return problemOptions;
+    },
+    /** Asks to switch to another problem: a reset, with the problem's own defaults, held until confirmed. */
+    requestProblemSwitch(id: string) {
+      const entry = entryOf(id);
+      if (!entry || id === problemId) return;
+      const options = entry.defaultOptions();
+      reset = {
+        setup: { problem: entry.create(options), init: entry.defaults.init },
+        seed: entry.defaults.seed,
+        params: entry.defaults.params,
+        changed: [],
+        problem: { id, options },
+      };
+      bump();
     },
     get epoch(): number {
       return epoch;
@@ -252,6 +279,10 @@ export function createSession(options: SessionOptions) {
       if (!reset) return;
       const { setup, seed, params } = reset;
       presetName = reset.preset;
+      if (reset.problem) {
+        problemId = reset.problem.id;
+        problemOptions = reset.problem.options;
+      }
       reset = undefined;
       act(() => {
         change = undefined;

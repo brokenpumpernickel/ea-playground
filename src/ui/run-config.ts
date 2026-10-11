@@ -1,6 +1,7 @@
 import { createRun } from '../run';
-import { gaAlgorithm, goldberg, weightSteps, type GaParams, type GaSetup, type Initialization, type Problem, type StepName } from '../engine';
+import { gaAlgorithm, weightSteps, type GaParams, type GaSetup, type Initialization, type StepName } from '../engine';
 import { draftOf, validate } from './drawer-model';
+import { entryOf, problemIds, type ProblemOptions } from './problems';
 
 /**
  * A run's whole configuration as one serialisable value: the problem, how the population starts, every parameter and
@@ -13,22 +14,22 @@ import { draftOf, validate } from './drawer-model';
 export interface RunConfig {
   readonly v: 1;
   readonly problem: string;
+  /** The problem's own options (a string problem's alphabet and target); absent for a problem that takes none. */
+  readonly options?: ProblemOptions;
   readonly setup: { readonly init: Initialization };
   readonly params: GaParams;
   readonly seed: number;
 }
 
-/** The problems a configuration can name. The problem menu (milestone 2, ticket 10) grows this into a full registry. */
-const problems: Readonly<Record<string, Problem>> = { goldberg };
-export const problemIds = (): string[] => Object.keys(problems);
+export { problemIds };
 
-export function configOf(setup: GaSetup, params: GaParams, seed: number, problem = 'goldberg'): RunConfig {
-  return { v: 1, problem, setup: { init: setup.init }, params, seed };
+export function configOf(setup: GaSetup, params: GaParams, seed: number, problem = 'goldberg', options?: ProblemOptions): RunConfig {
+  return { v: 1, problem, ...(options ? { options } : {}), setup: { init: setup.init }, params, seed };
 }
 
 /** The engine setup a configuration describes. */
 export function setupOf(config: RunConfig): GaSetup {
-  return { problem: problems[config.problem]!, init: config.setup.init };
+  return { problem: entryOf(config.problem)!.create(config.options), init: config.setup.init };
 }
 
 /* ----------------------------------------------------------------------- encoding */
@@ -155,10 +156,15 @@ export function decodeConfig(hash: string): Decoded {
 
   // structure first, with every problem collected; meaning second, through the same checks as the parameter drawer
   const problemsFound: string[] = [];
-  if (!exactKeys(json, 'configuration', ['v', 'problem', 'setup', 'params', 'seed'], [], problemsFound)) return { ok: false, problems: problemsFound };
+  if (!exactKeys(json, 'configuration', ['v', 'problem', 'setup', 'params', 'seed'], ['options'], problemsFound)) return { ok: false, problems: problemsFound };
   if ('v' in json && json.v !== 1) problemsFound.push('The configuration says it is version ' + String(json.v) + ', but the link says v1.');
-  if ('problem' in json && (typeof json.problem !== 'string' || !(json.problem in problems))) {
+  const entry = typeof json.problem === 'string' ? entryOf(json.problem) : undefined;
+  if ('problem' in json && !entry) {
     problemsFound.push(`Unknown problem ${typeof json.problem === 'string' ? `"${json.problem}"` : String(json.problem)}; this app knows ${list(problemIds())}.`);
+  }
+  if (entry) {
+    if (entry.hasOptions && !('options' in json)) problemsFound.push(`"configuration" is missing "options", which ${entry.name} needs.`);
+    else if ('options' in json) problemsFound.push(...entry.validateOptions(json.options).map((m) => (entry.hasOptions ? m : '"configuration" has an unknown key "options".')));
   }
   if ('seed' in json && (!isNumber(json.seed) || !Number.isInteger(json.seed) || json.seed < 0 || json.seed > 4294967295)) {
     problemsFound.push('The seed must be a whole number from 0 to 4294967295.');
@@ -168,8 +174,8 @@ export function decodeConfig(hash: string): Decoded {
   if (problemsFound.length > 0) return { ok: false, problems: problemsFound };
 
   const config = json as unknown as RunConfig;
-  const problem = problems[config.problem]!;
   const setup = setupOf(config);
+  const problem = setup.problem;
   const draft = draftOf(config.params, setup, config.seed);
   const first = Object.values(validate(draft, problem, []).errors);
   if (first.length > 0) return { ok: false, problems: first as string[] };

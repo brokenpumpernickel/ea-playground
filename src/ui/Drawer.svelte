@@ -6,7 +6,7 @@
   import { changes, chromosomePieces, draftOf, toParams, toSetup, validate, type Draft, type Field } from './drawer-model';
   import PopulationEditor from './PopulationEditor.svelte';
   import ShareLink from './ShareLink.svelte';
-  import { presets } from './presets';
+  import { presets as allPresets } from './presets';
   import type { Session } from './session.svelte';
 
   let { session, onclose }: { session: Session; onclose: () => void } = $props();
@@ -80,7 +80,12 @@
   });
   const blamed = $derived(validation.chainStep);
 
-  let chosenPreset = $state(presets[0]?.id ?? '');
+  // only the presets of the problem that is running
+  const presets = $derived(allPresets.filter((p) => p.problem === session.problemEntry.id));
+  let chosenPreset = $state('');
+  $effect(() => {
+    if (!presets.some((p) => p.id === chosenPreset)) chosenPreset = presets[0]?.id ?? '';
+  });
   const preset = $derived(presets.find((p) => p.id === chosenPreset));
   const loadPreset = () => {
     if (!preset) return;
@@ -108,6 +113,7 @@
     </div>
   {/if}
 
+  {#if presets.length > 0}
   <div class="sec" data-section="presets">
     <h3>Presets</h3>
     <DrawerRow label="Preset" id="preset">
@@ -124,6 +130,7 @@
       </div>
     {/if}
   </div>
+  {/if}
 
   <div class="sec" data-section="share">
     <h3>Share</h3>

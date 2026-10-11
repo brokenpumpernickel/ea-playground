@@ -47,7 +47,7 @@ export function shortcutFor(event: KeyInfo, target: KeyTarget): Shortcut | undef
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
 
   if (key === 'ArrowRight' || key === 'ArrowLeft') {
-    if (usesArrows.has(target.tag) || target.role === 'slider') return undefined;
+    if (usesArrows.has(target.tag) || target.role === 'slider' || target.role?.startsWith('menu')) return undefined;
     if (key === 'ArrowRight') return event.shiftKey ? 'stageForward' : 'microForward';
     return event.shiftKey ? 'stageBack' : 'microBack';
   }

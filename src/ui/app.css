@@ -503,3 +503,13 @@ input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radi
 .bit.letter { font-family:ui-monospace,Consolas,monospace; font-weight:600; }
 .bit.letter.one { font-weight:800; }
 .bit.sm.letter { width:26px; height:34px; font-size:21px; }
+
+/* problem menu in the brand area */
+.problemmenu { position:relative; }
+.problembtn { font:inherit; font-size:26px; font-weight:700; color:var(--ink); background:none; border:2px solid transparent; border-radius:8px; padding:0 8px; margin-left:-8px; cursor:pointer; }
+.problembtn:hover { border-color:var(--axis); }
+.menulist { position:absolute; left:-8px; top:100%; z-index:40; margin:4px 0 0; padding:6px; list-style:none; min-width:260px; background:var(--surface); border:2px solid var(--ink); border-radius:10px; box-shadow:0 12px 30px rgba(0,0,0,.25); }
+.menuitem { display:flex; gap:10px; width:100%; text-align:left; font:600 22px system-ui,"Segoe UI",sans-serif; color:var(--ink); background:none; border:2px solid transparent; border-radius:8px; padding:8px 12px; cursor:pointer; }
+.menuitem span { width:1.2em; }
+.menuitem:hover, .menuitem:focus-visible { background:var(--acc-tint); }
+.menuitem[aria-checked=true] { font-weight:800; }

@@ -3,6 +3,7 @@ import { createFakeScheduler } from '../run/fake-scheduler';
 import { gaAlgorithm } from '../engine';
 import { createRun } from '../run';
 import { defaultParams, defaultSetup } from './config';
+import { problemEntries } from './problems';
 import { createSession } from './session.svelte';
 
 const make = () => {
@@ -307,5 +308,64 @@ describe('starting from a configuration (a share link)', () => {
     session.changeParameters({ ...defaultParams, crossover: { ...defaultParams.crossover, probability: 0.3 } });
     expect(session.shareConfig.params.crossover.probability).toBe(0.3);
     expect(session.shareConfig.setup.init).toEqual({ kind: 'random', size: 6 });
+  });
+});
+
+describe('switching problem', () => {
+  test('is a reset held until confirmed, with a notice, and loads the other problem’s own defaults', () => {
+    const { session } = make();
+    generations(session, 3);
+    expect(session.problemEntry.id).toBe('goldberg');
+    session.requestProblemSwitch('target-string');
+    expect(session.problemEntry.id).toBe('goldberg'); // nothing changed yet
+    expect(session.resetNotice).toBe('Switching to the problem Target string restarts the run from generation 0 and discards the 3 recorded generations (1–3).');
+    session.confirmReset();
+    expect(session.problemEntry.id).toBe('target-string');
+    expect(session.problemOptions).toEqual({ alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ', target: 'HELLO' });
+    expect(session.run.lastCycle).toBe(0);
+    expect(session.run.snapshot(0).state.population).toHaveLength(12);
+    expect(session.run.parameters.selection).toEqual({ method: 'tournament', size: 3 });
+    expect(session.seed).toBe(42);
+    expect(session.shareConfig).toMatchObject({ problem: 'target-string', options: { target: 'HELLO' } });
+    expect(session.presetName).toBeUndefined();
+  });
+
+  test('cancelling changes nothing, and choosing the problem that is running does nothing', () => {
+    const { session } = make();
+    generations(session, 2);
+    session.requestProblemSwitch('goldberg');
+    expect(session.resetNotice).toBeUndefined();
+    session.requestProblemSwitch('target-string');
+    session.cancelReset();
+    expect(session.problemEntry.id).toBe('goldberg');
+    expect(session.run.lastCycle).toBe(2);
+    session.requestProblemSwitch('knapsack');
+    expect(session.resetNotice).toBeUndefined();
+  });
+
+  test('switching back loads Goldberg’s defaults and nothing of the string problem is carried over', () => {
+    const { session } = make();
+    session.requestProblemSwitch('target-string');
+    session.confirmReset();
+    session.changeParameters({ ...session.run.parameters, elites: 3 });
+    session.requestProblemSwitch('goldberg');
+    session.confirmReset();
+    expect(session.problemEntry.id).toBe('goldberg');
+    expect(session.problemOptions).toBeUndefined();
+    expect(session.run.parameters.elites).toBe(0);
+    expect(session.shareConfig).not.toHaveProperty('options');
+    expect(session.run.snapshot(0).state.population).toHaveLength(6);
+  });
+
+  test('a session started from a target string configuration says so', () => {
+    const options = { alphabet: 'ABC ', target: 'CAB' };
+    const t = problemEntries.find((p) => p.id === 'target-string')!;
+    const session = createSession({
+      scheduler: createFakeScheduler(),
+      config: { setup: { problem: t.create(options), init: { kind: 'random', size: 4 } }, params: t.defaults.params, seed: 3, problem: 'target-string', options },
+    });
+    expect(session.problemEntry.id).toBe('target-string');
+    expect(session.shareConfig.options).toEqual(options);
+    expect(session.display.columns.map((c) => c.header)).toEqual(['Fitness']);
   });
 });

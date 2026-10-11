@@ -29,7 +29,7 @@
     }
   }
   const session = createSession({
-    config: startConfig && { setup: setupOf(startConfig), params: startConfig.params, seed: startConfig.seed },
+    config: startConfig && { setup: setupOf(startConfig), params: startConfig.params, seed: startConfig.seed, problem: startConfig.problem, options: startConfig.options },
     scheduler: { setTimeout: (callback, ms) => window.setTimeout(callback, ms), clearTimeout: (handle) => window.clearTimeout(handle as number) },
     reducedMotion,
   });

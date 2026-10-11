@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ProblemMenu from './ProblemMenu.svelte';
   import type { Session } from './session.svelte';
 
   let { session }: { session: Session } = $props();
@@ -37,10 +38,10 @@
 
 <div id="top">
   <div id="brand">
-    <span class="logo" aria-hidden="true">x²</span>
+    <span class="logo" aria-hidden="true">{session.problemEntry.logo}</span>
     <div>
-      <div class="trow"><h1 class="t" style="margin:0">Goldberg x²</h1>{#if session.presetName}<span class="presetchip" title="The run was started from this preset">preset: {session.presetName}</span>{/if}</div>
-      <div class="s">Maximise x² on 0…31</div>
+      <div class="trow"><ProblemMenu {session} />{#if session.presetName}<span class="presetchip" title="The run was started from this preset">preset: {session.presetName}</span>{/if}</div>
+      <div class="s">{session.problemEntry.subtitle(session.problemOptions)}</div>
     </div>
   </div>
 
