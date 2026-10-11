@@ -41,14 +41,23 @@ export interface MutationEvent {
   readonly individualDraw?: { readonly u: number };
   /** Per-individual mode, when mutated: the single gene chosen to flip, from the draw r. */
   readonly chosenGene?: { readonly gene: number; readonly r: number };
+  /**
+   * Only for alphabets of more than 2 symbols: for each changed gene, in gene order, the draw r that picked its new
+   * symbol among the other symbols, and the old and new gene. (With 2 symbols the new gene is forced, nothing is drawn
+   * and nothing is recorded here; `before` and `after` already say it.)
+   */
+  readonly replacements?: readonly { readonly gene: number; readonly r: number; readonly from: number; readonly to: number }[];
 }
 
 export function mutate(
   offspring: readonly MutationInput[],
   config: MutationConfig,
   rng: Rng,
+  /** How many symbols a gene can take. With 2 the replacement is forced and costs no draw; with more, one draw per changed gene. */
+  alphabetSize = 2,
 ): { mutated: Mutated[]; events: MutationEvent[] } {
   if (!(config.probability >= 0 && config.probability <= 1)) throw new Error('Mutation probability must be between 0 and 1');
+  if (!Number.isInteger(alphabetSize) || alphabetSize < 2) throw new Error('A gene needs an alphabet of at least 2 symbols to be mutated');
   const mutated: Mutated[] = [];
   const events: MutationEvent[] = [];
   for (const input of offspring) {
@@ -58,7 +67,8 @@ export function mutate(
       : config.mode === 'per-gene'
         ? drawPerGene(input.chromosome, config, rng)
         : drawPerIndividual(input.chromosome, config, rng);
-    const after: Gene[] = input.chromosome.map((gene, k) => (draws.flipped.includes(k + 1) ? (gene === 0 ? 1 : 0) : gene));
+    const replaced = replaceGenes(input.chromosome, draws.flipped, alphabetSize, rng);
+    const after = replaced.after;
     mutated.push({ offspring: input.offspring, chromosome: after, flipped: draws.flipped });
     events.push({
       stage: 'mutation',
@@ -73,6 +83,7 @@ export function mutate(
       after: [...after],
       flipped: draws.flipped,
       ...draws.record,
+      ...(replaced.draws.length > 0 ? { replacements: replaced.draws } : {}),
     });
   }
   return { mutated, events };
@@ -94,4 +105,26 @@ function drawPerIndividual(chromosome: Chromosome, config: MutationConfig, rng: 
   const r = rng.next();
   const gene = 1 + Math.floor(r * chromosome.length);
   return { flipped: [gene], record: { individualDraw: { u }, chosenGene: { gene, r } } };
+}
+
+/**
+ * Gives every changed gene (1-based, in order) a different symbol. With 2 symbols that is the other one and nothing is
+ * drawn. With more, one draw r per gene picks the ⌊r·(k − 1)⌋-th of the other symbols, in alphabet order.
+ */
+function replaceGenes(chromosome: Chromosome, changed: readonly number[], k: number, rng: Rng) {
+  const draws: { gene: number; r: number; from: number; to: number }[] = [];
+  const after: Gene[] = [...chromosome];
+  for (const gene of changed) {
+    const from = chromosome[gene - 1]!;
+    if (k === 2) {
+      after[gene - 1] = from === 0 ? 1 : 0;
+      continue;
+    }
+    const r = rng.next();
+    const pick = Math.floor(r * (k - 1));
+    const to = pick < from ? pick : pick + 1; // skip the symbol the gene has now
+    after[gene - 1] = to;
+    draws.push({ gene, r, from, to });
+  }
+  return { after, draws };
 }
