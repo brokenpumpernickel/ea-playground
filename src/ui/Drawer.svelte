@@ -1,12 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { gaAlgorithm, itemName, knapsackLimits } from '../engine';
+  import { gaAlgorithm, itemName, knapsackLimits, linkages, trapLimits } from '../engine';
   import ChainEditor from './ChainEditor.svelte';
   import DrawerRow from './DrawerRow.svelte';
   import { changes, chromosomePieces, draftOf, followedTargetFitness, optionsOf, problemOf, resetParams, toParams, toSetup, validate, type Draft, type Field } from './drawer-model';
   import PopulationEditor from './PopulationEditor.svelte';
   import ShareLink from './ShareLink.svelte';
   import { presets as allPresets } from './presets';
+  import { trapDefinition } from './trap-text';
   import type { Session } from './session.svelte';
 
   let { session, onclose }: { session: Session; onclose: () => void } = $props();
@@ -52,7 +53,7 @@
     session.changeParameters(toParams(candidate));
   };
 
-  const setupFields: Field[] = ['size', 'chromosomes', 'seed', 'alphabet', 'target', 'items', 'capacity', 'handling', 'rho'];
+  const setupFields: Field[] = ['size', 'chromosomes', 'seed', 'alphabet', 'target', 'items', 'capacity', 'handling', 'rho', 'blockSize', 'blocks', 'linkage', 'genes'];
   const setupChanges = $derived.by(() => {
     void session.version;
     return setupFields.some((f) => errors[f]) ? undefined : changes(draft, effective()).reset;
@@ -73,6 +74,17 @@
   // the knapsack's items: two columns of the typed weights and values, with add and remove
   const maxItems = knapsackLimits.maxItems;
   const itemCount = $derived(draft.knapsack?.items.length ?? 0);
+
+  // the trap's sizes as numbers, once they are valid, for the definition under the fields
+  const trapSizes = $derived.by(() => {
+    const t = draft.trap && optionsOf(draft);
+    return t && 'blockSize' in t && !errors.blockSize && !errors.blocks && !errors.genes ? { k: t.blockSize, m: t.blocks } : undefined;
+  });
+  const linkageHelp = $derived(
+    draft.trap?.linkage === 'loose'
+      ? `The blocks are interleaved: block 1 is genes 1, ${1 + (trapSizes?.m ?? 5)}, ${1 + 2 * (trapSizes?.m ?? 5)}, …; block 2 is genes 2, ${2 + (trapSizes?.m ?? 5)}, …. A crossover cut then falls inside almost every block.`
+      : 'A block’s genes sit side by side: block 1 is genes 1 to k, block 2 the next k, and so on. A cut falls inside a block only now and then.',
+  );
   const firstHalf = $derived(Math.ceil(itemCount / 2));
   const addItem = () => draft.knapsack && draft.knapsack.items.length < maxItems && draft.knapsack.items.push({ weight: '5', value: '10' });
   const removeItem = (k: number) => draft.knapsack && draft.knapsack.items.length > knapsackLimits.minItems && draft.knapsack.items.splice(k, 1);
@@ -207,6 +219,20 @@
         {#if errors.items}<p class="err" role="alert" id="items-error">{errors.items}</p>{/if}
       </div>
     {/if}
+    {#if draft.trap}
+      <DrawerRow label="Block size k" id="block-size" error={errors.blockSize} help={`Genes per block, ${trapLimits.minBlockSize} to ${trapLimits.maxBlockSize}.`}>
+        <input id="block-size" type="text" inputmode="numeric" bind:value={draft.trap.blockSize} aria-invalid={errors.blockSize ? 'true' : undefined} aria-describedby={errors.blockSize ? 'block-size-error' : 'block-size-help'} />
+      </DrawerRow>
+      <DrawerRow label="Number of blocks m" id="blocks" error={errors.blocks ?? errors.genes} help={`${trapLimits.minBlocks} to ${trapLimits.maxBlocks} blocks, at most ${trapLimits.maxGenes} genes in all${trapSizes ? ` (${trapSizes.k} × ${trapSizes.m} = ${trapSizes.k * trapSizes.m})` : ''}.`}>
+        <input id="blocks" type="text" inputmode="numeric" bind:value={draft.trap.blocks} aria-invalid={errors.blocks || errors.genes ? 'true' : undefined} aria-describedby={errors.blocks || errors.genes ? 'blocks-error' : 'blocks-help'} />
+      </DrawerRow>
+      <DrawerRow label="Linkage" id="linkage" error={errors.linkage} help={linkageHelp}>
+        <select id="linkage" bind:value={draft.trap.linkage} aria-describedby="linkage-help">
+          {#each linkages as linkage (linkage)}<option value={linkage}>{linkage === 'tight' ? 'Tight: a block’s genes sit side by side' : 'Loose: the blocks are interleaved'}</option>{/each}
+        </select>
+      </DrawerRow>
+      <p class="trapdef" data-testid="trap-definition"><b>The trap.</b> {trapDefinition(trapSizes?.k, trapSizes?.m)}</p>
+    {/if}
     {#if draft.options}
       <DrawerRow label="Target" id="target" wide error={errors.target} help={`The string to evolve toward, at most 24 characters from the alphabet. ${[...draft.options.target].length} characters, so the best possible fitness is ${[...draft.options.target].length}.`}>
         <input id="target" class="textfield" type="text" spellcheck="false" autocomplete="off" bind:value={draft.options.target} aria-invalid={errors.target ? 'true' : undefined} aria-describedby={errors.target ? 'target-error' : 'target-help'} />
@@ -237,7 +263,7 @@
       <button class="btn primary" onclick={applyReset} disabled={anyError || !setupChanges || setupChanges.length === 0} data-testid="apply-reset">Apply and restart</button>
       <span class="help">
         {#if anyError}Fix the highlighted fields first.{#if errors['crossover.operator']} The crossover type does not fit the target (see Crossover).{/if}
-        {:else if setupChanges && setupChanges.length > 0}Changed: {setupChanges.join(', ')}. Restarts the run from generation 0.{#if setupChanges.includes('Target fitness')} The stop at “target fitness reached” moves to the new {draft.options ? "target's length" : "instance's optimum"} ({followed}).{/if}
+        {:else if setupChanges && setupChanges.length > 0}Changed: {setupChanges.join(', ')}. Restarts the run from generation 0.{#if setupChanges.includes('Target fitness')} The stop at “target fitness reached” moves to the new {draft.options ? "target's length" : draft.trap ? 'optimum, k × m' : "instance's optimum"} ({followed}).{/if}
         {:else}No setup changes.{/if}
       </span>
     </div>

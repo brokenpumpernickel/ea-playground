@@ -1,5 +1,5 @@
 import { isKnapsackOptions, isStringOptions, isTrapOptions, type ProblemEntry, type ProblemOptions } from './problems';
-import { describeAlphabet, handlings, minimumGenes, operatorName, optimalBag, parseGenes, validateKnapsack, validateTrap, type Handling, type KnapsackOptions, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
+import { describeAlphabet, handlings, minimumGenes, operatorName, optimalBag, parseGenes, validateKnapsack, validateTrap, type Handling, type KnapsackOptions, type Linkage, type TrapOptions, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
 
 /**
  * What the parameter drawer edits. Numbers are kept as the text the user typed, so a half-typed or wrong entry can be
@@ -23,6 +23,8 @@ export interface Draft {
   options?: { alphabet: string; target: string };
   /** The knapsack's options as typed (every number as text, so a half-typed one can be explained); absent for the other problems. */
   knapsack?: { items: { weight: string; value: string }[]; capacity: string; handling: Handling; rho: string };
+  /** The trap's options as typed (block size and number of blocks as text); absent for the other problems. */
+  trap?: { blockSize: string; blocks: string; linkage: Linkage };
   method: 'roulette' | 'tournament';
   tournamentSize: string;
   chain: ChainStepDraft[];
@@ -47,6 +49,10 @@ export type Field =
   | 'capacity'
   | 'handling'
   | 'rho'
+  | 'blockSize'
+  | 'blocks'
+  | 'linkage'
+  | 'genes'
   | 'tournamentSize'
   | 'chain'
   | 'crossover.operator'
@@ -89,6 +95,7 @@ export function draftOf(params: GaParams, setup: GaSetup, seed: number, options?
           },
         }
       : {}),
+    ...(options && isTrapOptions(options) ? { trap: { blockSize: String(options.blockSize), blocks: String(options.blocks), linkage: options.linkage } } : {}),
     method: selection.method,
     tournamentSize: selection.method === 'tournament' ? String(selection.size) : '2',
     chain:
@@ -186,6 +193,10 @@ export function optionsOf(draft: Draft): ProblemOptions | undefined {
     const read = (text: string) => numberOf(text) ?? Number.NaN;
     return { items: k.items.map((item) => ({ weight: read(item.weight), value: read(item.value) })), capacity: read(k.capacity), handling: k.handling, rho: read(k.rho) };
   }
+  if (draft.trap) {
+    const read = (text: string) => numberOf(text) ?? Number.NaN;
+    return { blockSize: read(draft.trap.blockSize), blocks: read(draft.trap.blocks), linkage: draft.trap.linkage };
+  }
   return undefined;
 }
 
@@ -199,6 +210,9 @@ export function optimumOf(draft: Draft): number | undefined {
   return optimalBag({ items: options.items, capacity: options.capacity }).value;
 }
 
+/** The drawer fields that hold a problem's own options (each problem uses its own few). */
+const optionFields = ['alphabet', 'target', 'items', 'capacity', 'handling', 'rho', 'blockSize', 'blocks', 'linkage', 'genes'] as const;
+
 /**
  * `sampleFitness` is the fitness of the population the chain will next be applied to, so its messages are real.
  * `problem` is the one the draft describes (see `problemOf`); `entry` is needed to check typed options.
@@ -210,9 +224,9 @@ export function validate(draft: Draft, problem: Problem, sampleFitness: readonly
   const typed = optionsOf(draft);
   if (typed && entry) {
     const found = entry.validateOptionFields(typed);
-    for (const field of ['alphabet', 'target', 'items', 'capacity', 'handling', 'rho'] as const) if (found[field]?.length) errors[field] = found[field]!.join(' ');
+    for (const field of optionFields) if (found[field]?.length) errors[field] = found[field]!.join(' ');
   }
-  const optionsValid = (['alphabet', 'target', 'items', 'capacity', 'handling', 'rho'] as const).every((field) => errors[field] === undefined);
+  const optionsValid = optionFields.every((field) => errors[field] === undefined);
 
   // run setup
   const seed = numberOf(draft.seed);
@@ -366,6 +380,13 @@ export function changes(draft: Draft, current: { params: GaParams; setup: GaSetu
     if (k.handling !== was.handling) reset.push('Constraint handling');
     // ρ only matters while the penalty is the method
     if (k.handling === 'penalty' && was.handling === 'penalty' && k.rho !== String(was.rho)) reset.push('Penalty ρ');
+  }
+  if (draft.trap && current.options && isTrapOptions(current.options)) {
+    const was = current.options;
+    const t = draft.trap;
+    if (numberOf(t.blockSize) !== was.blockSize) reset.push('Block size');
+    if (numberOf(t.blocks) !== was.blocks) reset.push('Number of blocks');
+    if (t.linkage !== was.linkage) reset.push('Linkage');
   }
   if (Number(draft.seed) !== current.seed) reset.push('Seed');
   if (followedTargetFitness(draft, current.setup.problem) !== undefined) reset.push('Target fitness');

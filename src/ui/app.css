@@ -685,3 +685,6 @@ table:has(.itemhdr) thead th:first-child { vertical-align:top; }
 /* twenty items and a heavy overweight: the long "over by 120 (0 × 120)" may wrap rather than push the table out of its panel */
 .etable:has(.bit.dense) td.why { white-space:normal; max-width:130px; line-height:1.15; }
 .etable:has(.bit.dense) th.why { white-space:normal; width:90px; }
+
+/* the trap's definition under its setup fields in the drawer */
+#drawer .trapdef { margin:8px 0; padding:8px 12px; border:2px dashed var(--ink2); border-radius:10px; font-size:16px; line-height:1.3; }
