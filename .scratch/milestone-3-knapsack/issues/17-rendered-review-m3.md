@@ -1,6 +1,6 @@
 # 17 Rendered review and sign-off
 
-Status: awaiting instructor sign-off (second pass after review findings)
+Status: resolved
 Type: review (needs instructor)
 Blocked by: 14, 15, 16
 Spec: ../spec.md
@@ -60,3 +60,7 @@ Found with penalty ρ = 0, where most bags are far overweight; each was reproduc
 7. `app.spec.ts` "stepping by micro-step, by stage and by generation" timed out at 20 s whenever the whole suite ran at once; it is now marked slow (3× timeout). The test itself is unchanged.
 
 Rechecked: `npm run check` clean, 1233 unit tests, 289 Playwright tests, all passing. New screenshots: `1920-15-fix-mutation-cards.png`, `1920-16-fix-penalty-meters.png`, `1920-17-fix-penalty-stacked-bar.png`.
+
+### Instructor sign-off
+
+2026-10-11: after the second pass the instructor stepped through the penalty evaluation in projector mode, reported "Now it's fine", and asked to proceed. One remaining annoyance, accepted as not blocking: the stacked bar's track changes width with the caption beside it. Filed as ticket 18. Criterion 9 is met; milestone 3 is complete.
