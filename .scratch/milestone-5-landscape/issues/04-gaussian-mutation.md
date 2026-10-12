@@ -14,6 +14,7 @@ Gaussian mutation for real chromosomes with the per-gene mode (each gene mutates
 - Hand-worked cases; the recorded step equals σ × range × z with z equal to the Box–Muller value of the recorded uniforms; property tests: results are inside the bounds, an unchanged gene is exactly unchanged, a clamped gene equals its bound, per-gene probabilities hold over many draws (statistically, with a fixed seed), per-individual mutates at most one gene.
 - Seeded runs reproduce; the draws do not depend on how the run is advanced (micro-step, stage, generation).
 - Symbol mutation and golden runs are unchanged.
+- A whole-generation test on the real sphere (tournament selection, BLX-α and arithmetic crossover, mutation on and off): population size kept, genes inside the bounds, reproducible by seed. It could not be written in ticket 03 because the generation still called the symbol mutation, which refuses a gene without an alphabet; the generation must pass the bounds to the mutation as it now does to the crossover.
 
 ## Comments
 
