@@ -166,6 +166,48 @@ _Avoid_: Variance, diversity (diversity is the mean distance between individuals
 How close to the best possible fitness a run must get to count as having reached it, for a problem whose optimum is a real number that is never hit exactly. Its default is one thousandth of the fitness range.
 _Avoid_: Error, precision
 
+### Permutation search
+
+**Permutation chromosome**:
+A chromosome in which every one of n cities (or other items) appears exactly once, so that the order is the solution. Its operators must keep it a permutation; ordinary crossover and mutation would repeat and lose cities.
+_Avoid_: Sequence, ordering (too loose), path
+
+**Tour**:
+A closed route through every city once, returning to the first. Rotating a tour or reading it backwards gives the same route; the **canonical route** is the form that starts at city 1 and goes in the direction whose second city is the lower, so that equal routes look equal.
+_Avoid_: Path, circuit (use the same word on screen as in the code)
+
+**Edge**:
+The link between two cities that are neighbours on a tour, in either direction. Two tours are alike to the extent that they share edges.
+_Avoid_: Link (that means a share link here), segment
+
+**Order crossover (OX)**:
+A crossover for permutations: the child keeps a slice of one parent in place and fills the other positions, starting after the slice, with the remaining cities in the order the other parent visits them.
+_Avoid_: Ordered crossover, OX1
+
+**Partial-mapped crossover (PMX)**:
+A crossover for permutations: the child takes a slice from one parent in place and keeps the other parent's cities elsewhere, except that a city already in the slice is replaced by following the mapping between the two slices to a city that is free.
+_Avoid_: Partially matched crossover
+
+**Cycle crossover (CX)**:
+A crossover for permutations: the positions fall into cycles, and the child takes each cycle's positions whole from one parent, alternating between the parents. It has no random cut point.
+_Avoid_: Cyclic crossover
+
+**Swap, inversion and insertion mutation**:
+The three permutation mutations: exchange two cities, reverse the slice between two cut points (a 2-opt move), or take one city out and put it back elsewhere. One move per mutated individual; the probability is per individual, since a permutation has no independent genes.
+_Avoid_: Reversal (use inversion), shift
+
+**Edge agreement**:
+For each edge of the best tour so far, the share of the population that also uses it; a population that agrees on most edges has converged.
+_Avoid_: Edge frequency, consensus
+
+**Gap to the optimum**:
+How much longer a tour is than the best possible, as a share of the best possible length, (length − optimum) / optimum.
+_Avoid_: Error, regret
+
+**Nearest-neighbour tour**:
+The tour made by starting at city 1 and always going to the nearest unvisited city, ties to the lower number. A greedy baseline a run can be read against.
+_Avoid_: Greedy tour (the word is used for the heuristic in general)
+
 ### Selection and variation
 
 **Mating pool**:
