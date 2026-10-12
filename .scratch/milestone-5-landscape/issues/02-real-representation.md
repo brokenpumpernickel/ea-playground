@@ -1,6 +1,6 @@
 # 02 The real-valued representation in the engine
 
-Status: open
+Status: claimed
 Type: task (test-first)
 Blocked by: 01
 Spec: ../spec.md

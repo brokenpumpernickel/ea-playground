@@ -7,7 +7,7 @@ Spec: ../spec.md
 
 ## What to build
 
-The stage panel's second view "Stage view | Landscape" (as the schema tracker, with the narration bar still visible) and in it the **heatmap** of fitness as decided in the mock: the colour ramp with a labelled scale, isolines at fixed fitness levels with their values (the non-colour carrier), axes with ticks and labels, the optimum mark(s) with a label, the rule "fitness = −f" for the minimised functions, drawn on a canvas from a pure grid model (the fitness grid, the isoline segments, the colour index per cell) that is unit-tested; a text alternative (a sentence naming the function, the bounds, where the optimum is and the range of fitness).
+The stage panel's second view "Stage view | Landscape" (as the schema tracker, with the narration bar still visible) and in it the **heatmap** of fitness as decided in the mock: the colour ramp with a labelled scale, isolines at fixed fitness levels with their values (the non-colour carrier), axes with ticks and labels, the optimum mark(s) with a label, the rule "fitness = −f" for the minimised functions, with the **Zoom to population** toggle (off by default: rescales the heatmap to the population's bounding box plus a margin, axes relabelled, the optimum marks kept when inside), drawn on a canvas from a pure grid model (the fitness grid, the isoline segments, the colour index per cell) that is unit-tested; a text alternative (a sentence naming the function, the bounds, where the optimum is and the range of fitness).
 
 ## Done when
 

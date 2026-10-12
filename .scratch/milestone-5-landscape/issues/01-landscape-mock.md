@@ -1,6 +1,6 @@
 # 01 Throwaway mock of the landscape screens
 
-Status: claimed
+Status: resolved
 Type: mock, review (needs instructor)
 Blocked by: none
 Spec: ../spec.md
@@ -36,3 +36,7 @@ The mock is `.scratch/milestone-5-landscape/mock/index.html` (open it in a brows
 10. **Drawer** (`16`, `17`): landscape, representation, bits per variable for the binary-coded ones, the crossover types of the chosen representation (BLX-α with its α field only for real-valued), mutation σ for real-valued or the bit-flip mode, and "Stop within ε"; the restart notice for a representation switch lists exactly what resets ("crossover type BLX-α → One-point; mutation Gaussian σ = 0.05 → bit flip, per gene, pm 0.05"). **Menu** (`18`): Landscape is the fifth entry, logo `Ls`. *Decision: OK?*
 
 Nothing is built yet beyond the mock. Waiting for the decisions above (especially 2, 5 and 8) before tickets 02 and 08.
+
+### Instructor decisions (2026-10-12)
+
+"All recommended": the Landscape view as a second view of the stage panel; viridis with isolines at 20, 40, 60 and 80 % of the fitness range; the surface, markers and stage marks as shown; the table cells and operator cards as shown (including the plain binary against Gray flip table); the spread panel, diversity legend and drawer as shown; and **"Zoom to population" is added** to the heatmap. Recorded in the spec's "To decide" list and in ticket 10.
