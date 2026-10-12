@@ -4,6 +4,9 @@
   import { blockNotes } from './block-model';
   import CapacityBar from './CapacityBar.svelte';
   import ItemRow from './ItemRow.svelte';
+  import { visibleColumns } from './landscape-cells';
+  import { num } from './format';
+  import VariableRow from './VariableRow.svelte';
   import TargetRow from './TargetRow.svelte';
   import type { Session } from './session.svelte';
 
@@ -22,24 +25,27 @@
   const knapsack = $derived(session.bag !== undefined);
   /** The trap's table is as narrow: selection columns only with roulette weights, and the parent count in the first column. */
   const blocks = $derived(session.blocks);
-  const compact = $derived(knapsack || blocks !== undefined);
+  /** The landscape's table is as narrow: the bits of a binary-coded chromosome are 20 or 24 cells wide. */
+  const landscape = $derived(session.landscape);
+  const compact = $derived(knapsack || blocks !== undefined || landscape !== undefined);
   const showSelection = $derived(!compact || table.rows.some((r) => r.weight !== undefined || r.probability !== undefined));
   /** With the selection columns on show beside the knapsack's own, or with more than fourteen items, the bars and the optional columns make way. */
   const tight = $derived((knapsack && (showSelection || display.chromosomeLength > 14)) || (blocks !== undefined && (showSelection || display.chromosomeLength > 20)));
-  const columns = $derived(display.columns.map((column, c) => ({ column, c })).filter(({ column }) => !(tight && column.optional)));
+  const kept = $derived(landscape ? new Set(visibleColumns(display.columns, landscape, showSelection)) : undefined);
+  const columns = $derived(display.columns.map((column, c) => ({ column, c })).filter(({ column }) => (kept ? kept.has(column) : !(tight && column.optional))));
 </script>
 
 <section class="panel" style="left:1136px;top:172px;width:760px;height:542px" aria-labelledby="pop-heading">
   <div class="ph">
     <h2 id="pop-heading">{table.title}</h2>
-    <span class="r">Σ fitness {total} · avg {average} · best {best}</span>
+    <span class="r">Σ fitness {num(total)} · avg {num(average)} · best {num(best)}</span>
   </div>
   <div class="tablewrap">
     <table aria-labelledby="pop-heading" class:tight>
       <thead>
         <tr>
           <th scope="col">#</th>
-          <th scope="col">Chromosome<TargetRow /><ItemRow /><BlockRow /></th>
+          <th scope="col">Chromosome<TargetRow /><ItemRow /><BlockRow /><VariableRow /></th>
           {#each columns as { column } (column.header)}
             <th scope="col" class="num" class:meter={column.meter}>{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>
           {/each}

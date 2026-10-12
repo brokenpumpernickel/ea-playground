@@ -1,8 +1,9 @@
-import { gaAlgorithm, metricsOfProblem, type KnapsackProblem, type TrapProblem, type Problem, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
+import { gaAlgorithm, metricsOfProblem, type KnapsackProblem, type LandscapeProblem, type TrapProblem, type Problem, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
 import { createPlayback, createRun, type AnimationFlags, type Playback, type PlaybackStatus, type Position, type Run, type Scheduler, type Tier, type View } from '../run';
 import { defaultParams, defaultSeed, defaultSetup } from './config';
 import type { BagInfo } from './bag-context';
 import { blockInfoOf, type BlockInfo } from './block-context';
+import { landscapeInfoOf, type LandscapeInfo } from './landscape-context';
 import { blockStatesModel, type BlockStatesModel } from './block-states-model';
 import { schemaHistory, type SchemaPoint, type SchemaSymbol } from './schema-model';
 import { changes, draftOf } from './drawer-model';
@@ -217,6 +218,12 @@ export function createSession(options: SessionOptions) {
       void version;
       const p = run.setup.problem as Partial<TrapProblem>;
       return p.blockGenes && p.options && p.outcomeOf ? blockInfoOf(run.setup.problem as TrapProblem) : undefined;
+    },
+    /** The running landscape, as the views need it (the representation, bits per variable, how a chromosome decodes); absent for other problems. */
+    get landscape(): LandscapeInfo | undefined {
+      void version;
+      const p = run.setup.problem as Partial<LandscapeProblem>;
+      return p.pointOf && p.info && p.options ? landscapeInfoOf(run.setup.problem as LandscapeProblem) : undefined;
     },
     /** For every recorded generation, how many individuals are instances of a schema and the mean fitnesses (the schema tracker). It only reads the run. */
     schemaHistory(symbols: readonly SchemaSymbol[]): SchemaPoint[] {

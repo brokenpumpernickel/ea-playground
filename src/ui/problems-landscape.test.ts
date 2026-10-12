@@ -22,13 +22,21 @@ describe('the landscape entry', () => {
     expect((entry.defaultOptions() as unknown as LandscapeOptions).bitsPerVariable).toBe(10);
   });
 
-  test('says what it is in the brand area: the function, what is to be done to f, the optimum and the representation', () => {
+  test('says what it is in the brand area: the function, what is to be done to f and the optimum', () => {
     const sub = (o: LandscapeOptions) => entry.subtitle(o);
-    expect(sub({ function: 'single-peak', representation: 'real', bitsPerVariable: 10 })).toBe('Single peak · maximise f · optimum 1 · real-valued');
-    expect(sub({ function: 'two-peaks', representation: 'plain', bitsPerVariable: 8 })).toBe('Two peaks · maximise f · optimum 1.0003 · binary-coded, 8 bits each');
-    expect(sub({ function: 'rastrigin', representation: 'gray', bitsPerVariable: 12 })).toBe('Rastrigin · minimise f · optimum f = 0 · Gray-coded, 12 bits each');
-    expect(sub({ function: 'himmelblau', representation: 'real', bitsPerVariable: 10 })).toBe('Himmelblau · minimise f · optimum f = 0 (4 places) · real-valued');
+    expect(sub({ function: 'single-peak', representation: 'real', bitsPerVariable: 10 })).toBe('Single peak · maximise f · optimum 1');
+    expect(sub({ function: 'two-peaks', representation: 'plain', bitsPerVariable: 8 })).toBe('Two peaks · maximise f · optimum 1.0003');
+    expect(sub({ function: 'rastrigin', representation: 'gray', bitsPerVariable: 12 })).toBe('Rastrigin · minimise f · optimum f = 0');
+    expect(sub({ function: 'himmelblau', representation: 'real', bitsPerVariable: 10 })).toBe('Himmelblau · minimise f · optimum f = 0 (4 places)');
     expect(entry.subtitle(undefined)).toBe('Evolve a point on a fitness landscape');
+  });
+
+  test('and the representation is a chip beside the problem name; the other problems have none', () => {
+    expect(entry.chip!({ function: 'single-peak', representation: 'real', bitsPerVariable: 10 })).toBe('real-valued');
+    expect(entry.chip!({ function: 'single-peak', representation: 'plain', bitsPerVariable: 8 })).toBe('binary-coded · 8 bits');
+    expect(entry.chip!({ function: 'single-peak', representation: 'gray', bitsPerVariable: 12 })).toBe('Gray-coded · 12 bits');
+    expect(entry.chip!(undefined)).toBeUndefined();
+    for (const id of ['goldberg', 'target-string', 'knapsack', 'trap']) expect(entryOf(id)!.chip).toBeUndefined();
   });
 
   test('options are validated in words, whatever they are', () => {

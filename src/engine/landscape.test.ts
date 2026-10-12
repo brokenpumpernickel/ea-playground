@@ -294,16 +294,33 @@ describe('the real-valued problem', () => {
     expect(real('rastrigin').evaluate([-0.0004, 1.23456]).decoded).toBe('(0.000, 1.235)');
   });
 
-  test('the population columns: x and y, the objective only where it differs from fitness, and fitness with its rule', () => {
-    const maximised = real('single-peak');
-    expect(maximised.columns.map((c) => c.header)).toEqual(['x', 'y', 'Fitness']);
+  test('the population columns of a real-valued run: the pair is the chromosome, so only the objective (where it differs from fitness) and fitness follow', () => {
+    expect(real('single-peak').columns.map((c) => c.header)).toEqual(['Fitness']);
     const minimised = real('himmelblau');
-    expect(minimised.columns.map((c) => c.header)).toEqual(['x', 'y', 'f(x, y)', 'Fitness']);
-    expect(minimised.columns[3]!.note).toBe('= −f');
+    expect(minimised.columns.map((c) => c.header)).toEqual(['f(x, y)', 'Fitness']);
+    expect(minimised.columns[1]!.note).toBe('= −f');
     const scores = minimised.evaluate([1, 1]);
-    expect(minimised.columns.map((c) => c.show(scores))).toEqual(['1.000', '1.000', '106', '-106']);
-    const negative = minimised.evaluate([-1.5, 2.25]);
-    expect(minimised.columns[0]!.show(negative)).toBe('−1.500');
+    expect(minimised.columns.map((c) => c.show(scores))).toEqual(['106.000', '−106.000']);
+    expect(minimised.columns[0]!.optional).toBe(true); // the one the table can drop when it needs the room
+  });
+
+  test('the population columns of a binary-coded run: the decoded x and y beside the bits, then the same', () => {
+    const maximised = landscapeProblem(options('single-peak', 'plain', 8));
+    expect(maximised.columns.map((c) => c.header)).toEqual(['x', 'y', 'Fitness']);
+    const minimised = landscapeProblem(options('rastrigin', 'gray', 8));
+    expect(minimised.columns.map((c) => c.header)).toEqual(['x', 'y', 'f(x, y)', 'Fitness']);
+    const scores = minimised.evaluate([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]); // x = 5.12, y = −5.12
+    const f = 20 + 2 * (5.12 ** 2 - 10 * Math.cos(2 * Math.PI * 5.12)); // Rastrigin at (5.12, −5.12), computed here by hand
+    expect(minimised.columns.map((c) => c.show(scores))).toEqual(['5.120', '−5.120', f.toFixed(3), `−${f.toFixed(3)}`]);
+    expect(minimised.columns[0]!.show(minimised.evaluate([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))).toBe('−5.120');
+  });
+
+  test('numbers in the columns are shown to three decimals with a real minus sign, so a column keeps its width', () => {
+    const p = real('single-peak');
+    expect(p.columns[0]!.show(p.evaluate([2, -1]))).toBe('1.000');
+    expect(p.columns[0]!.show(p.evaluate([0, 0]))).toBe('0.535');
+    expect(p.columns[0]!.show({ decoded: '', objective: 0, fitness: 0 })).toBe('0.000');
+    expect(p.columns[0]!.show({ decoded: '', objective: 0, fitness: -0.0001 })).toBe('0.000'); // never "−0.000"
   });
 
   test('the explanation names the function, and for a minimised one the rule fitness = −f', () => {
@@ -315,6 +332,10 @@ describe('the real-valued problem', () => {
   test('the sentence for a score reads in the problem’s own terms', () => {
     const problem = real('himmelblau');
     expect(problem.scoreText!(problem.evaluate([1, 1]))).toBe('(1.000, 1.000): f = 106, so fitness = −106');
+    // long fractions are rounded to three decimals, so a sentence stays a sentence
+    expect(real('single-peak').scoreText!(real('single-peak').evaluate([0, 0]))).toBe('(0.000, 0.000): f = 0.535, fitness 0.535');
+    expect(real('single-peak').scoreText!(real('single-peak').evaluate([5, 5]))).toBe('(5.000, 5.000): f = 0.004, fitness 0.004');
+    expect(real('single-peak').scoreText!(real('single-peak').evaluate([-5, 5]))).toBe('(−5.000, 5.000): f = 0, fitness 0');
     expect(real('single-peak').scoreText!(real('single-peak').evaluate([2, -1]))).toBe('(2.000, −1.000): f = 1, fitness 1');
   });
 

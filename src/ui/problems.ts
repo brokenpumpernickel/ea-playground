@@ -55,6 +55,8 @@ export interface ProblemEntry {
   readonly diversityNote: string;
   /** The line under the name in the brand area. */
   subtitle(options: ProblemOptions | undefined): string;
+  /** A short chip beside the name, for what a problem's options say in a word (the landscape's representation); absent when there is none. */
+  chip?(options: ProblemOptions | undefined): string | undefined;
   /** Whether this problem is configured by options (an alphabet and a target, say). Goldberg is not. */
   readonly hasOptions: boolean;
   /** The options a fresh run of this problem opens with (none for a problem without options). */
@@ -192,7 +194,7 @@ const trapEntry: ProblemEntry = {
   defaults: { init: { kind: 'random', size: trapDefaults.populationSize }, params: trapDefaults.params, seed: defaultSeed },
 };
 
-const representationWords = (o: LandscapeOptions) => (o.representation === 'real' ? 'real-valued' : `${o.representation === 'gray' ? 'Gray-coded' : 'binary-coded'}, ${o.bitsPerVariable} bits each`);
+const representationWords = (o: LandscapeOptions) => (o.representation === 'real' ? 'real-valued' : `${o.representation === 'gray' ? 'Gray-coded' : 'binary-coded'} · ${o.bitsPerVariable} bits`);
 
 const landscapeEntry: ProblemEntry = {
   id: 'landscape',
@@ -205,7 +207,11 @@ const landscapeEntry: ProblemEntry = {
     const info = landscapeFunctionInfo[options.function];
     const optimum = landscapeProblem({ ...options, representation: 'real' }).knownOptimumFitness;
     const best = info.goal === 'maximise' ? String(Math.round(optimum * 10000) / 10000) : `f = 0${info.optima.length > 1 ? ` (${info.optima.length} places)` : ''}`;
-    return `${info.name} · ${info.goal} f · optimum ${best} · ${representationWords(options)}`;
+    return `${info.name} · ${info.goal} f · optimum ${best}`;
+  },
+  chip(options) {
+    if (!options || !isLandscapeOptions(options) || validateLandscape(options).length > 0) return undefined;
+    return representationWords(options);
   },
   hasOptions: true,
   defaultOptions: () => ({ function: 'single-peak', representation: 'real', bitsPerVariable: 10 }),

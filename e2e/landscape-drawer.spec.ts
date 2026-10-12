@@ -60,7 +60,8 @@ test('the problem menu lists the landscape as the fifth problem; choosing it res
   await expect(page.getByTestId('reset-notice')).toHaveText('Switching to the problem Landscape restarts the run from generation 0. Nothing recorded will be lost.');
   await page.getByRole('button', { name: 'Restart and apply' }).click();
   await expect(page.getByTestId('problem-button')).toHaveText(/Landscape/);
-  await expect(page.locator('#brand .s')).toHaveText('Single peak · maximise f · optimum 1 · real-valued');
+  await expect(page.locator('#brand .s')).toHaveText('Single peak · maximise f · optimum 1');
+  await expect(page.getByTestId('problem-chip')).toHaveText('real-valued');
   await expect(page.locator('#brand .logo')).toHaveText('Ls');
   await page.keyboard.press('g');
   await expectSummary(page, summaryAt(base, 1));
@@ -97,7 +98,7 @@ test('each option changed through the drawer restarts under the new landscape an
   await expect(page.getByTestId('reset-notice')).toHaveText('Changing the function restarts the run from generation 0. Nothing recorded will be lost.');
   await page.getByRole('button', { name: 'Restart and apply' }).click();
   await page.keyboard.press('Escape');
-  await expect(page.locator('#brand .s')).toHaveText('Rastrigin · minimise f · optimum f = 0 · real-valued');
+  await expect(page.locator('#brand .s')).toHaveText('Rastrigin · minimise f · optimum f = 0');
   const options: LandscapeOptions = { ...base, function: 'rastrigin' };
   await expectSummary(page, summaryAt(options, 0, 42, (d) => d));
   await page.keyboard.press('g');
@@ -119,7 +120,8 @@ test('switching to Gray code resets the operators to the bit-string defaults and
   await expect(page.getByTestId('reset-notice')).toHaveText(`Changing the representation restarts the run from generation 0. Nothing recorded will be lost. ${note}`);
   await page.getByRole('button', { name: 'Restart and apply' }).click();
   await page.keyboard.press('Escape');
-  await expect(page.locator('#brand .s')).toHaveText('Single peak · maximise f · optimum 1 · Gray-coded, 10 bits each');
+  await expect(page.locator('#brand .s')).toHaveText('Single peak · maximise f · optimum 1');
+  await expect(page.getByTestId('problem-chip')).toHaveText('Gray-coded · 10 bits');
   const options: LandscapeOptions = { ...base, representation: 'gray' };
   await expectSummary(page, summaryAt(options, 0));
   await page.keyboard.press('g');

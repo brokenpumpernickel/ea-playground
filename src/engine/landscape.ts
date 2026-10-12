@@ -176,12 +176,13 @@ export function landscapeProblem(options: LandscapeOptions): LandscapeProblem {
       : { x: decodeVariable(chromosome.slice(0, n), coding, info.bounds), y: decodeVariable(chromosome.slice(n, 2 * n), coding, info.bounds) };
 
   const text = (scores: Scores) => `(${show(scores.values![0]!)}, ${show(scores.values![1]!)})`;
-  const minus = (value: number) => String(value).replace('-', '−');
+  // three decimals at most, trailing zeros dropped: 106, 0.535, −1.5 (a sentence stays a sentence)
+  const minus = (value: number) => String(Math.round(value * 1000) / 1000).replace('-', '−');
+  // A real-valued chromosome is the pair (x, y), so its table needs no x and y columns; the bits of a binary-coded one need them.
   const columns: ProblemColumn[] = [
-    { header: 'x', show: (scores) => show(scores.values![0]!) },
-    { header: 'y', show: (scores) => show(scores.values![1]!) },
-    ...(minimised ? [{ header: 'f(x, y)', show: (scores: Scores) => String(scores.objective) }] : []),
-    { header: 'Fitness', ...(minimised ? { note: '= −f' } : {}), show: (scores) => String(scores.fitness) },
+    ...(real ? [] : [{ header: 'x', show: (scores: Scores) => show(scores.values![0]!) }, { header: 'y', show: (scores: Scores) => show(scores.values![1]!) }]),
+    ...(minimised ? [{ header: 'f(x, y)', optional: true, show: (scores: Scores) => show(scores.objective) }] : []),
+    { header: 'Fitness', ...(minimised ? { note: '= −f' } : {}), show: (scores: Scores) => show(scores.fitness) },
   ];
   return {
     options,

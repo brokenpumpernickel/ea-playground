@@ -40,7 +40,7 @@
   <div id="brand">
     <span class="logo" aria-hidden="true">{session.problemEntry.logo}</span>
     <div>
-      <div class="trow"><ProblemMenu {session} />{#if session.presetName}<span class="presetchip" title="The run was started from this preset">preset: {session.presetName}</span>{/if}</div>
+      <div class="trow"><ProblemMenu {session} />{#if session.problemEntry.chip?.(session.problemOptions)}<span class="presetchip" data-testid="problem-chip">{session.problemEntry.chip(session.problemOptions)}</span>{/if}{#if session.presetName}<span class="presetchip" title="The run was started from this preset">preset: {session.presetName}</span>{/if}</div>
       <div class="s">{session.problemEntry.subtitle(session.problemOptions)}</div>
     </div>
   </div>

@@ -7,6 +7,7 @@
   import { blockNotes } from './block-model';
   import CapacityBar from './CapacityBar.svelte';
   import ItemRow from './ItemRow.svelte';
+  import VariableRow from './VariableRow.svelte';
   import TargetRow from './TargetRow.svelte';
   import { revealWhenCurrent } from './reveal';
   import StackedBag from './StackedBag.svelte';
@@ -33,7 +34,7 @@
       <thead>
         <tr>
           <th scope="col">Offspring</th>
-          <th scope="col">Chromosome<TargetRow /><ItemRow /><BlockRow /></th>
+          <th scope="col">Chromosome<TargetRow /><ItemRow /><BlockRow /><VariableRow /></th>
           {#if model.explains}<th scope="col" class="why">What happened</th>{/if}
           {#each shownColumns as { column, c } (column.header)}
             <th scope="col" class="num" class:meter={model.rows.some((r) => r.meters?.[c])}>{column.header}{#if column.note}<span class="colnote">{column.note}</span>{/if}</th>

@@ -125,7 +125,7 @@ describe('a hand-edited population for the landscape', () => {
 
   test('real: each row shows what it decodes to, its fitness and the table cells; a bad row says what is wrong', () => {
     const rows = parseChromosomes('2 -1\n0 0\n6 0\n1\n1 x', real);
-    expect(rows[0]).toMatchObject({ text: '2 -1', decoded: '(2.000, −1.000)', fitness: 1, cells: ['2.000', '−1.000', '1'] });
+    expect(rows[0]).toMatchObject({ text: '2 -1', decoded: '(2.000, −1.000)', fitness: 1, cells: ['1.000'] });
     expect(rows[1]!.fitness).toBeCloseTo(Math.exp(-5 / 8), 12);
     expect(rows[2]!.error).toBe('Chromosome 3: gene 1 (6) is outside its bounds from −5 to 5.');
     expect(rows[3]!.error).toBe('Chromosome 4 has 1 number, but this problem needs 2.');

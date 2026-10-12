@@ -6,6 +6,8 @@
   import { blockGeometry, drawExtra } from './block-geometry';
   import { blockSentence, type BlockNote } from './block-model';
   import { geneList } from './format';
+  import { bitsSentence, realPair, realSentence, variableGeometry } from './landscape-cells';
+  import { landscapeContextKey, type LandscapeGetter } from './landscape-context';
   import { targetContextKey, type TargetGetter } from './target-context';
 
   /**
@@ -26,6 +28,10 @@
    * - With a trap in the screen's context, the cells are laid out by block: tight linkage groups each block's genes (a
    *   bracket over the group, `blockNotes` printed under it); loose linkage keeps the genes in order and prints the
    *   notes as a line under the chromosome. The description gains a sentence about the blocks.
+   * - With a real-valued landscape in the screen's context, the chromosome (the shown text of two numbers) is drawn as the
+   *   pair (x, y), each number in a column of fixed width; a gene a mutation changed or one from parent B is marked on its number.
+   * - With a binary-coded landscape in the context, the bits are drawn as two groups, the x bits and the y bits, and the
+   *   description says what they decode to.
    * - `unders`: a short text under each gene (the mutation view's draws), with the genes it flags marked.
    * A space is drawn as `␣` so it is visible.
    */
@@ -82,6 +88,16 @@
   const tightBlocks = $derived(blocked && blocks!.linkage === 'tight');
   const noteOf = (b: number) => blockNotes.find((n) => n.block === b + 1);
 
+  const getLand = getContext<LandscapeGetter | undefined>(landscapeContextKey);
+  const land = $derived(getLand?.());
+  /** The two numbers of a real-valued landscape chromosome, when this is one. */
+  const pair = $derived(land?.representation === 'real' ? realPair(chromosome) : undefined);
+  /** Whether this is a binary-coded landscape chromosome (a bit string of the right length): drawn as two groups of bits. */
+  const varied = $derived(land !== undefined && land.representation !== 'real' && /^[01]+$/.test(chromosome) && chromosome.length === 2 * land.bits);
+  const varGeometry = $derived(varied ? variableGeometry(land!.bits) : undefined);
+  const varStyle = $derived(varGeometry ? `--vw:${varGeometry.cell}px;--vh:${varGeometry.height}px;--vf:${varGeometry.font}px;--vg:${varGeometry.gap}px;--vgg:${varGeometry.groupGap}px` : undefined);
+  const numberClass = (gene: number) => `xv${flipped.includes(gene) ? ' flip' : ''}${sources?.[gene - 1] === 'B' ? ' hatch' : ''}`;
+
   const fromB = $derived(sources ? [...sources].flatMap((s, k) => (s === 'B' ? [k + 1] : [])) : []);
   /** A screen reader should say each letter, so letters are spelled out one by one and a space is named. */
   const spelled = $derived(letters ? [...chromosome].map((c) => (c === ' ' ? 'space' : c)).join(', ') : chromosome);
@@ -90,7 +106,7 @@
   const label = $derived(
     [
       // the letters end with a full stop so that the next fact is not read as one more letter
-      `Chromosome ${spelled}${letters ? '.' : ''}`,
+      pair ? `Chromosome ${realSentence(pair)}` : varied ? `Chromosome ${bitsSentence(chromosome, land!)}` : `Chromosome ${spelled}${letters ? '.' : ''}`,
       blocked ? blockSentence(blocks!, chromosome) : '',
       outcome ? `${packedLetters.length > 0 ? `bag: ${packedLetters.join(', ')}` : 'nothing in the bag'}, weight ${outcome.weight} of ${bag!.capacity}` : '',
       skippedAt.length > 0 ? `not in the bag although the gene is 1: ${skippedAt.map(itemName).join(', ')}` : '',
@@ -106,7 +122,7 @@
   );
 </script>
 
-{#snippet cell(bit: string, k: number)}<b class="bit" class:knap={knap} class:dense={dense} class:skip={skippedAt.includes(k)} class:one={marks ? marks[k] : matched ? matched[k] : bit === '1' && !skippedAt.includes(k)} class:match={matched?.[k] === true} class:miss={matched?.[k] === false} class:letter={letters} class:blocked={blocked} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cut={dropped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{skippedAt.includes(k) ? '✕' : bit === ' ' ? '␣' : bit}</b>{/snippet}
+{#snippet cell(bit: string, k: number)}<b class="bit" class:knap={knap} class:dense={dense} class:skip={skippedAt.includes(k)} class:one={marks ? marks[k] : matched ? matched[k] : bit === '1' && !skippedAt.includes(k)} class:match={matched?.[k] === true} class:miss={matched?.[k] === false} class:letter={letters} class:blocked={blocked} class:var={varied} class:sm={small} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cut={dropped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{skippedAt.includes(k) ? '✕' : bit === ' ' ? '␣' : bit}</b>{/snippet}
 
 {#snippet gene(bit: string, k: number)}{#if unders || (wideColumns && blocked)}<span class="gcell">{@render cell(bit, k)}<span class="under" class:flag={unders?.[k]?.flag} data-gene={k + 1} data-u={unders?.[k]?.value} aria-hidden="true">{unders?.[k]?.text ?? ''}</span></span>{:else}{@render cell(bit, k)}{/if}{/snippet}
 
@@ -114,7 +130,9 @@
   class="bits"
   class:withunders={unders}
   class:blocked
-  style={blockStyle}
+  class:vars={varied}
+  class:pair={pair !== undefined}
+  style={blockStyle ?? varStyle}
   role="img"
   aria-label={label}
   data-bits={chromosome}
@@ -122,4 +140,4 @@
   data-sources={sources ? sources.join('') : undefined}
   data-cuts={cuts.length > 0 ? cuts.join(',') : undefined}
   data-flipped={flipped.length > 0 ? flipped.join(',') : undefined}
-  data-dropped={dropped.length > 0 ? dropped.join(',') : undefined}>{#if tightBlocks}{#each blocks!.blockGenes as genes, b (b)}<span class="blk" data-block={b + 1}>{#each genes as g (g)}{@render gene(chromosome[g]!, g)}{/each}{#if noteOf(b)}<span class="bnote {noteOf(b)!.state}" aria-hidden="true">{noteOf(b)!.text}</span>{/if}</span>{/each}{:else}{#each [...chromosome] as bit, k (k)}{@render gene(bit, k)}{/each}{#if blocked && blockNotes.length > 0}<span class="bnotes" aria-hidden="true">{#each blockNotes as note (note.block)}<span class="bnote {note.state}">block {note.block}: {note.text}</span>{/each}</span>{/if}{/if}</span>
+  data-dropped={dropped.length > 0 ? dropped.join(',') : undefined}>{#if pair}<span class="xy"><span aria-hidden="true">(</span><span class={numberClass(1)}>{pair.x}</span><span aria-hidden="true">, </span><span class={numberClass(2)}>{pair.y}</span><span aria-hidden="true">)</span></span>{:else if varied}{#each [0, 1] as v (v)}<span class="vgrp" data-variable={v === 0 ? 'x' : 'y'}>{#each [...chromosome].slice(v * land!.bits, (v + 1) * land!.bits) as bit, j (j)}{@render gene(bit, v * land!.bits + j)}{/each}</span>{/each}{:else if tightBlocks}{#each blocks!.blockGenes as genes, b (b)}<span class="blk" data-block={b + 1}>{#each genes as g (g)}{@render gene(chromosome[g]!, g)}{/each}{#if noteOf(b)}<span class="bnote {noteOf(b)!.state}" aria-hidden="true">{noteOf(b)!.text}</span>{/if}</span>{/each}{:else}{#each [...chromosome] as bit, k (k)}{@render gene(bit, k)}{/each}{#if blocked && blockNotes.length > 0}<span class="bnotes" aria-hidden="true">{#each blockNotes as note (note.block)}<span class="bnote {note.state}">block {note.block}: {note.text}</span>{/each}</span>{/if}{/if}</span>
