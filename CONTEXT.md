@@ -120,6 +120,36 @@ _Avoid_: Epistasis (a related but wider idea), locality
 A pattern over the chromosome that fixes some genes and leaves the others free (written with `*`), such as `1111****`. An individual is an instance of a schema when it matches every fixed gene.
 _Avoid_: Template, mask (a crossover mask is a different thing)
 
+### Real-valued search
+
+**Real-valued chromosome**:
+A chromosome whose genes are numbers within bounds rather than symbols, such as the pair (x, y) of a point on a landscape. Its genes are shown by value, never through an alphabet.
+_Avoid_: Float string, continuous chromosome
+
+**Bounds**:
+The lowest and highest value a real gene may take. A value that would leave its bounds is clamped to the nearest bound, and the run history says so.
+_Avoid_: Limits, range (the range of a gene is its upper bound minus its lower bound)
+
+**Landscape**:
+The fitness of every point of a real-valued search space, drawn as a heatmap or a surface. Higher fitness is always better on it; for a function that is minimised the landscape is of fitness, the negated objective.
+_Avoid_: Fitness function (that is the rule; the landscape is its picture), terrain
+
+**Blend crossover (BLX-α)**:
+A crossover for real genes in which each child gene is drawn uniformly from the interval between the two parents' values widened on each side by α times the interval's length. With α = 0 children stay between their parents.
+_Avoid_: Blend, interpolation crossover
+
+**Arithmetic crossover**:
+A crossover for real genes in which the two children are weighted averages of the parents, λ·A + (1 − λ)·B and (1 − λ)·A + λ·B, with one λ drawn per pair.
+_Avoid_: Averaging crossover, linear crossover
+
+**Gaussian mutation**:
+A mutation for real genes in which a gene chosen to mutate is moved by a normal random step whose standard deviation is a set share (σ) of the gene's range.
+_Avoid_: Noise, jitter
+
+**Trail**:
+The positions a population had in the last few generations, drawn faded behind its present positions to show movement. It shows where individuals were, not which one descended from which.
+_Avoid_: Path, lineage
+
 ### Selection and variation
 
 **Mating pool**:
