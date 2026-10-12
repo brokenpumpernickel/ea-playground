@@ -158,6 +158,14 @@ _Avoid_: Reflected binary (the name of the construction, not of the idea student
 The positions a population had in the last few generations, drawn faded behind its present positions to show movement. It shows where individuals were, not which one descended from which.
 _Avoid_: Path, lineage
 
+**Spread**:
+The standard deviation of the population in one variable, as a share of that variable's range, so that it can be compared between variables. 0.5 is the most there can be: half of the population on each bound.
+_Avoid_: Variance, diversity (diversity is the mean distance between individuals)
+
+**Tolerance (ε)**:
+How close to the best possible fitness a run must get to count as having reached it, for a problem whose optimum is a real number that is never hit exactly. Its default is one thousandth of the fitness range.
+_Avoid_: Error, precision
+
 ### Selection and variation
 
 **Mating pool**:
