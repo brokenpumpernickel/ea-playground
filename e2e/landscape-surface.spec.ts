@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { landscapeFunctions, landscapeProblem, type LandscapeFunction, type LandscapeOptions } from '../src/engine';
 import { defaultsOf, entryOf } from '../src/ui/problems';
 import { configOf, encodeConfig } from '../src/ui/run-config';
+import { canvasSize } from '../src/ui/landscape-canvas';
 import { landscapeInfoOf } from '../src/ui/landscape-context';
 import { defaultView, dragBy, rasterise, rotate, surfaceMesh, viewLimits } from '../src/ui/surface-projection';
 
@@ -104,7 +105,7 @@ for (const fn of landscapeFunctions) {
       for (let k = 0; k < turn; k++) await page.getByRole('button', { name: 'Rotate the surface right' }).click();
       await page.getByRole('button', { name: 'Tilt the surface down' }).click().catch(() => undefined);
       const view = await camera(page);
-      const mesh = surfaceMesh(info, view, 520, 300);
+      const mesh = surfaceMesh(info, view, canvasSize.width, canvasSize.height);
       const ids = rasterise(mesh);
       // the centre of each of 300 cells, where nothing nearer covers it
       const wanted: { at: [number, number]; colour: readonly number[] }[] = [];
@@ -112,8 +113,8 @@ for (const fn of landscapeFunctions) {
         const q = mesh.quads[k]!;
         const cx = Math.round(q.pts.reduce((s, p) => s + p.sx, 0) / 4);
         const cy = Math.round(q.pts.reduce((s, p) => s + p.sy, 0) / 4);
-        if (cx < 2 || cy < 2 || cx > 517 || cy > 297) continue;
-        if (ids.data[cy * 520 + cx] !== k + 1) continue;
+        if (cx < 2 || cy < 2 || cx > canvasSize.width - 3 || cy > canvasSize.height - 3) continue;
+        if (ids.data[cy * canvasSize.width + cx] !== k + 1) continue;
         // a cell only a few pixels across is mostly its own edge line, which darkens its centre
         const area = Math.abs(q.pts.reduce((sum, p, n) => sum + (p.sx * q.pts[(n + 1) % 4]!.sy - q.pts[(n + 1) % 4]!.sx * p.sy), 0)) / 2;
         if (area < 24) continue;
@@ -135,7 +136,7 @@ for (const fn of landscapeFunctions) {
       // the optimum mark: white at its projected point
       const o = info.optima[0]!;
       const p = mesh.project(o.x, o.y, info.fitnessAt(o.x, o.y));
-      if (p.sx > 10 && p.sx < 510 && p.sy > 10 && p.sy < 290) {
+      if (p.sx > 10 && p.sx < canvasSize.width - 10 && p.sy > 10 && p.sy < canvasSize.height - 10) {
         const [centre] = await pixels(page, [[p.sx, p.sy]]);
         centre!.forEach((v) => expect(v).toBeGreaterThan(225));
       }
@@ -151,8 +152,8 @@ test('the surface keeps its size from generation to generation and when it is tu
     return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)];
   };
   const first = await size();
-  expect(first[2]).toBe(524); // 520 and its 2 px border
-  expect(first[3]).toBe(304);
+  expect(first[2]).toBe(canvasSize.width + 4); // the canvas and its 2 px border
+  expect(first[3]).toBe(canvasSize.height + 4);
   for (let g = 0; g < 4; g++) {
     await page.keyboard.press('g');
     expect(await size()).toEqual(first);

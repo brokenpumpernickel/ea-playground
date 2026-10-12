@@ -1,14 +1,15 @@
 import { describe, expect, test } from 'vitest';
 import { heatLayout, pixelOf, pointAt } from './heatmap-draw';
+import { canvasSize } from './landscape-canvas';
 
 describe('the heatmap’s layout and pixel mapping', () => {
-  const layout = heatLayout(520, 300);
+  const layout = heatLayout(canvasSize.width, canvasSize.height);
   const region = { x0: -5, x1: 5, y0: -5, y1: 5 };
 
   test('the plot sits inside the canvas with room on the left for the y axis and on the right for the colour scale', () => {
     expect(layout.L).toBeGreaterThanOrEqual(40);
-    expect(520 - layout.R).toBeGreaterThanOrEqual(70);
-    expect(layout.B).toBeLessThan(300 - 30);
+    expect(canvasSize.width - layout.R).toBeGreaterThanOrEqual(70);
+    expect(layout.B).toBeLessThan(canvasSize.height - 30);
     expect(layout.T).toBeGreaterThan(0);
   });
 

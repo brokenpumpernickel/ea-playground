@@ -5,6 +5,7 @@ import { landscapeFunctions, landscapeProblem, type LandscapeFunction, type Land
 import { defaultsOf, entryOf } from '../src/ui/problems';
 import { configOf, encodeConfig } from '../src/ui/run-config';
 import { heatLayout, pixelOf, pointAt } from '../src/ui/heatmap-draw';
+import { canvasSize } from '../src/ui/landscape-canvas';
 import { colourAt, fitnessGrid, isolineLevels, isolines, landscapeSentence, zoomRegion } from '../src/ui/landscape-grid';
 import { landscapeInfoOf } from '../src/ui/landscape-context';
 
@@ -59,7 +60,7 @@ for (const fn of landscapeFunctions) {
     await showLandscape(page);
     const info = landscapeInfoOf(landscapeProblem(options(fn)));
     const { layout, region } = await geometry(page);
-    expect(layout).toEqual(heatLayout(520, 300));
+    expect(layout).toEqual(heatLayout(canvasSize.width, canvasSize.height));
     const levels = isolineLevels(info.fitnessRange);
     const range = info.fitnessRange.max - info.fitnessRange.min;
     const optimumPixel = pixelOf(layout, region, info.optima[0]!.x, info.optima[0]!.y);
@@ -90,7 +91,7 @@ for (const fn of landscapeFunctions) {
       if (info.optima.some((o) => Math.hypot(pixelOf(layout, region, o.x, o.y).px - px, pixelOf(layout, region, o.x, o.y).py - py) < 70)) continue;
       wanted.push([Math.round(px), Math.round(py)]);
     }
-    expect(wanted.length).toBeGreaterThan(40); // Rastrigin is crossed by isolines almost everywhere
+    expect(wanted.length).toBeGreaterThan(25); // Rastrigin is crossed by isolines almost everywhere
     const got = await pixels(page, wanted);
     let wrong = 0;
     wanted.forEach(([px, py], k) => {

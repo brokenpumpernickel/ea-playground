@@ -13,6 +13,7 @@ import type { Preset } from './presets';
 import { configOf, type RunConfig } from './run-config';
 import { plotModel, type PlotModel } from './plot-models';
 import { atCycleEnd, populationTable, type PopulationTable } from './population';
+import { marksModel, type MarksModel } from './landscape-marks';
 
 export type GaRun = Run<GaSetup, GaParams, RunState, GaEvent>;
 
@@ -83,6 +84,8 @@ export function createSession(options: SessionOptions) {
   let presetName = $state<string | undefined>(undefined);
   /** Bumped whenever the setup, seed or parameters are replaced wholesale, so the drawer rereads them. */
   let epoch = $state(0);
+  /** The individual highlighted in the table and on the landscape views, by id; a view setting that starts over with the run. */
+  let selectedId = $state<number | undefined>(undefined);
 
   let version = $state(0);
   const bump = () => {
@@ -225,6 +228,25 @@ export function createSession(options: SessionOptions) {
       const p = run.setup.problem as Partial<LandscapeProblem>;
       return p.pointOf && p.info && p.options ? landscapeInfoOf(run.setup.problem as LandscapeProblem) : undefined;
     },
+    /** The individual highlighted in the table and on the landscape views. */
+    get selectedId(): number | undefined {
+      return selectedId;
+    },
+    /** Highlights an individual (or, with the same one again or none, clears the highlight). */
+    selectIndividual(id: number | undefined) {
+      selectedId = id === selectedId ? undefined : id;
+      bump();
+    },
+    /** What the landscape views draw of the population at the cursor, with this many earlier generations as trails; absent for the other problems. */
+    landscapeMarks(trail: 0 | 1 | 3 | 5): MarksModel | undefined {
+      void version;
+      const p = run.setup.problem as Partial<LandscapeProblem>;
+      if (!(p.pointOf && p.info && p.options)) return undefined;
+      const view = currentView();
+      const table = populationTable(view, isEnd(), displayOf(run.setup.problem));
+      const generation = view.position.cycle === 0 || isEnd() ? view.position.cycle : view.position.cycle - 1;
+      return marksModel({ view, info: landscapeInfoOf(run.setup.problem as LandscapeProblem), rows: table.rows, generation, populationAt: (g) => run.snapshot(g).state.population, selectedId, trail });
+    },
     /** For every recorded generation, how many individuals are instances of a schema and the mean fitnesses (the schema tracker). It only reads the run. */
     schemaHistory(symbols: readonly SchemaSymbol[]): SchemaPoint[] {
       void version;
@@ -349,6 +371,7 @@ export function createSession(options: SessionOptions) {
         change = undefined;
         run.reset({ setup, params, seed });
         playback.forgetReports();
+        selectedId = undefined;
         epoch++;
       });
     },
@@ -386,6 +409,7 @@ export function createSession(options: SessionOptions) {
         change = undefined;
         run.reset();
         playback.forgetReports();
+        selectedId = undefined;
         epoch++;
       }),
     /** Starts again with a fresh seed. */
@@ -394,6 +418,7 @@ export function createSession(options: SessionOptions) {
         change = undefined;
         run.reset({ seed: drawSeed() });
         playback.forgetReports();
+        selectedId = undefined;
         epoch++;
       }),
   };

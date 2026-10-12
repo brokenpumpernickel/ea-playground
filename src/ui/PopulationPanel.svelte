@@ -58,8 +58,8 @@
       </thead>
       <tbody>
         {#each table.rows as row (row.id)}
-          <tr>
-            <td data-col="id"><span class="sym" title={row.elite ? 'Elite: carried over unchanged' : undefined}>{row.elite ? '★' : ''}</span>{row.id}{#if compact && row.parentCount}<span class="parentmark" title="selected as a parent {row.parentCount} {row.parentCount === 1 ? 'time' : 'times'}" data-col="parent"><span class="sym" aria-hidden="true">◆</span>×{row.parentCount}</span>{/if}</td>
+          <tr class:sel={landscape !== undefined && row.id === session.selectedId} data-id={row.id}>
+            <td data-col="id"><span class="sym" title={row.elite ? 'Elite: carried over unchanged' : undefined}>{row.elite ? '★' : ''}</span>{#if landscape}<button class="idbtn" type="button" aria-pressed={row.id === session.selectedId} aria-label={`Select individual ${row.id}`} data-testid="select-{row.id}" onclick={() => session.selectIndividual(row.id)}>{row.id}</button>{:else}{row.id}{/if}{#if compact && row.parentCount}<span class="parentmark" title="selected as a parent {row.parentCount} {row.parentCount === 1 ? 'time' : 'times'}" data-col="parent"><span class="sym" aria-hidden="true">◆</span>×{row.parentCount}</span>{/if}</td>
             <td><Bits chromosome={row.chromosome} small blockNotes={blocks ? blockNotes(blocks, row.chromosome) : []} /></td>
             {#each columns as { column, c } (column.header)}
               <td class="num" class:meter={row.meters?.[c]} data-col={column.header.toLowerCase()}>{#if row.meters?.[c]}<CapacityBar value={row.meters[c]!.value} limit={row.meters[c]!.limit} /> {/if}{row.cells[c]}</td>

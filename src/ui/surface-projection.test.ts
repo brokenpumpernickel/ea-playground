@@ -1,12 +1,13 @@
 import { describe, expect, test } from 'vitest';
 import { landscapeProblem, type LandscapeFunction } from '../engine';
+import { canvasSize } from './landscape-canvas';
 import { landscapeInfoOf } from './landscape-context';
 import { rampLuminance } from './landscape-grid';
 import { defaultView, dragBy, isHidden, middleOffset, rasterise, rotate, surfaceMesh, viewLimits, type SurfaceView } from './surface-projection';
 
 const infoOf = (fn: LandscapeFunction) => landscapeInfoOf(landscapeProblem({ function: fn, representation: 'real', bitsPerVariable: 10 }));
-const W = 520;
-const H = 300;
+const W = canvasSize.width;
+const H = canvasSize.height;
 
 describe('the camera', () => {
   test('starts where the mock put it and rotates by fixed steps: left and right turn the azimuth, up and down tilt, reset returns', () => {

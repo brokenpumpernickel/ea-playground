@@ -813,7 +813,7 @@ table:has(.itemhdr) thead th:first-child { vertical-align:top; }
 /* numeric columns keep their width, whatever the numbers: each has its own, wider than any number it can hold */
 .tablewrap:has(.bits.pair) td.num, .tablewrap:has(.bits.vars) td.num { font-variant-numeric:tabular-nums; }
 .tablewrap:has(.bits.pair) th, .tablewrap:has(.bits.pair) td, .tablewrap:has(.bits.vars) th, .tablewrap:has(.bits.vars) td { padding-left:6px; padding-right:6px; }
-.tablewrap:has(.bits.pair) th:first-child, .tablewrap:has(.bits.vars) th:first-child, .tablewrap:has(.bits.pair) td[data-col="id"], .tablewrap:has(.bits.vars) td[data-col="id"] { width:100px; }
+.tablewrap:has(.bits.pair) th:first-child, .tablewrap:has(.bits.vars) th:first-child, .tablewrap:has(.bits.pair) td[data-col="id"], .tablewrap:has(.bits.vars) td[data-col="id"] { width:112px; }
 .tablewrap:has(.bits.pair) th, .tablewrap:has(.bits.vars) th { font-size:15px; letter-spacing:.02em; }
 .tablewrap:has(.bits.pair) th .colnote, .tablewrap:has(.bits.vars) th .colnote { font-size:12px; }
 .tablewrap:has(.bits.pair) td, .tablewrap:has(.bits.vars) td { font-size:20px; }
@@ -884,3 +884,28 @@ canvas.heat { border:2px solid var(--line, var(--ink2)); border-radius:8px; disp
 .surfpick { display:block; border-radius:8px; }
 .surfpick:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
 canvas.surf { cursor:grab; touch-action:none; }
+
+/* ---------- the population on the landscape views ---------- */
+.heatwrap { position:relative; display:inline-block; }
+.heatwrap svg.marks, .surfpick svg.marks { position:absolute; left:2px; top:2px; pointer-events:none; overflow:hidden; }
+.surfpick { position:relative; }
+svg.marks:focus-visible { outline:3px solid var(--acc); outline-offset:2px; border-radius:6px; }
+svg.marks .mk { pointer-events:all; cursor:pointer; }
+svg.marks .body { fill:#fff; stroke:#111; stroke-width:2.2; }
+svg.marks .triangle .body { fill:#c8f0d4; }
+svg.marks .square .body { fill:#ffe9a8; }
+svg.marks .ghost { fill:none; stroke:#111; stroke-width:1.6; stroke-dasharray:3 3; }
+svg.marks .ring { fill:none; stroke:#d6470e; stroke-width:3.2; }
+svg.marks .cross { fill:none; stroke:#d6470e; stroke-width:1.6; }
+svg.marks .lab { font-size:12px; font-weight:700; fill:#fff; stroke:rgba(0,0,0,.75); stroke-width:3; paint-order:stroke; }
+svg.marks .arrowline { stroke:#ff9d5c; stroke-width:2.4; }
+svg.marks .arrowhead { fill:#ff9d5c; stroke:#111; stroke-width:1; }
+svg.marks .dot { fill:rgba(255,255,255,.7); stroke:rgba(0,0,0,.7); stroke-width:1.2; }
+.lkey { margin:0; font-size:13px; color:var(--ink2); }
+.idbtn { font:inherit; color:inherit; background:none; border:none; padding:0; cursor:pointer; border-radius:4px; }
+.idbtn[aria-pressed="true"] { background:var(--acc-tint); font-weight:800; text-decoration:underline; }
+.idbtn:focus-visible { outline:3px solid var(--acc); }
+tr.sel td { background:var(--acc-tint); }
+.lview { gap:4px; }
+.lview .lsent, .lview .lkey { font-size:13px; line-height:1.2; }
+.lplots figcaption { margin-bottom:0; }

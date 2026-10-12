@@ -1,12 +1,12 @@
 import type { LandscapeInfo } from './landscape-context';
-import { surfaceMesh, type SurfaceMesh, type SurfaceView } from './surface-projection';
+import type { SurfaceMesh } from './surface-projection';
 
 /**
  * Draws the surface of the landscape on a canvas: every cell of the mesh from the farthest to the nearest, filled with the
  * colour of its fitness lit from one side and edged with a faint line, the floor's frame with its axes named, and the optimum
- * marked ✕. Returns the mesh, so a layer drawn over the picture can use the same projection.
+ * marked ✕. The mesh is built by the caller, so the markers drawn over the picture use the same projection.
  */
-export function drawSurface(canvas: HTMLCanvasElement, info: LandscapeInfo, view: SurfaceView): SurfaceMesh {
+export function drawSurface(canvas: HTMLCanvasElement, info: LandscapeInfo, mesh: SurfaceMesh): void {
   const W = canvas.width;
   const H = canvas.height;
   const ctx = canvas.getContext('2d')!;
@@ -14,7 +14,6 @@ export function drawSurface(canvas: HTMLCanvasElement, info: LandscapeInfo, view
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, W, H);
-  const mesh = surfaceMesh(info, view, W, H);
 
   for (const q of mesh.quads) {
     const [a, b, c, d] = q.pts;
@@ -66,5 +65,4 @@ export function drawSurface(canvas: HTMLCanvasElement, info: LandscapeInfo, view
     ctx.strokeStyle = '#fff';
     ctx.stroke();
   }
-  return mesh;
 }

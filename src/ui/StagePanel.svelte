@@ -46,6 +46,7 @@
   let showLandscape = $state(false);
   let zoomToPopulation = $state(false);
   let surfaceView = $state<SurfaceView>({ ...defaultView });
+  let trail = $state<0 | 1 | 3 | 5>(0);
   let seenLandscapeEpoch: number | undefined;
   $effect(() => {
     if (seenLandscapeEpoch === undefined) seenLandscapeEpoch = session.epoch;
@@ -54,6 +55,7 @@
       showLandscape = false;
       zoomToPopulation = false;
       surfaceView = { ...defaultView };
+      trail = 0;
     }
   });
   const landscapeOpen = $derived(land !== undefined && showLandscape);
@@ -100,7 +102,7 @@
   {/if}
   <div id="stagebody" style={blocks || land ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
     {#if landscapeOpen}
-      <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} />
+      <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} bind:trail />
     {:else if schemaOpen && blocks}
       <SchemaTracker info={blocks} text={schemaText} oninput={(t) => (typedSchema = t)} history={schemaPoints} now={view.position.cycle} />
     {:else if stage === 'selection' && tournament}
