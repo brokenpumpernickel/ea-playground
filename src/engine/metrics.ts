@@ -1,4 +1,5 @@
 import type { RunState } from './generation';
+import type { Bounds, Problem } from './problem';
 
 /** What the plots show for one generation. Derived from the run state, so it can always be recomputed from a snapshot. */
 export interface GenerationMetrics {
@@ -34,21 +35,58 @@ function feasibleMetrics(state: RunState): NonNullable<GenerationMetrics['feasib
   return { count: feasible.length, best: feasible.length === 0 ? null : Math.max(...feasible.map((i) => i.fitness)), bestSoFar: state.feasibility!.bestSoFar };
 }
 
-const cache = new WeakMap<RunState, { readonly alphabetSize: number; readonly metrics: GenerationMetrics }>();
+const cache = new WeakMap<RunState, { readonly alphabetSize: number; readonly bounds: readonly Bounds[] | undefined; readonly metrics: GenerationMetrics }>();
+
+/** The metrics of a state for the problem it belongs to: symbol counts for an alphabet, distances inside the bounds for a real problem. */
+export function metricsOfProblem(state: RunState, problem: Pick<Problem, 'alphabet' | 'bounds'>): GenerationMetrics {
+  return metricsOf(state, problem.alphabet.length, problem.bounds);
+}
+
+/**
+ * Mean Euclidean distance over all pairs of points with each gene scaled to its bounds (so every gene spans 0 to 1),
+ * divided by the diagonal of that unit box: 0 when all points coincide, 1 for opposite corners.
+ */
+function realDiversity(state: RunState, bounds: readonly Bounds[]): number {
+  const unit = state.population.map((i) => i.chromosome.map((x, k) => (x - bounds[k]!.lo) / (bounds[k]!.hi - bounds[k]!.lo)));
+  let total = 0;
+  for (let a = 0; a < unit.length; a++) {
+    for (let b = a + 1; b < unit.length; b++) total += Math.hypot(...unit[a]!.map((x, k) => x - unit[b]![k]!));
+  }
+  const pairs = (unit.length * (unit.length - 1)) / 2;
+  return pairs === 0 ? 0 : total / pairs / Math.sqrt(bounds.length);
+}
 
 /**
  * States are never modified, so the result for a state never changes; asking again returns the same object.
- * `alphabetSize` is how many symbols a gene can take (2 for the binary problems).
+ * `alphabetSize` is how many symbols a gene can take (2 for the binary problems). With `bounds` the genes are real
+ * numbers: there are no symbols to count, so `symbolCounts` and `alleleFrequencies` are empty, and diversity is a distance.
  */
-export function metricsOf(state: RunState, alphabetSize = 2): GenerationMetrics {
+export function metricsOf(state: RunState, alphabetSize = 2, bounds?: readonly Bounds[]): GenerationMetrics {
   const known = cache.get(state);
-  if (known && known.alphabetSize === alphabetSize) return known.metrics;
+  if (known && known.alphabetSize === alphabetSize && known.bounds === bounds) return known.metrics;
 
   const population = state.population;
   const size = population.length;
   if (size === 0) throw new Error('Cannot compute metrics for an empty population');
 
   const fitness = population.map((i) => i.fitness);
+  if (bounds) {
+    const metrics: GenerationMetrics = {
+      generation: state.generation,
+      best: Math.max(...fitness),
+      worst: Math.min(...fitness),
+      average: fitness.reduce((sum, f) => sum + f, 0) / size,
+      bestSoFar: state.bestFitnessSoFar,
+      evaluations: state.evaluations,
+      diversity: realDiversity(state, bounds),
+      distinct: new Set(population.map((i) => i.chromosome.join(','))).size,
+      alleleFrequencies: [],
+      symbolCounts: [],
+      ...(state.feasibility ? { feasible: feasibleMetrics(state) } : {}),
+    };
+    cache.set(state, { alphabetSize, bounds, metrics });
+    return metrics;
+  }
   const length = population[0]!.chromosome.length;
   const symbolCounts = Array.from({ length }, (_, gene) => {
     const counts = new Array<number>(alphabetSize).fill(0);
@@ -60,10 +98,10 @@ export function metricsOf(state: RunState, alphabetSize = 2): GenerationMetrics 
     return counts;
   });
 
-  // At each gene the pairs that differ are all pairs minus the pairs with the same symbol: (N² − Σ c²) / 2, where c is
+  // At each gene the pairs that differ are all pairs minus the pairs with the same symbol: (NÂ² âˆ’ Î£ cÂ²) / 2, where c is
   // how many individuals have each symbol there. Summing over genes and dividing by the number of pairs and by the
   // length is the same number as comparing every pair directly (the tests check this), in time proportional to
-  // size × length instead of size² × length. For two symbols it equals the original k·(N − k) formula exactly.
+  // size Ã— length instead of sizeÂ² Ã— length. For two symbols it equals the original kÂ·(N âˆ’ k) formula exactly.
   const differingGenes = symbolCounts.reduce((sum, counts) => sum + (size * size - counts.reduce((squares, c) => squares + c * c, 0)) / 2, 0);
   const pairs = (size * (size - 1)) / 2;
 
@@ -80,6 +118,6 @@ export function metricsOf(state: RunState, alphabetSize = 2): GenerationMetrics 
     symbolCounts,
     ...(state.feasibility ? { feasible: feasibleMetrics(state) } : {}),
   };
-  cache.set(state, { alphabetSize, metrics });
+  cache.set(state, { alphabetSize, bounds, metrics });
   return metrics;
 }

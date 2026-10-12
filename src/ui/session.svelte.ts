@@ -1,4 +1,4 @@
-import { gaAlgorithm, metricsOf, type KnapsackProblem, type TrapProblem, type Problem, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
+import { gaAlgorithm, metricsOfProblem, type KnapsackProblem, type TrapProblem, type Problem, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
 import { createPlayback, createRun, type AnimationFlags, type Playback, type PlaybackStatus, type Position, type Run, type Scheduler, type Tier, type View } from '../run';
 import { defaultParams, defaultSeed, defaultSetup } from './config';
 import type { BagInfo } from './bag-context';
@@ -107,7 +107,7 @@ export function createSession(options: SessionOptions) {
   const isEnd = () => atCycleEnd(run.layout(run.cursor.cycle), run.cursor);
   const shownMetrics = () => {
     const view = currentView();
-    return metricsOf(view.position.cycle === 0 || isEnd() ? view.after : view.before!, run.setup.problem.alphabet.length);
+    return metricsOfProblem(view.position.cycle === 0 || isEnd() ? view.after : view.before!, run.setup.problem);
   };
 
   return {

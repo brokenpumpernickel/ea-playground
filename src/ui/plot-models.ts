@@ -1,4 +1,4 @@
-import { metricsOf, type GaEvent, type GaParams, type GaSetup, type RunState } from '../engine';
+import { metricsOfProblem, type GaEvent, type GaParams, type GaSetup, type RunState } from '../engine';
 import type { Run } from '../run';
 
 /**
@@ -56,7 +56,7 @@ const generationAxes = [15, 30, 50, 100, 200, 500, 1000, 2000];
 
 export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: number, optimum: number | undefined, feasibleLine = false, attractor?: number): PlotModel {
   const points = Array.from({ length: run.lastCycle + 1 }, (_, g): PlotPoint => {
-    const m = metricsOf(run.snapshot(g).state, run.setup.problem.alphabet.length);
+    const m = metricsOfProblem(run.snapshot(g).state, run.setup.problem);
     return {
       generation: g,
       average: m.average,

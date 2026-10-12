@@ -23,6 +23,46 @@ export function parseGenes(text: string, alphabet: readonly string[]): Chromosom
   return genes.includes(-1) ? undefined : genes;
 }
 
+const minus = (text: string): string => text.replace(/-/g, '−');
+
+const numberToken = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
+
+/**
+ * '1.5, −2.25' → [1.5, -2.25]. Numbers separated by spaces or commas, with `-` or `−` as the minus sign; anything else
+ * (no numbers, a word, Infinity, NaN) gives undefined so the caller can say what was wrong.
+ */
+export function parseReal(text: string): Chromosome | undefined {
+  const trimmed = text.trim();
+  if (trimmed === '') return undefined;
+  const tokens = trimmed.split(/[\s,]+/).map((token) => token.replace(/−/g, '-'));
+  if (!tokens.every((token) => numberToken.test(token))) return undefined;
+  return tokens.map(Number);
+}
+
+/**
+ * [-2.5054, 1.2] → '−2.505 1.200' with `decimals` (a real minus sign, for display); without it the exact numbers with `-`,
+ * which `parseReal` reads back unchanged (for data and share links).
+ */
+export function formatReal(chromosome: Chromosome, decimals?: number): string {
+  if (decimals === undefined) return chromosome.join(' ');
+  return chromosome
+    .map((gene) => {
+      const shown = gene.toFixed(decimals);
+      return Number(shown) === 0 ? shown.replace('-', '') : minus(shown); // no "−0.000"
+    })
+    .join(' ');
+}
+
+/** The genes that lie outside their bounds, each named in words: 'gene 1 (5.001) is outside its bounds from −5 to 5'. */
+export function checkReal(chromosome: Chromosome, bounds: readonly { readonly lo: number; readonly hi: number }[]): string[] {
+  const problems: string[] = [];
+  chromosome.forEach((gene, k) => {
+    const { lo, hi } = bounds[k]!;
+    if (!(gene >= lo && gene <= hi)) problems.push(`gene ${k + 1} (${minus(String(gene))}) is outside its bounds from ${minus(String(lo))} to ${minus(String(hi))}`);
+  });
+  return problems;
+}
+
 /** '01101' → [0, 1, 1, 0, 1] */
 export function parseBits(text: string): Chromosome {
   return [...text].map((char) => (char === '1' ? 1 : 0));

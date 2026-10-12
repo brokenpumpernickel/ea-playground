@@ -1,7 +1,7 @@
-export { binaryAlphabet, formatBits, formatGenes, parseBits, parseGenes, type Bit, type Chromosome, type Gene } from './chromosome';
+export { binaryAlphabet, formatBits, formatGenes, parseBits, parseGenes, checkReal, formatReal, parseReal, type Bit, type Chromosome, type Gene } from './chromosome';
 export { goldberg } from './goldberg';
 export { describeAlphabet, initialize, type Individual, type Initialization, type Origin, type SetupEvent } from './initialize';
-export { fitnessColumn, type Landscape, type Problem, type ProblemColumn, type Scores } from './problem';
+export { fitnessColumn, isRealProblem, type Bounds, type Landscape, type Problem, type ProblemColumn, type Scores } from './problem';
 export { createRng, type Rng, type SeededRng } from '../run/rng';
 export { matingPoolSize, pair, type Pair, type PairingEvent } from './pairing';
 export { rouletteSelect, type SelectionEntry, type SelectionEvent, type SelectionResult } from './selection';
@@ -51,7 +51,7 @@ export {
   type StopReason,
 } from './generation';
 export { gaAlgorithm, populationFromEvents, supportedLimits, type GaEvent, type GaParams, type GaSetup } from './algorithm';
-export { metricsOf, type GenerationMetrics } from './metrics';
+export { metricsOf, metricsOfProblem, type GenerationMetrics } from './metrics';
 export { tournamentSelect, type TournamentContestant, type TournamentEvent, type TournamentSetupEvent } from './tournament';
 export {
   knapsackDefaults,

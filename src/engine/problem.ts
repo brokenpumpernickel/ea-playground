@@ -48,10 +48,24 @@ export interface ProblemColumn {
 /** The one column every problem can offer: its fitness. */
 export const fitnessColumn: ProblemColumn = { header: 'Fitness', show: (scores) => String(scores.fitness) };
 
+/** The closed interval a real-valued gene lives in. */
+export interface Bounds {
+  readonly lo: number;
+  readonly hi: number;
+}
+
+/** True when the problem's genes are numbers inside bounds (ADR 0006) rather than symbols of an alphabet. */
+export const isRealProblem = (problem: Pick<Problem, 'bounds'>): boolean => problem.bounds !== undefined;
+
 export interface Problem {
   readonly chromosomeLength: number;
-  /** The symbols a gene can take, in order; a gene is stored as its position here (see ADR 0004). Binary is `0`, `1`. */
+  /**
+   * The symbols a gene can take, in order; a gene is stored as its position here (see ADR 0004). Binary is `0`, `1`.
+   * A real-valued problem (one with `bounds`) has no alphabet: this is empty and its genes are the numbers themselves.
+   */
   readonly alphabet: readonly string[];
+  /** Present for a real-valued problem: the bounds of each gene, in gene order (ADR 0006); absent for the symbol problems. */
+  readonly bounds?: readonly Bounds[];
   /** The columns the population table and the evaluation view show for this problem, besides the chromosome. */
   readonly columns: readonly ProblemColumn[];
   /** How a score reads in a sentence, such as "4 of 5 positions match"; without it sentences use the decoded value (x = 13). */

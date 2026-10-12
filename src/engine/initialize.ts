@@ -1,5 +1,5 @@
-import { parseGenes, type Chromosome } from './chromosome';
-import type { Problem, Scores } from './problem';
+import { checkReal, parseGenes, parseReal, type Chromosome } from './chromosome';
+import type { Bounds, Problem, Scores } from './problem';
 import type { Rng } from '../run/rng';
 
 /** Where an individual came from, so lineage can be shown without re-deriving it from events. */
@@ -9,7 +9,7 @@ export type Origin =
       readonly kind: 'offspring';
       /** The generation this offspring was born into (1 for the first generation made from the initial population). */
       readonly generation: number;
-      /** Its number within that generation: O1, O2, … */
+      /** Its number within that generation: O1, O2, â€¦ */
       readonly offspring: number;
       readonly parentAId: number;
       readonly parentBId: number;
@@ -73,13 +73,19 @@ export function initialize(
 
 function randomChromosomes(problem: Problem, size: number, rng: Rng): Chromosome[] {
   if (!Number.isInteger(size) || size < 1) throw new Error('Population size must be a whole number of at least 1');
+  if (problem.bounds) {
+    // a real gene is lo + uÂ·(hi âˆ’ lo), one draw per gene, genes in order, individuals in order
+    const bounds = problem.bounds;
+    return Array.from({ length: size }, () => bounds.map(({ lo, hi }) => lo + rng.next() * (hi - lo)));
+  }
   const k = problem.alphabet.length;
-  // the symbol index is k − 1 − ⌊u·k⌋, which for the binary alphabet is the original rule: a gene is 1 when its draw is below 0.5
+  // the symbol index is k âˆ’ 1 âˆ’ âŒŠuÂ·kâŒ‹, which for the binary alphabet is the original rule: a gene is 1 when its draw is below 0.5
   return Array.from({ length: size }, () => Array.from({ length: problem.chromosomeLength }, () => k - 1 - Math.floor(rng.next() * k)));
 }
 
 function explicitChromosomes(problem: Problem, texts: readonly string[]): Chromosome[] {
   if (texts.length === 0) throw new Error('The initial population needs at least one chromosome');
+  if (problem.bounds) return texts.map((text, k) => explicitReal(problem.bounds!, text, `Chromosome ${k + 1}`));
   return texts.map((text, k) => {
     const label = `Chromosome ${k + 1}`;
     const genes = parseGenes(text, problem.alphabet);
@@ -89,6 +95,17 @@ function explicitChromosomes(problem: Problem, texts: readonly string[]): Chromo
     }
     return genes;
   });
+}
+
+function explicitReal(bounds: readonly Bounds[], text: string, label: string): Chromosome {
+  const genes = parseReal(text);
+  if (!genes) throw new Error(`${label} ("${text}") may only contain numbers separated by spaces`);
+  if (genes.length !== bounds.length) {
+    throw new Error(`${label} has ${genes.length} ${genes.length === 1 ? 'number' : 'numbers'}, but this problem needs ${bounds.length}`);
+  }
+  const outside = checkReal(genes, bounds);
+  if (outside.length > 0) throw new Error(`${label}: ${outside.join('; ')}`);
+  return genes;
 }
 
 /** "0 and 1", "a, b and c", or for a long alphabet just how many symbols it has. */
