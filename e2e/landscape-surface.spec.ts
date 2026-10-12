@@ -162,7 +162,7 @@ test('the surface keeps its size from generation to generation and when it is tu
   expect(await size()).toEqual(first);
 });
 
-test('a restart returns the surface to the starting camera; switching tabs and back keeps what was turned', async ({ page }) => {
+test('switching tabs and a restart keep what was turned', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await open(page);
   await page.getByRole('button', { name: 'Rotate the surface right' }).click();
@@ -171,8 +171,8 @@ test('a restart returns the surface to the starting camera; switching tabs and b
   await page.getByTestId('show-landscape').click();
   expect(await camera(page)).toEqual(turned);
   await page.getByRole('button', { name: /New/ }).click();
-  await page.getByTestId('show-landscape').click();
-  expect(await camera(page)).toEqual(defaultView);
+  await expect(page.getByTestId('surface')).toBeVisible();
+  expect(await camera(page)).toEqual(turned);
 });
 
 for (const [width, height] of [

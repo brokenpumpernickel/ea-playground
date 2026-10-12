@@ -217,7 +217,7 @@ for (const [width, height] of [
   }
 }
 
-test('stepping keeps the view and its zoom; a restart returns to the stage view with the zoom off', async ({ page }) => {
+test('stepping and a restart keep the view and its zoom', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await open(page, options('two-peaks'));
   await showLandscape(page);
@@ -226,7 +226,6 @@ test('stepping keeps the view and its zoom; a restart returns to the stage view 
   await expect(page.getByTestId('heatmap')).toBeVisible();
   await expect(page.getByTestId('zoom-toggle')).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: /New/ }).click();
-  await expect(page.getByTestId('heatmap')).toHaveCount(0);
-  await showLandscape(page);
-  await expect(page.getByTestId('zoom-toggle')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByTestId('heatmap')).toBeVisible();
+  await expect(page.getByTestId('zoom-toggle')).toHaveAttribute('aria-pressed', 'true');
 });

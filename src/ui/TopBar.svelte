@@ -34,14 +34,16 @@
           ? 'being made · stage entered'
           : `being made · micro-step ${view.position.micro} of ${view.micros}`,
   );
+  /** The line under the title; one that is long wraps to two smaller lines inside the brand box. */
+  const subtitle = $derived(session.problemEntry.subtitle(session.problemOptions));
 </script>
 
 <div id="top">
   <div id="brand">
     <span class="logo" aria-hidden="true">{session.problemEntry.logo}</span>
     <div>
-      <div class="trow"><ProblemMenu {session} />{#if session.problemEntry.chip?.(session.problemOptions)}<span class="presetchip" data-testid="problem-chip">{session.problemEntry.chip(session.problemOptions)}</span>{/if}{#if session.presetName}<span class="presetchip" title="The run was started from this preset">preset: {session.presetName}</span>{/if}</div>
-      <div class="s">{session.problemEntry.subtitle(session.problemOptions)}</div>
+      <div class="trow"><ProblemMenu {session} />{#if session.problemEntry.chip?.(session.problemOptions)}<span class="presetchip" data-testid="problem-chip">{session.problemEntry.chip(session.problemOptions)}</span>{/if}{#if session.presetName}<span class="presetchip" title="The run was started from this preset: {session.presetName}">preset: {session.presetName}</span>{/if}</div>
+      <div class="s" class:long={subtitle.length > 34}>{subtitle}</div>
     </div>
   </div>
 

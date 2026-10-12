@@ -375,3 +375,40 @@ test('the other problems have no marks, no trails and no selection buttons', asy
   await expect(page.getByTestId('heat-marks')).toHaveCount(0);
   await expect(page.locator('.idbtn')).toHaveCount(0);
 });
+
+test('a restart keeps the landscape view, with its trails, zoom and rotated surface; the selection starts over; another problem without a landscape starts the views over', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await open(page);
+  await showLandscape(page);
+  await page.getByTestId('trail-3').click();
+  await page.getByTestId('zoom-toggle').click();
+  await page.getByTestId('rotate-left').click();
+  const surface = await page.getByTestId('surface').evaluate((c) => (c as HTMLCanvasElement).toDataURL());
+  await page.getByTestId(`select-${(await markers(page, 'heat-marks'))[1]!.id}`).click();
+  // a new seed restarts the run
+  await page.getByRole('button', { name: /New/ }).click();
+  await expect(page.getByTestId('heat-marks')).toBeVisible();
+  await expect(page.getByTestId('show-landscape')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('trail-3')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('zoom-toggle')).toHaveAttribute('aria-pressed', 'true');
+  expect((await markers(page, 'heat-marks')).filter((m) => m.selected)).toEqual([]);
+  // a restart through the drawer (another function) keeps it too, and the surface keeps its turn
+  await page.getByRole('button', { name: /Parameters/ }).click();
+  await page.locator('#function').selectOption('rastrigin');
+  await page.getByTestId('apply-reset').click();
+  await page.getByRole('button', { name: 'Restart and apply' }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('heat-marks')).toBeVisible();
+  await expect(page.getByTestId('trail-3')).toHaveAttribute('aria-pressed', 'true');
+  // a problem without a landscape: its views are gone, and a landscape started again opens on the stage view
+  await page.getByTestId('problem-button').click();
+  await page.getByRole('menuitemradio', { name: /Goldberg/ }).click();
+  await page.getByRole('button', { name: 'Restart and apply' }).click();
+  await expect(page.getByTestId('show-landscape')).toHaveCount(0);
+  await page.getByTestId('problem-button').click();
+  await page.getByRole('menuitemradio', { name: /Landscape/ }).click();
+  await page.getByRole('button', { name: 'Restart and apply' }).click();
+  await expect(page.getByTestId('show-stage')).toHaveAttribute('aria-pressed', 'true');
+  await page.getByTestId('show-landscape').click();
+  await expect(page.getByTestId('trail-0')).toHaveAttribute('aria-pressed', 'true');
+});

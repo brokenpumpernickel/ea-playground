@@ -37,7 +37,14 @@ Verify the spec's acceptance criteria in a real browser and get the instructor's
 ### Things the instructor may want to look at
 
 - At 1366×768 the whole screen is scaled to fit, so the small text under the two pictures (14 px in projector mode before scaling) is the least readable on a small projector; the picture sentence is also in the table and read aloud by a screen reader. It could be shortened or moved if it is too small.
-- The header subtitle of the Himmelblau and the two-peaks landscape wraps to two lines at both sizes.
+- The header subtitle of the Himmelblau and the two-peaks landscape wraps to two smaller lines (see round 1).
 - A trail dot shows its age only by its lightness (the toolbar says how many generations are shown).
 - The single peak reaches its optimum in every run, by design (approved in ticket 14).
 - The ticket 16 screenshots were taken before the last 1 px change of the text size under the pictures; the classroom screenshots are current.
+
+### Instructor review, round 1
+
+Two findings from the instructor's own run, both fixed with tests that would have caught them:
+
+1. **A restart dropped the Landscape view** (back to the stage view, trails and zoom off, camera reset). A restart of a landscape run (New seed, Restart and apply, a preset or another function) now keeps the view, its trails, zoom and camera; the selection still starts over with the run, and the views start over only when the problem has no landscape (`e2e/landscape-marks.spec.ts`; the two older tests that asserted the reset now assert the keeping).
+2. **The header overlapped the stage ribbon** when a preset was loaded: the title row and the long subtitle ("Himmelblau · minimise f · optimum f = 0 (4 places)") overflowed the 430 px brand box into the ribbon. The brand is now 520 px, its text box shrinks (the preset chip is cut with an ellipsis and carries the full name as its tooltip, the representation chip is never cut) and a subtitle longer than 34 characters wraps to two smaller lines. My earlier overlap checks only compared the panels, not the header; `landscape-a11y.spec.ts` now checks, at both sizes, in projector mode and not, for every function and with the longest preset name, that nothing in the brand leaves its box or the top bar, the brand does not reach the ribbon, the ribbon does not reach the generation counter and every stage's label fits its pill (it fails without the fix).

@@ -5,7 +5,7 @@ html, body { margin:0; height:100%; overflow:hidden; background:var(--page); fon
 /* ---------- top ribbon ---------- */
 #top { position:absolute; left:0; top:0; width:1920px; height:84px; display:flex; align-items:center; gap:24px; padding:0 24px;
   background:var(--surface); border-bottom:1px solid var(--hair); }
-#brand { width:430px; }
+#brand { width:520px; }
 #brand .t { font-size:26px; font-weight:700; }
 #brand .s { font-size:20px; color:var(--ink2); }
 #ribbon { display:flex; flex:1; gap:0; }
@@ -929,3 +929,9 @@ tr.sel td { background:var(--acc-tint); }
 .bits.vars.crowded .gcell .under { width:28px; font-size:12px; letter-spacing:-.3px; padding:0; }
 .projector .bits.vars.crowded .gcell .under { font-size:13px; }
 .projector .lview .lsent, .projector .lview .lkey { font-size:14px; }
+/* the brand never runs into the ribbon: the title row shrinks (the chips are cut with an ellipsis) and a long subtitle wraps inside its box */
+#brand > div:last-child { min-width:0; flex:1 1 0; }
+#brand .trow { min-width:0; }
+#brand .s { line-height:1.15; max-height:2.3em; overflow:hidden; overflow-wrap:anywhere; }
+#brand .s.long, .projector #brand .s.long { font-size:16px; line-height:1.1; }
+#brand .presetchip[data-testid="problem-chip"] { flex:none; }

@@ -52,10 +52,13 @@
     if (seenLandscapeEpoch === undefined) seenLandscapeEpoch = session.epoch;
     else if (session.epoch !== seenLandscapeEpoch) {
       seenLandscapeEpoch = session.epoch;
-      showLandscape = false;
-      zoomToPopulation = false;
-      surfaceView = { ...defaultView };
-      trail = 0;
+      // a restart of a landscape run keeps the view the class was looking at; the views start over only when the problem has no landscape
+      if (land === undefined) {
+        showLandscape = false;
+        zoomToPopulation = false;
+        surfaceView = { ...defaultView };
+        trail = 0;
+      }
     }
   });
   const landscapeOpen = $derived(land !== undefined && showLandscape);

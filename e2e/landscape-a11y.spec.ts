@@ -303,3 +303,43 @@ for (const [width, height] of [
     });
   }
 }
+
+for (const [width, height] of [
+  [1920, 1080],
+  [1366, 768],
+] as const) {
+  for (const projector of [true, false]) {
+    test(`at ${width}×${height}${projector ? ' in projector mode' : ''}, the title, the chips and the subtitle stay inside the brand box and never run into the stage ribbon, for every function and with the longest preset name`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      for (const fn of ['single-peak', 'two-peaks', 'rastrigin', 'himmelblau'] as const) {
+        await open(page, { ...base, function: fn, representation: fn === 'himmelblau' ? 'gray' : 'real' }, 12, projector);
+        for (const preset of [undefined, 'Himmelblau: four optima']) {
+          if (preset) {
+            await page.getByRole('button', { name: /Parameters/ }).click();
+            await page.locator('#preset').selectOption({ label: preset });
+            await page.getByTestId('load-preset').click();
+            await page.getByRole('button', { name: 'Restart and apply' }).click();
+            await page.keyboard.press('Escape');
+            await expect(page.locator('#brand')).toContainText(`preset: ${preset}`);
+          }
+          const problems = await page.evaluate(() => {
+            const out: string[] = [];
+            const brand = document.querySelector('#brand')!.getBoundingClientRect();
+            const ribbon = document.querySelector('#ribbon')!.getBoundingClientRect();
+            if (brand.right > ribbon.left + 1) out.push('the brand runs into the ribbon');
+            if (ribbon.right > document.querySelector('#gen')!.getBoundingClientRect().left + 1) out.push('the ribbon runs into the generation counter');
+            for (const li of document.querySelectorAll('#ribbon li')) if (li.scrollWidth > li.clientWidth + 1) out.push(`the stage "${li.textContent!.trim()}" does not fit its pill`);
+            for (const el of document.querySelectorAll('#brand *')) {
+              const r = el.getBoundingClientRect();
+              if (r.width === 0) continue;
+              if (r.right > brand.right + 1 || r.left < brand.left - 1) out.push(`${el.className || el.tagName} leaves the brand box (${Math.round(r.right)} > ${Math.round(brand.right)})`);
+              if (r.bottom > document.querySelector('#top')!.getBoundingClientRect().bottom + 1) out.push(`${el.className || el.tagName} leaves the top bar`);
+            }
+            return out;
+          });
+          expect(problems, `${fn} ${preset ?? ''}`).toEqual([]);
+        }
+      }
+    });
+  }
+}
