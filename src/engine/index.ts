@@ -94,3 +94,21 @@ export {
   type TrapOutcome,
   type TrapProblem,
 } from './trap';
+export {
+  decodeVariable,
+  integerOfBits,
+  landscapeDefaultOptions,
+  landscapeFunctionInfo,
+  landscapeFunctions,
+  landscapeLimits,
+  landscapeProblem,
+  landscapeRepresentations,
+  validateLandscape,
+  validateLandscapeFields,
+  type LandscapeFunction,
+  type LandscapeFunctionInfo,
+  type LandscapeOptions,
+  type LandscapeProblem,
+  type LandscapeRepresentation,
+  type Point,
+} from './landscape';

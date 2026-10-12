@@ -4,6 +4,11 @@ import type { Chromosome } from './chromosome';
 export interface Scores {
   /** The decoded solution shown to students (for Goldberg, the integer x; for a string problem, the string). */
   decoded: number | string;
+  /**
+   * When the decoded solution is several numbers (the landscape's x and y), those numbers, so views can place an
+   * individual without parsing `decoded`. Absent for problems whose solution is not numeric.
+   */
+  values?: readonly number[];
   /** The problem's native measure of the decoded solution. */
   objective: number;
   /** The maximised quantity derived from the objective by a visible rule. */
