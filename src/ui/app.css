@@ -879,3 +879,8 @@ table:has(.itemhdr) thead th:first-child { vertical-align:top; }
 .lplots figcaption i { font-weight:400; color:var(--ink2); }
 canvas.heat { border:2px solid var(--line, var(--ink2)); border-radius:8px; display:block; background:#fff; }
 .lsent { margin:2px 0 0; font-size:14px; color:var(--ink2); line-height:1.25; }
+.lbar .rl { font-size:14px; margin-right:2px; }
+.lbar .tog { min-width:30px; }
+.surfpick { display:block; border-radius:8px; }
+.surfpick:focus-visible { outline:3px solid var(--acc); outline-offset:2px; }
+canvas.surf { cursor:grab; touch-action:none; }

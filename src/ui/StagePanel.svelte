@@ -2,6 +2,7 @@
   import { describer, stageTitle } from './describe';
   import { parseSchema, schemaOfBlock } from './schema-model';
   import SchemaTracker from './SchemaTracker.svelte';
+  import { defaultView, type SurfaceView } from './surface-projection';
   import CrossoverView from './CrossoverView.svelte';
   import EvaluationView from './EvaluationView.svelte';
   import LandscapeView from './LandscapeView.svelte';
@@ -44,6 +45,7 @@
   const land = $derived(session.landscape);
   let showLandscape = $state(false);
   let zoomToPopulation = $state(false);
+  let surfaceView = $state<SurfaceView>({ ...defaultView });
   let seenLandscapeEpoch: number | undefined;
   $effect(() => {
     if (seenLandscapeEpoch === undefined) seenLandscapeEpoch = session.epoch;
@@ -51,6 +53,7 @@
       seenLandscapeEpoch = session.epoch;
       showLandscape = false;
       zoomToPopulation = false;
+      surfaceView = { ...defaultView };
     }
   });
   const landscapeOpen = $derived(land !== undefined && showLandscape);
@@ -97,7 +100,7 @@
   {/if}
   <div id="stagebody" style={blocks || land ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
     {#if landscapeOpen}
-      <LandscapeView {session} bind:zoom={zoomToPopulation} />
+      <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} />
     {:else if schemaOpen && blocks}
       <SchemaTracker info={blocks} text={schemaText} oninput={(t) => (typedSchema = t)} history={schemaPoints} now={view.position.cycle} />
     {:else if stage === 'selection' && tournament}

@@ -1,5 +1,5 @@
 import { formatReal } from '../engine';
-import { colourAt, fitnessGrid, isolineLevels, isolines, optimumMarks, ramp, type Region } from './landscape-grid';
+import { colourAt, fitnessGrid, isolineLevels, isolines, optimumMarks, placeLabels, ramp, type Region } from './landscape-grid';
 import type { LandscapeInfo } from './landscape-context';
 
 /** Where the plot sits inside the canvas, in canvas pixels: the plot's own rectangle, with room around it for the axes and the scale. */
@@ -91,17 +91,17 @@ export function drawHeatmap(canvas: HTMLCanvasElement, info: LandscapeInfo, regi
   ctx.font = 'bold 11px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  lines.forEach((segments, k) => {
-    // the label sits on the segment nearest the middle of the plot's top half that is clear of the edges
-    const inside = segments.filter(([x1, y1]) => X(x1) > L + 14 && X(x1) < R - 14 && Y(y1) > T + 12 && Y(y1) < B - 6);
-    const pick = inside.sort((a, b) => Math.hypot(X(a[0]) - (L + pw * 0.5), Y(a[1]) - (T + ph * 0.25)) - Math.hypot(X(b[0]) - (L + pw * 0.5), Y(b[1]) - (T + ph * 0.25)))[0];
-    if (!pick) return;
+  // each level's value on its own line, clear of the other labels and of the optimum marks
+  const inPixels = lines.map((segments) => segments.map(([x1, y1, x2, y2]) => [X(x1), Y(y1), X(x2), Y(y2)] as const));
+  const marks = optimumMarks(info, region).map((o) => ({ x: X(o.x), y: Y(o.y) }));
+  placeLabels(inPixels, { x: L + pw * 0.5, y: T + ph * 0.25 }, marks, layout).forEach((at, k) => {
+    if (!at) return;
     const text = level(levels[k]!);
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(0,0,0,.8)';
-    ctx.strokeText(text, X(pick[0]), Y(pick[1]) - 2);
+    ctx.strokeText(text, at.x, at.y - 2);
     ctx.fillStyle = '#fff';
-    ctx.fillText(text, X(pick[0]), Y(pick[1]) - 2);
+    ctx.fillText(text, at.x, at.y - 2);
   });
 
   // the frame and the axes with their ticks

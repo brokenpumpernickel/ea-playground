@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { landscapeFitnessRange, landscapeFunctionInfo, landscapeFunctions, landscapeProblem, type LandscapeFunction } from '../engine';
 import { landscapeInfoOf } from './landscape-context';
-import { colourAt, fitnessGrid, isolineLevels, isolines, landscapeSentence, optimumMarks, ramp, rampLuminance, zoomRegion } from './landscape-grid';
+import { colourAt, fitnessGrid, isolineLevels, isolines, landscapeSentence, optimumMarks, placeLabels, ramp, rampLuminance, zoomRegion } from './landscape-grid';
 
 const infoOf = (fn: LandscapeFunction) => landscapeInfoOf(landscapeProblem({ function: fn, representation: 'real', bitsPerVariable: 10 }));
 const whole = (fn: LandscapeFunction) => {
@@ -180,5 +180,39 @@ describe('the sentence that stands for the picture', () => {
     expect(landscapeSentence(infoOf('himmelblau'), whole('himmelblau'), false)).toContain('four optima');
     expect(landscapeSentence(infoOf('rastrigin'), whole('rastrigin'), false)).toContain('fitness = −f');
     expect(landscapeSentence(infoOf('single-peak'), { x0: 1, x1: 3, y0: -2, y1: 0 }, true)).toContain('Zoomed to the population: x from 1.0 to 3.0, y from −2.0 to 0.0');
+  });
+});
+
+describe('placing the isoline labels', () => {
+  const plot = { L: 48, T: 12, R: 442, B: 262 };
+  const line = (y: number, x0 = 100, x1 = 400): readonly [number, number, number, number][] => Array.from({ length: 30 }, (_, k) => [x0 + ((x1 - x0) * k) / 30, y, x0 + ((x1 - x0) * (k + 1)) / 30, y] as const);
+
+  test('a label goes on its line, nearest the anchor, inside the plot and clear of its edges', () => {
+    const [a] = placeLabels([line(120)], { x: 245, y: 60 }, [], plot);
+    expect(a).toBeDefined();
+    expect(a!.y).toBe(120);
+    expect(Math.abs(a!.x - 245)).toBeLessThan(15);
+    const [edge] = placeLabels([line(8)], { x: 245, y: 60 }, [], plot); // a line on the frame has no room for a label
+    expect(edge).toBeUndefined();
+  });
+
+  test('two labels never sit on top of each other: the second takes another place on its line, or none', () => {
+    const labels = placeLabels([line(120), line(126)], { x: 245, y: 60 }, [], plot);
+    expect(labels[0]).toBeDefined();
+    expect(labels[1]).toBeDefined();
+    const dx = Math.abs(labels[0]!.x - labels[1]!.x);
+    const dy = Math.abs(labels[0]!.y - labels[1]!.y);
+    expect(dx >= 40 || dy >= 14).toBe(true);
+    expect(placeLabels([line(120), line(126, 240, 250)], { x: 245, y: 60 }, [], plot)[1]).toBeUndefined(); // a line too short to hold a second label clear of the first
+  });
+
+  test('a label keeps away from the optimum marks', () => {
+    const [a] = placeLabels([line(120)], { x: 245, y: 60 }, [{ x: 245, y: 120 }], plot);
+    expect(Math.hypot(a!.x - 245, a!.y - 120)).toBeGreaterThanOrEqual(26);
+  });
+
+  test('is the same every time', () => {
+    const lines = [line(100), line(140), line(180)];
+    expect(placeLabels(lines, { x: 245, y: 60 }, [], plot)).toEqual(placeLabels(lines, { x: 245, y: 60 }, [], plot));
   });
 });

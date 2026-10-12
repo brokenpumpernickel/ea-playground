@@ -152,3 +152,35 @@ export function landscapeSentence(info: LandscapeInfo, region: Region, zoomed: b
   const shown = zoomed ? ` Zoomed to the population: x from ${f1(region.x0)} to ${f1(region.x1)}, y from ${f1(region.y0)} to ${f1(region.y1)}.` : '';
   return `${info.name}: fitness from ${f2(info.fitnessRange.min)} to ${f2(info.fitnessRange.max)} over x and y from ${trimmed(lo)} to ${trimmed(hi)}; ${optimum}.${rule}${shown}`;
 }
+
+/* ------------------------------------------------------------------ labels */
+
+export interface PlacedLabel {
+  /** Canvas position of the label's baseline centre. */
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * Where each isoline's value is printed: on a segment of its own line, as near the anchor as possible, inside the plot and clear
+ * of its edges, not on top of a label already placed (40 px sideways or 14 px up or down apart at least) and not on an optimum
+ * mark. `segments` are in canvas pixels. A line with no room has no label (`undefined`), because a missing label is better
+ * than two printed over each other; the line is still drawn and the levels are in the scale's neighbourhood and the sentence.
+ */
+export function placeLabels(
+  segments: readonly (readonly Segment[])[],
+  anchor: { x: number; y: number },
+  avoid: readonly { x: number; y: number }[],
+  plot: { L: number; T: number; R: number; B: number },
+): (PlacedLabel | undefined)[] {
+  const placed: PlacedLabel[] = [];
+  return segments.map((line) => {
+    const candidates = line
+      .map(([x, y]) => ({ x, y }))
+      .filter((p) => p.x > plot.L + 14 && p.x < plot.R - 14 && p.y > plot.T + 12 && p.y < plot.B - 6)
+      .sort((a, b) => Math.hypot(a.x - anchor.x, a.y - anchor.y) - Math.hypot(b.x - anchor.x, b.y - anchor.y));
+    const pick = candidates.find((p) => placed.every((q) => Math.abs(p.x - q.x) >= 40 || Math.abs(p.y - q.y) >= 14) && avoid.every((o) => Math.hypot(p.x - o.x, p.y - o.y) >= 26));
+    if (pick) placed.push(pick);
+    return pick;
+  });
+}
