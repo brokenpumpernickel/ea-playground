@@ -6,6 +6,7 @@
   import { blockMutation, describeCancel, describeChange } from './block-model';
   import { formatReal } from '../engine';
   import FlipTable from './FlipTable.svelte';
+  import { drawText } from './draw-text';
   import { geneList, num } from './format';
   import GaussianCard from './GaussianCard.svelte';
   import { landscapeContextKey, type LandscapeGetter } from './landscape-context';
@@ -26,15 +27,8 @@
   const genes = $derived(Array.from({ length: model.geneCount }, (_, k) => k + 1));
   const pm = $derived(num(model.threshold));
 
-  /**
-   * A draw under its gene. In a trap the columns are narrow, so the leading 0 goes (.281), and above 20 genes only the
-   * draws that flipped a gene are printed (the others were all at or above the threshold).
-   */
-  const drawText = (d: { u: number; flipped: boolean }) => {
-    if (!blocks) return num(d.u);
-    if (blocks.blockSize * blocks.blocks > 20) return d.flipped ? `.${String(Math.floor(d.u * 100)).padStart(2, '0')}` : '';
-    return num(d.u).replace(/^0\./, '.');
-  };
+  /** A draw under its gene: in full, or shortened where the columns are narrow or crowded (see `drawText`). */
+  const layout = $derived({ geneCount: model.geneCount, trapBlocks: blocks !== undefined, landscapeBits: land !== undefined && land.representation !== 'real' });
   const shown = (symbol: string) => (symbol === ' ' ? '␣' : symbol);
   /** With several symbols per gene each change says what the gene became and which draw r chose it. */
   const changed = (c: MutationRow['changes'][number]) => `gene ${c.gene}: ${shown(c.from)} → ${shown(c.to)}`;
@@ -93,7 +87,7 @@
         <section use:revealWhenCurrent={row.current} class="card mcard" class:current={row.current} class:pending={!row.revealed} aria-current={row.current ? 'true' : undefined} data-offspring={row.offspring} data-state={row.revealed ? 'revealed' : 'pending'} aria-label={`Offspring ${row.offspring}`}>
           <div class="crow">
             <span class="who">O{row.offspring}</span>
-            <Bits chromosome={row.before} small wideColumns flipped={row.flipped} unders={row.geneDraws?.map((d) => ({ text: drawText(d), flag: d.flipped, value: d.u }))} />
+            <Bits chromosome={row.before} small wideColumns flipped={row.flipped} unders={row.geneDraws?.map((d) => ({ text: drawText(d, layout), flag: d.flipped, value: d.u }))} />
             {#if !row.revealed}<span class="muted">not yet drawn</span>{/if}
             {#if row.individualDraw !== undefined}<span class="dec" data-testid="individual-draw">u = {num(row.individualDraw)} {row.chosenGene ? '<' : '≥'} pm {pm}{#if row.chosenGene} · gene {row.chosenGene.gene} chosen (r = {num(row.chosenGene.r)}){/if}</span>{/if}
           </div>

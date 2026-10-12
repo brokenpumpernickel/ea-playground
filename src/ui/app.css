@@ -924,3 +924,8 @@ tr.sel td { background:var(--acc-tint); }
 .projector .spread .shist { font-size:17px; }
 .plot .summary.landscape { font-size:16px; }
 .projector .plot .summary.landscape { font-size:18px; }
+/* a binary-coded landscape chromosome of more than 20 bits: the draws under it are printed only where they flipped a gene, so its columns are narrow */
+.bits.vars.crowded .gcell { width:28px; }
+.bits.vars.crowded .gcell .under { width:28px; font-size:12px; letter-spacing:-.3px; padding:0; }
+.projector .bits.vars.crowded .gcell .under { font-size:13px; }
+.projector .lview .lsent, .projector .lview .lkey { font-size:14px; }

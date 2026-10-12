@@ -5,6 +5,7 @@
   import { blockContextKey, type BlockGetter } from './block-context';
   import { blockGeometry, drawExtra } from './block-geometry';
   import { blockSentence, type BlockNote } from './block-model';
+  import { printAllDrawsUpTo } from './draw-text';
   import { geneList } from './format';
   import { bitsSentence, realPair, realSentence, variableGeometry } from './landscape-cells';
   import { landscapeContextKey, type LandscapeGetter } from './landscape-context';
@@ -133,6 +134,7 @@
 <span
   class="bits"
   class:withunders={unders}
+  class:crowded={varied && unders !== undefined && chromosome.length > printAllDrawsUpTo}
   class:blocked
   class:vars={varied}
   class:pair={pair !== undefined}
