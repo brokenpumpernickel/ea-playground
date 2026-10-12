@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "problem": "landscape",
+  "name": "BLX-α with α = 0.5",
+  "lesson": "With α = 0.5 the children of BLX-α may fall outside the box spanned by their parents, so the search can expand beyond it.",
+  "lookFor": "Mutation is off, the same seed and landscape as the preset with α = 0. Here the box around the population grows in some generations, and Run until stop pauses at generation 6, within ε of the optimum. Compare the two runs in the Landscape view. This is one seed: with seeds 1 to 100, 66 runs reach ε with α = 0.5 against 37 with α = 0.",
+  "seed": 8,
+  "options": {
+    "function": "himmelblau",
+    "representation": "real",
+    "bitsPerVariable": 10
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 12
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 2
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "blx-alpha",
+      "probability": 0.9,
+      "alpha": 0.5
+    },
+    "mutation": {
+      "enabled": false,
+      "mode": "per-gene",
+      "probability": 0.1,
+      "sigma": 0.05
+    },
+    "elites": 1,
+    "stop": {
+      "generationLimit": 100,
+      "targetEpsilon": 0.89,
+      "stagnationWindow": 50
+    }
+  }
+}

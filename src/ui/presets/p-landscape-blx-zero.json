@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "problem": "landscape",
+  "name": "BLX-α with α = 0",
+  "lesson": "With α = 0 the children of BLX-α stay inside the box spanned by their parents, so without mutation the search cannot expand.",
+  "lookFor": "Mutation is off. On the four-optima landscape the box around the population never grows, and with this seed Run until stop pauses at generation 79 for stagnation with the best so far −9.94 (f = 9.94), not within ε = 0.89 of any optimum. The next preset runs the same seed with α = 0.5. With seeds 1 to 100, 37 runs reach ε with α = 0 against 66 with α = 0.5.",
+  "seed": 8,
+  "options": {
+    "function": "himmelblau",
+    "representation": "real",
+    "bitsPerVariable": 10
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 12
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 2
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "blx-alpha",
+      "probability": 0.9,
+      "alpha": 0
+    },
+    "mutation": {
+      "enabled": false,
+      "mode": "per-gene",
+      "probability": 0.1,
+      "sigma": 0.05
+    },
+    "elites": 1,
+    "stop": {
+      "generationLimit": 100,
+      "targetEpsilon": 0.89,
+      "stagnationWindow": 50
+    }
+  }
+}

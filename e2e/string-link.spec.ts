@@ -2,10 +2,11 @@ import { expect, test, type Page } from '@playwright/test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-import { formatGenes, gaAlgorithm, type GaParams, type GaSetup } from '../src/engine';
+import { formatGenes, gaAlgorithm, metricsOfProblem, type GaParams, type GaSetup } from '../src/engine';
 import { createRun } from '../src/run';
 import { entryOf } from '../src/ui/problems';
 import { configOf, encodeConfig } from '../src/ui/run-config';
+import { statsLines } from '../src/ui/spread-model';
 
 const url = pathToFileURL(resolve('dist/index.html')).href;
 test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
@@ -22,8 +23,8 @@ const readPreset = (file: string) => {
 const rows = (page: Page) => page.getByRole('table', { name: /^(Population|Parents) · generation \d+$/ }).locator('tbody tr [data-bits]').evaluateAll((els) => els.map((el) => el.getAttribute('data-bits')!));
 const b64url = (value: unknown) => `#v1.${Buffer.from(JSON.stringify(value)).toString('base64url')}`;
 
-test('the preset files are all here: four for Goldberg, three for the target string, five for the knapsack and six for the trap', () => {
-  expect(presetFiles.map((f) => readPreset(f).problem)).toEqual([...Array(4).fill('goldberg'), ...Array(3).fill('target-string'), ...Array(5).fill('knapsack'), ...Array(6).fill('trap')]);
+test('the preset files are all here: four for Goldberg, three for the target string, five for the knapsack, six for the trap and ten for the landscape', () => {
+  expect(presetFiles.map((f) => readPreset(f).problem)).toEqual([...Array(4).fill('goldberg'), ...Array(3).fill('target-string'), ...Array(5).fill('knapsack'), ...Array(6).fill('trap'), ...Array(10).fill('landscape')]);
 });
 
 for (const file of presetFiles) {
@@ -32,18 +33,28 @@ for (const file of presetFiles) {
     const hash = encodeConfig(configOf(preset.setup, preset.params, preset.seed, preset.problem, preset.options));
     await page.goto(url + hash);
     await expect(page.getByTestId('link-notice')).toHaveCount(0);
-    await expect(page.getByTestId('problem-button')).toHaveText({ goldberg: /Goldberg/, 'target-string': /Target string/, knapsack: /Knapsack/, trap: /Trap/ }[preset.problem]!);
+    await expect(page.getByTestId('problem-button')).toHaveText({ goldberg: /Goldberg/, 'target-string': /Target string/, knapsack: /Knapsack/, trap: /Trap/, landscape: /Landscape/ }[preset.problem]!);
     await expect(page.getByTestId('seed')).toHaveText(String(preset.seed));
     await expect(page.locator('#pop-heading')).toHaveText('Population · generation 0');
     expect(page.url()).toBe(url); // the address is cleared once the link has loaded
     const engine = createRun(gaAlgorithm, { setup: preset.setup, params: preset.params, seed: preset.seed });
     const show = (generation: number) => engine.snapshot(generation).state.population.map((i) => formatGenes(i.chromosome, preset.setup.problem.alphabet));
-    expect(await rows(page)).toEqual(show(0));
+    // the landscape's real-valued individuals have no bit rows: its first summary line is compared instead, to the three decimals it shows
+    const summary = async () => (await page.getByTestId('summary').innerText()).split(String.fromCharCode(10))[0]!.trim();
+    const expectSame = async (generation: number) => {
+      if (preset.problem !== 'landscape') return expect(await rows(page)).toEqual(show(generation));
+      const want = statsLines(metricsOfProblem(engine.snapshot(generation).state, preset.setup.problem))[0];
+      const got = await summary();
+      const numbers = /-?[0-9]+(\.[0-9]+)?(e-?[0-9]+)?/g;
+      expect(got.replace(numbers, '#')).toBe(want.replace(numbers, '#'));
+      got.match(numbers)!.map(Number).forEach((v, k) => expect(v).toBeCloseTo(want.match(numbers)!.map(Number)[k]!, 2));
+    };
+    await expectSame(0);
     for (let g = 1; g <= 3; g++) {
       await page.keyboard.press('g');
       engine.forwardCycle();
     }
-    expect(await rows(page)).toEqual(show(3));
+    await expectSame(3);
   });
 }
 

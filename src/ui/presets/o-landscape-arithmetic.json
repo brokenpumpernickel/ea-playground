@@ -1,0 +1,42 @@
+{
+  "v": 1,
+  "problem": "landscape",
+  "name": "Arithmetic crossover",
+  "lesson": "Arithmetic crossover only makes points on the line between the parents, so without mutation the population can only shrink toward its centre.",
+  "lookFor": "Mutation is off, to show crossover alone. With this seed the box around the population never grows, it shrinks to a point, and Run until stop pauses at generation 56 for stagnation with the best so far 0.976, short of the top of the hill (fitness 1). In all 100 runs (seeds 1 to 100) the box never grows; 17 reach ε and 80 stop for stagnation.",
+  "seed": 42,
+  "options": {
+    "function": "single-peak",
+    "representation": "real",
+    "bitsPerVariable": 10
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 12
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 2
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "arithmetic",
+      "probability": 0.9
+    },
+    "mutation": {
+      "enabled": false,
+      "mode": "per-gene",
+      "probability": 0.1,
+      "sigma": 0.05
+    },
+    "elites": 1,
+    "stop": {
+      "generationLimit": 100,
+      "targetEpsilon": 0.0009999756991687407,
+      "stagnationWindow": 50
+    }
+  }
+}

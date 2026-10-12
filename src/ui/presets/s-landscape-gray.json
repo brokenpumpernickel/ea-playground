@@ -1,0 +1,41 @@
+{
+  "v": 1,
+  "problem": "landscape",
+  "name": "Gray code, low mutation",
+  "lesson": "In Gray code, neighbouring numbers differ by one bit, so the same low mutation rate keeps climbing the hill.",
+  "lookFor": "The same seed, landscape and settings as the plain binary preset, with Gray code. Run until stop pauses at generation 39, within ε of the optimum at (2, −1). With seeds 1 to 100, all 100 Gray-coded runs reach ε against 33 plain-binary ones.",
+  "seed": 42,
+  "options": {
+    "function": "single-peak",
+    "representation": "gray",
+    "bitsPerVariable": 10
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 12
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 2
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "one-point",
+      "probability": 0.9
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-gene",
+      "probability": 0.02
+    },
+    "elites": 1,
+    "stop": {
+      "generationLimit": 100,
+      "targetEpsilon": 0.0009999756991687407,
+      "stagnationWindow": 50
+    }
+  }
+}

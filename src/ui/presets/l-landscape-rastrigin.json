@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "problem": "landscape",
+  "name": "Rastrigin: local minima",
+  "lesson": "Rastrigin has a grid of local minima: a run can settle in one of them and miss the global minimum at (0, 0).",
+  "lookFor": "With this seed the best so far after 100 generations is −0.995 (f = 0.995) at (0.00, −0.99), the minimum next to the global one, and the run never gets within ε of the optimum; the 12 individuals are spread over 2 cells of the grid of minima. With seeds 1 to 100, 81 runs reach ε and 19 do not; seed 42 reaches it in generation 19. A run that does not reach the optimum is part of the lesson.",
+  "seed": 2,
+  "options": {
+    "function": "rastrigin",
+    "representation": "real",
+    "bitsPerVariable": 10
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 12
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 2
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "blx-alpha",
+      "probability": 0.9,
+      "alpha": 0.5
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-gene",
+      "probability": 0.1,
+      "sigma": 0.05
+    },
+    "elites": 1,
+    "stop": {
+      "generationLimit": 100,
+      "targetEpsilon": 0.08070658038767792,
+      "stagnationWindow": 50
+    }
+  }
+}

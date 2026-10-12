@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "problem": "landscape",
+  "name": "Himmelblau: four optima",
+  "lesson": "Himmelblau has four equally good minima: which one a run finds depends on the seed, and the population then clusters around it.",
+  "lookFor": "With this seed Run until stop pauses at generation 8, within ε of the optimum at (3, 2). Other seeds end elsewhere: over seeds 1 to 100, 45 runs end at (3, 2), 18 at (−2.81, 3.13), 9 at (−3.78, −3.28) and 28 at (3.58, −1.85). All 100 get within ε.",
+  "seed": 42,
+  "options": {
+    "function": "himmelblau",
+    "representation": "real",
+    "bitsPerVariable": 10
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 12
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 2
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "blx-alpha",
+      "probability": 0.9,
+      "alpha": 0.5
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-gene",
+      "probability": 0.1,
+      "sigma": 0.05
+    },
+    "elites": 1,
+    "stop": {
+      "generationLimit": 100,
+      "targetEpsilon": 0.89,
+      "stagnationWindow": 50
+    }
+  }
+}

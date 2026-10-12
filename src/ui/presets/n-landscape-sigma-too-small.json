@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "problem": "landscape",
+  "name": "Mutation too small",
+  "lesson": "Gaussian steps of σ = 0.005 are too small to carry the population out of a local minimum.",
+  "lookFor": "This is the Rastrigin landscape with σ = 0.005 instead of 0.05. With this seed the population collapses and the best so far after 100 generations is −4.97 (f = 4.97) at (2, 1), a local minimum far from the global one; the diversity is 0.002. The same seed with σ = 0.05 reaches the global minimum in generation 19. With seeds 1 to 100, 13 runs reach ε with σ = 0.005 against 81 with σ = 0.05.",
+  "seed": 42,
+  "options": {
+    "function": "rastrigin",
+    "representation": "real",
+    "bitsPerVariable": 10
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 12
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 2
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "blx-alpha",
+      "probability": 0.9,
+      "alpha": 0.5
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-gene",
+      "probability": 0.1,
+      "sigma": 0.005
+    },
+    "elites": 1,
+    "stop": {
+      "generationLimit": 100,
+      "targetEpsilon": 0.08070658038767792,
+      "stagnationWindow": 50
+    }
+  }
+}

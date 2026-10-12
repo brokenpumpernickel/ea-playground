@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { createRng, gaAlgorithm, metricsOf, minimumGenes, type GaParams, type Initialization, type StepSpec } from '../engine';
+import { createRng, gaAlgorithm, metricsOfProblem, minimumGenes, type GaParams, type Initialization, type StepSpec } from '../engine';
 import { createRun } from '../run';
 import { presets } from './presets';
 import { entryOf, type ProblemOptions } from './problems';
@@ -33,11 +33,10 @@ const roundTrip = (config: RunConfig) => {
 const trace = (config: RunConfig, generations = 6) => {
   const run = createRun(gaAlgorithm, { setup: setupOf(config), params: config.params, seed: config.seed });
   for (let g = 0; g < generations; g++) run.forwardCycle();
-  const alphabet = setupOf(config).problem.alphabet.length;
   return {
     populations: Array.from({ length: generations + 1 }, (_, g) => run.snapshot(g).state.population.map((i) => `${i.id}:${i.chromosome.join(',')}`)),
     events: run.events(generations),
-    metrics: metricsOf(run.snapshot(generations).state, alphabet),
+    metrics: metricsOfProblem(run.snapshot(generations).state, setupOf(config).problem),
   };
 };
 
@@ -63,6 +62,7 @@ describe('round trip and run equality', () => {
     expect(presets.filter((p) => p.problem === 'goldberg')).toHaveLength(4);
     expect(presets.filter((p) => p.problem === 'target-string')).toHaveLength(3);
     expect(presets.filter((p) => p.problem === 'knapsack')).toHaveLength(5);
+    expect(presets.filter((p) => p.problem === 'landscape')).toHaveLength(10);
     for (const preset of presets) {
       const config = configOf(preset.setup, preset.params, preset.seed, preset.problem, preset.options);
       expect(config.problem).toBe(preset.problem);

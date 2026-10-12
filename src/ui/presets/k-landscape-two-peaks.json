@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "problem": "landscape",
+  "name": "Two peaks: the broad hill",
+  "lesson": "A broad low hill and a narrow tall one: selection prefers what scores best now, and early on that is the broad hill.",
+  "lookFor": "With this seed the whole population ends on the broad hill around (−2.5, −2.5), where the best fitness is 0.6, and never reaches the narrow hill at (3, 3), whose top scores 1; the run goes on to generation 100 with nothing better, and the diversity has fallen to 0.02. A run that settles on the wrong hill is the expected result here, not a mistake: with seeds 1 to 100, 84 runs end on the broad hill and 16 find the narrow one.",
+  "seed": 42,
+  "options": {
+    "function": "two-peaks",
+    "representation": "real",
+    "bitsPerVariable": 10
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 12
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 2
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "blx-alpha",
+      "probability": 0.9,
+      "alpha": 0.5
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-gene",
+      "probability": 0.1,
+      "sigma": 0.05
+    },
+    "elites": 1,
+    "stop": {
+      "generationLimit": 100,
+      "targetEpsilon": 0.0010003112095324164,
+      "stagnationWindow": 50
+    }
+  }
+}

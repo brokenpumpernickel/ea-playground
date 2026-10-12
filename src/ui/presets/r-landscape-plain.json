@@ -1,0 +1,41 @@
+{
+  "v": 1,
+  "problem": "landscape",
+  "name": "Plain binary, low mutation",
+  "lesson": "Searched in plain binary with a low mutation rate, the same hill can stall a run where no single bit flip improves the best individual.",
+  "lookFor": "Ten bits per variable, mutation 0.02 per bit. With this seed Run until stop pauses at generation 75 for stagnation with the best so far 0.881 at (2.00, 0.00); none of the 20 single-bit changes of the best individual is better. The next preset runs the same seed in Gray code. With seeds 1 to 100, 33 plain-binary runs reach ε against all 100 Gray-coded ones.",
+  "seed": 42,
+  "options": {
+    "function": "single-peak",
+    "representation": "plain",
+    "bitsPerVariable": 10
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 12
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 2
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "one-point",
+      "probability": 0.9
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-gene",
+      "probability": 0.02
+    },
+    "elites": 1,
+    "stop": {
+      "generationLimit": 100,
+      "targetEpsilon": 0.0009999756991687407,
+      "stagnationWindow": 50
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "problem": "landscape",
+  "name": "Single peak",
+  "lesson": "One smooth hill: the population climbs it, and the run stops as soon as the best individual is within ε of the top.",
+  "lookFor": "With this seed the population, spread over the whole map in generation 0, gathers on the hill and Run until stop pauses at generation 10, when the best so far is within ε of the optimum at (2, −1), where the fitness is 1. Watch the diversity plot fall from 0.36 to 0.01 in those ten generations: the population has become one cluster. This is the easy case: all 100 runs with seeds 1 to 100 reach the optimum, in 0 to 27 generations (median 10).",
+  "seed": 42,
+  "options": {
+    "function": "single-peak",
+    "representation": "real",
+    "bitsPerVariable": 10
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 12
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 2
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "blx-alpha",
+      "probability": 0.9,
+      "alpha": 0.5
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-gene",
+      "probability": 0.1,
+      "sigma": 0.05
+    },
+    "elites": 1,
+    "stop": {
+      "generationLimit": 100,
+      "targetEpsilon": 0.0009999756991687407,
+      "stagnationWindow": 50
+    }
+  }
+}
