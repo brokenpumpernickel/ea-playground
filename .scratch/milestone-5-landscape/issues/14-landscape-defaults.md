@@ -1,6 +1,6 @@
 # 14 Landscape defaults by measurement
 
-Status: proposal awaiting instructor approval
+Status: resolved
 Type: measurement, review (needs instructor approval)
 Blocked by: 06
 Spec: ../spec.md
@@ -66,3 +66,6 @@ Why: a population of 12 is readable on the screen and in the table (and is what 
 **Decision for the instructor:** the spec asks that the *default* function finds its optimum in most but not all runs. The default is the single peak with the real coding, and it is found in 100 of 100 runs by every sensible setting (the generation limit is not the issue: the median is 10 generations). Making it fail would mean crippling the algorithm (population 6–8 with tiny σ), which would ruin the other functions. Options: (a) accept 100 % — the single peak is the example that "converges quickly", and the default binary-coded run (plain, 10 bits, pm 0.05) finds it in 88 % of runs; (b) make plain binary the default representation (88 % on the single peak, a real Hamming-cliff contrast with Gray); (c) another default function. I recommend (a).
 
 ## Answer
+Approved by the instructor, option (a) (the single peak stays at 100 %). Set in `landscapeDefaults` (`src/engine/landscape.ts`): population 12, tournament 2, one elite, generation limit 100, ε 1e-3 of the range; real: BLX-α 0.9 with α 0.5, Gaussian per gene 0.1 with σ 0.05; binary-coded: one-point 0.9, flip per gene 0.05, 10 bits per variable. One change from the proposal: the stagnation window is **50 for both** codings (the measurements show no real-coded run paused at 50 that went on to improve, and it keeps the window when the drawer switches representation, which resets only the operators).
+
+Pinned by `problems-landscape.test.ts` (every number, for every function and representation, and the entry's initial population of 12); mutation-checked (population, tournament size, stagnation window and mutation probability each fail it). The tests that quoted the old numbers (`drawer-landscape.test.ts`, `e2e/landscape-drawer.spec.ts`) were updated. 1850 unit tests, `npm run check` and the e2e suite pass.

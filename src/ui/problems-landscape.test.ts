@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { landscapeDefaultEpsilon, landscapeDefaults, landscapeProblem, type LandscapeOptions } from '../engine';
+import { landscapeDefaultEpsilon, landscapeDefaultOptions, landscapeDefaults, landscapeProblem, type LandscapeOptions } from '../engine';
 import { entryOf, problemIds } from './problems';
 
 describe('the landscape entry', () => {
@@ -83,6 +83,34 @@ describe('the landscape entry', () => {
   test('the other entries have no per-options defaults and are unchanged', () => {
     expect(entryOf('trap')!.defaultsFor).toBeUndefined();
     expect(entryOf('knapsack')!.defaults.params.stop.targetFitness).toBe(123);
+  });
+
+  test('the defaults are the measured, approved ones (ticket 14): the same population, selection, elites and limit for every function, the operators by representation', () => {
+    for (const fn of ['single-peak', 'two-peaks', 'rastrigin', 'himmelblau'] as const) {
+      const real = landscapeDefaults({ function: fn, representation: 'real', bitsPerVariable: 10 });
+      const epsilon = landscapeDefaultEpsilon(landscapeProblem({ function: fn, representation: 'real', bitsPerVariable: 10 }));
+      expect(real.populationSize).toBe(12);
+      expect(real.params).toEqual({
+        selection: { method: 'tournament', size: 2 },
+        crossover: { enabled: true, operator: 'blx-alpha', probability: 0.9, alpha: 0.5 },
+        mutation: { enabled: true, mode: 'per-gene', probability: 0.1, sigma: 0.05 },
+        elites: 1,
+        stop: { generationLimit: 100, targetEpsilon: epsilon, stagnationWindow: 50 },
+      });
+      for (const representation of ['plain', 'gray'] as const) {
+        const bits = landscapeDefaults({ function: fn, representation, bitsPerVariable: 10 });
+        expect(bits.populationSize).toBe(12);
+        expect(bits.params).toEqual({
+          selection: { method: 'tournament', size: 2 },
+          crossover: { enabled: true, operator: 'one-point', probability: 0.9 },
+          mutation: { enabled: true, mode: 'per-gene', probability: 0.05 },
+          elites: 1,
+          stop: { generationLimit: 100, targetEpsilon: epsilon, stagnationWindow: 50 },
+        });
+      }
+    }
+    expect(entry.defaults.init).toEqual({ kind: 'random', size: 12 });
+    expect(landscapeDefaultOptions).toEqual({ function: 'single-peak', representation: 'real', bitsPerVariable: 10 });
   });
 
   test('the engine’s defaults are valid for every function and representation, and are what the entry offers', () => {

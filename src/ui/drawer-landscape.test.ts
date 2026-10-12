@@ -33,8 +33,8 @@ describe('the landscape draft', () => {
   test('a binary-coded run has no α or σ, and its bits per variable are drafted', () => {
     const draft = draftFor(currentOf({ representation: 'gray', bitsPerVariable: 8 }));
     expect(draft.landscape).toEqual({ function: 'single-peak', representation: 'gray', bits: '8' });
-    expect(draft.crossover).toEqual({ enabled: true, operator: 'one-point', probability: '0.8' });
-    expect(draft.mutation).toEqual({ enabled: true, mode: 'per-gene', probability: '0.02' });
+    expect(draft.crossover).toEqual({ enabled: true, operator: 'one-point', probability: '0.9' });
+    expect(draft.mutation).toEqual({ enabled: true, mode: 'per-gene', probability: '0.05' });
   });
 
   test('the options the draft describes are read from the typed text', () => {
@@ -49,7 +49,7 @@ describe('the landscape draft', () => {
   test.each(['real', 'plain', 'gray'] as const)('%s: the draft turns back into exactly the parameters it came from', (representation) => {
     const c = currentOf({ representation, bitsPerVariable: 9 });
     const { truncation, ...params } = toParams(draftFor(c)); // the drawer always writes the truncation setting, off here
-    expect(truncation).toEqual({ enabled: false, lambda: 20 });
+    expect(truncation).toEqual({ enabled: false, lambda: 12 });
     expect(params).toEqual(c.params);
     expect(toSetup(draftFor(c), c.setup.problem)).toEqual({ problem: c.setup.problem, init: c.setup.init });
   });
@@ -162,7 +162,7 @@ describe('switching the representation resets the operators to the new represent
     const draft = withRepresentation(draftFor(c), 'gray');
     expect(draft.landscape!.representation).toBe('gray');
     expect(draft.crossover).toEqual({ enabled: true, operator: 'one-point', probability: '0.9' });
-    expect(draft.mutation).toEqual({ enabled: true, mode: 'per-gene', probability: '0.02' });
+    expect(draft.mutation).toEqual({ enabled: true, mode: 'per-gene', probability: '0.05' });
     expect(errorsOf(draft, c)).toEqual({});
   });
 
@@ -195,11 +195,11 @@ describe('switching the representation resets the operators to the new represent
     const result = changes(draft, c);
     expect(result.reset).toEqual(['Representation']);
     expect(result.notes).toEqual([
-      'Reset to the new representation’s defaults: crossover type (BLX-α → One-point), mutation (Gaussian, per gene, pm 0.1, σ = 0.05 → bit flip, per gene, pm 0.02).',
+      'Reset to the new representation’s defaults: crossover type (BLX-α → One-point), mutation (Gaussian, per gene, pm 0.1, σ = 0.05 → bit flip, per gene, pm 0.05).',
     ]);
     const back = changes(withRepresentation(draftFor(currentOf({ representation: 'gray', bitsPerVariable: 8 })), 'real'), currentOf({ representation: 'gray', bitsPerVariable: 8 }));
     expect(back.notes).toEqual([
-      'Reset to the new representation’s defaults: crossover type (One-point → BLX-α, α = 0.5), mutation (bit flip, per gene, pm 0.02 → Gaussian, per gene, pm 0.1, σ = 0.05).',
+      'Reset to the new representation’s defaults: crossover type (One-point → BLX-α, α = 0.5), mutation (bit flip, per gene, pm 0.05 → Gaussian, per gene, pm 0.1, σ = 0.05).',
     ]);
   });
 

@@ -113,9 +113,9 @@ test('switching to Gray code resets the operators to the bit-string defaults and
   await expect(page.locator('#crossover-type')).toHaveValue('one-point');
   await expect(page.locator('#crossover-alpha')).toHaveCount(0);
   await expect(page.locator('#mutation-sigma')).toHaveCount(0);
-  await expect(page.locator('#mutation-probability')).toHaveValue('0.02');
+  await expect(page.locator('#mutation-probability')).toHaveValue('0.05');
   await expect(page.locator('#crossover-type option')).toHaveText(['One-point', 'Two-point', 'Uniform']);
-  const note = 'Reset to the new representation’s defaults: crossover type (BLX-α → One-point), mutation (Gaussian, per gene, pm 0.1, σ = 0.05 → bit flip, per gene, pm 0.02).';
+  const note = 'Reset to the new representation’s defaults: crossover type (BLX-α → One-point), mutation (Gaussian, per gene, pm 0.1, σ = 0.05 → bit flip, per gene, pm 0.05).';
   await expect(page.locator('[data-section="setup"] .applyreset .help')).toContainText(`Changed: Representation. Restarts the run from generation 0. ${note}`);
   await page.getByTestId('apply-reset').click();
   await expect(page.getByTestId('reset-notice')).toHaveText(`Changing the representation restarts the run from generation 0. Nothing recorded will be lost. ${note}`);

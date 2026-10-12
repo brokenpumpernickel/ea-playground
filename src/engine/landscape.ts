@@ -248,8 +248,9 @@ export function validateEpsilon(epsilon: number): string[] {
 }
 
 /**
- * The setup the landscape opens with for these options, as plain data. Provisional: ticket 14 of milestone 5 replaces
- * these numbers with measured ones. The operators follow the representation: BLX-α and Gaussian mutation for real genes,
+ * The setup the landscape opens with for these options, as plain data. The numbers were measured (milestone 5, ticket 14,
+ * recorded in its issue) and approved: a population of 12 (readable on the screen), binary tournament, one elite, and a
+ * generation limit of 100. The operators follow the representation: BLX-α and Gaussian mutation for real genes,
  * one-point crossover and bit-flip mutation for the binary-coded ones; the stop "within ε of the optimum" uses the
  * function's default ε.
  */
@@ -258,13 +259,14 @@ export function landscapeDefaults(options: LandscapeOptions): { readonly options
   const real = options.representation === 'real';
   return {
     options,
-    populationSize: 20,
+    populationSize: 12,
     params: {
-      selection: { method: 'tournament', size: 3 },
-      crossover: real ? { enabled: true, operator: 'blx-alpha', probability: 0.9, alpha: defaultAlpha } : { enabled: true, operator: 'one-point', probability: 0.8 },
-      mutation: real ? { enabled: true, mode: 'per-gene', probability: 0.1, sigma: defaultSigma } : { enabled: true, mode: 'per-gene', probability: 0.02 },
+      selection: { method: 'tournament', size: 2 },
+      crossover: real ? { enabled: true, operator: 'blx-alpha', probability: 0.9, alpha: defaultAlpha } : { enabled: true, operator: 'one-point', probability: 0.9 },
+      mutation: real ? { enabled: true, mode: 'per-gene', probability: 0.1, sigma: defaultSigma } : { enabled: true, mode: 'per-gene', probability: 0.05 },
       elites: 1,
-      stop: { generationLimit: 100, targetEpsilon: epsilon, stagnationWindow: 40 },
+      // a strict improvement of any size restarts the window; at 50 generations no measured run was paused that went on to improve (real) and the fewest were (binary-coded); one window for both, so a switch of representation keeps it
+      stop: { generationLimit: 100, targetEpsilon: epsilon, stagnationWindow: 50 },
     },
   };
 }
