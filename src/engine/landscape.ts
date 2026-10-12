@@ -186,6 +186,7 @@ export function landscapeProblem(options: LandscapeOptions): LandscapeProblem {
     chromosomeLength: real ? 2 : 2 * n,
     alphabet: real ? [] : binaryAlphabet,
     ...(real ? { bounds: [info.bounds, info.bounds] } : {}),
+    decodedBounds: [info.bounds, info.bounds],
     columns,
     knownOptimumFitness,
     scoreText: (scores) => (minimised ? `${text(scores)}: f = ${minus(scores.objective)}, so fitness = ${minus(scores.fitness)}` : `${text(scores)}: f = ${minus(scores.objective)}, fitness ${minus(scores.fitness)}`),
@@ -199,4 +200,55 @@ export function landscapeProblem(options: LandscapeOptions): LandscapeProblem {
       return { decoded: `(${show(x)}, ${show(y)})`, values: [x, y], objective, fitness: minimised ? 0 - objective : objective };
     },
   };
+}
+
+const ranges = new Map<LandscapeFunction, { readonly min: number; readonly max: number }>();
+
+/**
+ * The lowest and highest fitness the function has over its bounds: the highest is the known optimum, the lowest is found
+ * numerically (a grid, then repeated finer grids around its best point, kept inside the bounds) and remembered.
+ */
+export function landscapeFitnessRange(problem: Pick<LandscapeProblem, 'info' | 'fitnessAt' | 'knownOptimumFitness'>): { readonly min: number; readonly max: number } {
+  const known = ranges.get(problem.info.id);
+  if (known) return known;
+  const { lo, hi } = problem.info.bounds;
+  const clamp = (v: number) => Math.min(hi, Math.max(lo, v));
+  const scan = (cx: number, cy: number, half: number, n: number, from: { x: number; y: number; f: number }) => {
+    let best = from;
+    for (let i = 0; i <= n; i++) {
+      for (let j = 0; j <= n; j++) {
+        const x = clamp(cx - half + (2 * half * i) / n);
+        const y = clamp(cy - half + (2 * half * j) / n);
+        const f = problem.fitnessAt(x, y);
+        if (f < best.f) best = { x, y, f };
+      }
+    }
+    return best;
+  };
+  let worst = scan((lo + hi) / 2, (lo + hi) / 2, (hi - lo) / 2, 600, { x: lo, y: lo, f: Infinity });
+  for (let half = (hi - lo) / 600, round = 0; round < 30; round++, half /= 2) worst = scan(worst.x, worst.y, half, 40, worst);
+  const range = { min: worst.f, max: problem.knownOptimumFitness };
+  ranges.set(problem.info.id, range);
+  return range;
+}
+
+/** The default ε for "within ε of the optimum": one thousandth of the function's fitness range. */
+export function landscapeDefaultEpsilon(problem: Pick<LandscapeProblem, 'info' | 'fitnessAt' | 'knownOptimumFitness'>): number {
+  const { min, max } = landscapeFitnessRange(problem);
+  return 1e-3 * (max - min);
+}
+
+/** What is wrong with an ε, in words, or an empty list. */
+export function validateEpsilon(epsilon: number): string[] {
+  return typeof epsilon === 'number' && Number.isFinite(epsilon) && epsilon > 0 ? [] : ['ε must be a number greater than 0.'];
+}
+
+/**
+ * The target fitness that makes the engine's "target reached" criterion mean "within ε of the optimum": the best fitness
+ * so far is at least the optimum fitness minus ε.
+ */
+export function landscapeTargetFitness(problem: Pick<LandscapeProblem, 'knownOptimumFitness'>, epsilon: number): number {
+  const problems = validateEpsilon(epsilon);
+  if (problems.length > 0) throw new Error(problems[0]);
+  return problem.knownOptimumFitness - epsilon;
 }

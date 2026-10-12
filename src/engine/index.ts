@@ -97,6 +97,10 @@ export {
 export {
   decodeVariable,
   integerOfBits,
+  landscapeDefaultEpsilon,
+  landscapeFitnessRange,
+  landscapeTargetFitness,
+  validateEpsilon,
   landscapeDefaultOptions,
   landscapeFunctionInfo,
   landscapeFunctions,

@@ -28,6 +28,14 @@ export interface GenerationMetrics {
    * among them (null when there is none), and the best feasible fitness seen in any generation so far.
    */
   readonly feasible?: { readonly count: number; readonly best: number | null; readonly bestSoFar: number | null };
+  /**
+   * Only for a problem whose individuals have decoded numbers inside known bounds (the landscape, in either representation):
+   * `diversity` is the mean distance between all pairs of points, each value scaled to its bounds, over the diagonal of the
+   * bounds (0 when every point is the same, 1 for opposite corners), and `spread` is the standard deviation of each value
+   * (over the whole population, not a sample) as a share of that value's range. For a binary-coded run the top-level
+   * `diversity` stays the Hamming one; for a real-valued run it is this same number.
+   */
+  readonly decoded?: { readonly diversity: number; readonly spread: readonly number[] };
 }
 
 function feasibleMetrics(state: RunState): NonNullable<GenerationMetrics['feasible']> {
@@ -38,16 +46,29 @@ function feasibleMetrics(state: RunState): NonNullable<GenerationMetrics['feasib
 const cache = new WeakMap<RunState, { readonly alphabetSize: number; readonly bounds: readonly Bounds[] | undefined; readonly metrics: GenerationMetrics }>();
 
 /** The metrics of a state for the problem it belongs to: symbol counts for an alphabet, distances inside the bounds for a real problem. */
-export function metricsOfProblem(state: RunState, problem: Pick<Problem, 'alphabet' | 'bounds'>): GenerationMetrics {
-  return metricsOf(state, problem.alphabet.length, problem.bounds);
+export function metricsOfProblem(state: RunState, problem: Pick<Problem, 'alphabet' | 'bounds' | 'decodedBounds'>): GenerationMetrics {
+  const base = metricsOf(state, problem.alphabet.length, problem.bounds);
+  const decodedBounds = problem.decodedBounds;
+  if (!decodedBounds) return base;
+  const known = decodedCache.get(state);
+  if (known && known.base === base && known.decodedBounds === decodedBounds) return known.metrics;
+  const points = state.population.map((i) => {
+    if (!i.values || i.values.length !== decodedBounds.length) throw new Error(`Individual ${i.id} has no decoded values to measure`);
+    return i.values;
+  });
+  const metrics: GenerationMetrics = { ...base, decoded: { diversity: pointsDiversity(points, decodedBounds), spread: spreadOf(points, decodedBounds) } };
+  decodedCache.set(state, { base, decodedBounds, metrics });
+  return metrics;
 }
 
+const decodedCache = new WeakMap<RunState, { readonly base: GenerationMetrics; readonly decodedBounds: readonly Bounds[]; readonly metrics: GenerationMetrics }>();
+
 /**
- * Mean Euclidean distance over all pairs of points with each gene scaled to its bounds (so every gene spans 0 to 1),
+ * Mean Euclidean distance over all pairs of points with each value scaled to its bounds (so every value spans 0 to 1),
  * divided by the diagonal of that unit box: 0 when all points coincide, 1 for opposite corners.
  */
-function realDiversity(state: RunState, bounds: readonly Bounds[]): number {
-  const unit = state.population.map((i) => i.chromosome.map((x, k) => (x - bounds[k]!.lo) / (bounds[k]!.hi - bounds[k]!.lo)));
+function pointsDiversity(points: readonly (readonly number[])[], bounds: readonly Bounds[]): number {
+  const unit = points.map((p) => p.map((x, k) => (x - bounds[k]!.lo) / (bounds[k]!.hi - bounds[k]!.lo)));
   let total = 0;
   for (let a = 0; a < unit.length; a++) {
     for (let b = a + 1; b < unit.length; b++) total += Math.hypot(...unit[a]!.map((x, k) => x - unit[b]![k]!));
@@ -55,6 +76,16 @@ function realDiversity(state: RunState, bounds: readonly Bounds[]): number {
   const pairs = (unit.length * (unit.length - 1)) / 2;
   return pairs === 0 ? 0 : total / pairs / Math.sqrt(bounds.length);
 }
+
+/** The standard deviation of each value over the population (dividing by N), as a share of its range. */
+function spreadOf(points: readonly (readonly number[])[], bounds: readonly Bounds[]): number[] {
+  return bounds.map(({ lo, hi }, k) => {
+    const mean = points.reduce((sum, p) => sum + p[k]!, 0) / points.length;
+    return Math.sqrt(points.reduce((sum, p) => sum + (p[k]! - mean) ** 2, 0) / points.length) / (hi - lo);
+  });
+}
+
+const realDiversity = (state: RunState, bounds: readonly Bounds[]): number => pointsDiversity(state.population.map((i) => i.chromosome), bounds);
 
 /**
  * States are never modified, so the result for a state never changes; asking again returns the same object.

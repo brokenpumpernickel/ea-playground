@@ -71,6 +71,11 @@ export interface Problem {
   readonly alphabet: readonly string[];
   /** Present for a real-valued problem: the bounds of each gene, in gene order (ADR 0006); absent for the symbol problems. */
   readonly bounds?: readonly Bounds[];
+  /**
+   * Present when each individual's `Scores.values` are numbers inside known bounds (the landscape, in either
+   * representation): the bounds of each value, so the metrics can measure diversity and spread in decoded space.
+   */
+  readonly decodedBounds?: readonly Bounds[];
   /** The columns the population table and the evaluation view show for this problem, besides the chromosome. */
   readonly columns: readonly ProblemColumn[];
   /** How a score reads in a sentence, such as "4 of 5 positions match"; without it sentences use the decoded value (x = 13). */
