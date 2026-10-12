@@ -1,6 +1,7 @@
-import type { GaEvent, MutationEvent } from '../engine';
+import { formatReal, type GaEvent, type MutationEvent } from '../engine';
 import { goldbergDisplay, type Display } from './format';
 import { geneList, num } from './format';
+import { realPair, realPairText } from './landscape-cells';
 
 /** Plain-language sentences for what the engine recorded, so every number a view shows can be traced to an event. */
 
@@ -30,14 +31,42 @@ function replaced(event: MutationEvent, display: Display): string {
   return `; ${event.replacements.map((x) => `gene ${x.gene}: ${shown(x.from)} → ${shown(x.to)} (r = ${num(x.r)})`).join(', ')}`;
 }
 
+/** A real chromosome as the pair "(x, y)" for a sentence; any other chromosome as the display shows it. */
+const shower = (display: Display) => (chromosome: readonly number[]): string => {
+  const text = display.show(chromosome);
+  const pair = display.landscape?.representation === 'real' ? realPair(text) : undefined;
+  return pair ? realPairText(pair) : text;
+};
+
+const nameOf = (gene: number) => (gene === 1 ? 'x' : 'y');
+/** Coordinates, steps and distances: three decimals and a real minus sign, as the tables show them; z, trimmed. */
+const f3 = (v: number) => formatReal([v], 3);
+const trimmed = (v: number) => num(v).replace('-', '−');
+const signed = (v: number) => `${v < 0 ? '−' : '+'}${f3(Math.abs(v))}`;
+const stepText = (s: { z: number; step: number; before: number; after: number; clamped: boolean }) =>
+  `z = ${trimmed(s.z)}, step ${signed(s.step)} (${f3(s.before)} → ${f3(s.after)}${s.clamped ? ', clamped to the bound' : ''})`;
+
+/** For a binary-coded landscape: where the offspring's point was and is. */
+function moved(event: MutationEvent, display: Display): string {
+  const land = display.landscape;
+  if (!land || land.representation === 'real' || event.decision !== 'mutated') return '';
+  const a = land.pointOf(event.before);
+  const b = land.pointOf(event.after);
+  const text = (p: { x: number; y: number }) => `(${f3(p.x)}, ${f3(p.y)})`;
+  return `; the point moves from ${text(a)} to ${text(b)} by ${f3(Math.hypot(b.x - a.x, b.y - a.y))}`;
+}
+
 function describeWith(event: GaEvent, display: Display): string {
-  const formatBits = display.show;
+  const formatBits = shower(display);
+  const real = display.landscape?.representation === 'real';
+  /** A landscape's fitness is a long fraction: three decimals, as the tables show it. */
+  const fit = (v: number) => (display.landscape ? num(v) : v);
   switch (event.stage) {
     case 'setup': {
       const i = event.individual;
       const steps = (display.explainEvaluation?.(event.repairedFrom ?? i.chromosome).details ?? []).map((d) => `${d}; `).join('');
       const chromosome = event.repairedFrom ? `${formatBits(event.repairedFrom)} repaired to ${formatBits(i.chromosome)}` : formatBits(i.chromosome);
-      return `Individual ${i.id} (${chromosome}): ${steps}${scored(i, display)}fitness ${i.fitness}`;
+      return real ? `Individual ${i.id}: ${steps}${scored(i, display)}fitness ${fit(i.fitness)}` : `Individual ${i.id} (${chromosome}): ${steps}${scored(i, display)}fitness ${fit(i.fitness)}`;
     }
 
     case 'selection':
@@ -78,13 +107,17 @@ function describeWith(event: GaEvent, display: Display): string {
         return `${head} ${why} → bypassed: children are copies, ${kids}${dropped}`;
       }
       let where = '';
-      if (event.cuts && event.cuts.length === 1) where = ` (cut after gene ${event.cuts[0]})`;
+      if (event.blend) where = ` (BLX-α, α = ${num(event.alpha ?? 0.5)})`;
+      else if (event.lambda !== undefined) where = ` (arithmetic, λ = ${num(event.lambda)})`;
+      else if (event.cuts && event.cuts.length === 1) where = ` (cut after gene ${event.cuts[0]})`;
       else if (event.cuts) where = ` (cuts after genes ${event.cuts[0]} and ${event.cuts[1]})`;
       else if (event.mask) {
         const swapped = event.mask.flatMap((m, g) => (m ? [g + 1] : []));
         where = swapped.length > 0 ? ` (${geneList(swapped)} taken from the other parent)` : ' (no gene taken from the other parent)';
       }
-      return `${head} u = ${num(event.draw!.u)} < pc ${num(event.draw!.threshold)} → recombined${where}: children ${kids}${dropped}`;
+      const clamps = event.children.flatMap((c) => (c.clamped ?? []).flatMap((x, g) => (x ? [`O${c.offspring} ${nameOf(g + 1)}`] : [])));
+      const clamped = clamps.length > 0 ? ` · clamped to a bound: ${clamps.join(', ')}` : '';
+      return `${head} u = ${num(event.draw!.u)} < pc ${num(event.draw!.threshold)} → recombined${where}: children ${kids}${dropped}${clamped}`;
     }
 
     case 'mutation': {
@@ -92,25 +125,26 @@ function describeWith(event: GaEvent, display: Display): string {
       const after = formatBits(event.after);
       const head = `Offspring ${event.offspring}:`;
       const pm = num(event.threshold);
+      if (real) return describeGaussian(event, head, pm, before, after);
       if (event.decision === 'bypassed') return `${head} mutation is off → unchanged (${before})`;
       if (event.mode === 'per-individual') {
         const u = num(event.individualDraw!.u);
         if (event.decision === 'unchanged') return `${head} u = ${u} ≥ pm ${pm} → unchanged (${before})`;
-        return `${head} u = ${u} < pm ${pm} → mutated, gene ${event.chosenGene!.gene} chosen (${before} → ${after})${replaced(event, display)}`;
+        return `${head} u = ${u} < pm ${pm} → mutated, gene ${event.chosenGene!.gene} chosen (${before} → ${after})${replaced(event, display)}${moved(event, display)}`;
       }
       if (event.decision === 'unchanged') return `${head} no gene drew below pm ${pm} → unchanged (${before})`;
       if (event.flipped.length === 1) {
         const u = event.geneDraws!.find((d) => d.gene === event.flipped[0])!.u;
-        return `${head} gene ${event.flipped[0]} drew u = ${num(u)} < pm ${pm} → flipped (${before} → ${after})${replaced(event, display)}`;
+        return `${head} gene ${event.flipped[0]} drew u = ${num(u)} < pm ${pm} → flipped (${before} → ${after})${replaced(event, display)}${moved(event, display)}`;
       }
-      return `${head} ${geneList(event.flipped)} drew below pm ${pm} → flipped (${before} → ${after})${replaced(event, display)}`;
+      return `${head} ${geneList(event.flipped)} drew below pm ${pm} → flipped (${before} → ${after})${replaced(event, display)}${moved(event, display)}`;
     }
 
     case 'evaluation': {
       const i = event.individual;
       const steps = (display.explainEvaluation?.(event.repairedFrom ?? i.chromosome).details ?? []).map((d) => `${d}; `).join('');
       const chromosome = event.repairedFrom ? `${formatBits(event.repairedFrom)} → repaired to ${formatBits(i.chromosome)}` : formatBits(i.chromosome);
-      return `Offspring ${event.offspring}: ${chromosome} → ${steps}${scored(i, display, ' → ')}fitness ${i.fitness} (individual ${i.id})`;
+      return `Offspring ${event.offspring}: ${real ? '' : `${chromosome} → `}${steps}${scored(i, display, ' → ')}fitness ${fit(i.fitness)} (individual ${i.id})`;
     }
 
     case 'replacement': {
@@ -128,4 +162,22 @@ function describeWith(event: GaEvent, display: Display): string {
 function scored(i: { readonly decoded: number | string; readonly objective: number; readonly fitness: number }, display: Display, separator = ', '): string {
   if (display.scoreText) return display.scoreText(i) + separator;
   return typeof i.decoded === 'number' ? `x = ${i.decoded}${separator}` : '';
+}
+
+/** Gaussian mutation of a real-valued landscape: which gene drew what, and each step. */
+function describeGaussian(event: MutationEvent, head: string, pm: string, before: string, after: string): string {
+  if (event.decision === 'bypassed') return `${head} mutation is off → unchanged, still ${before}`;
+  if (event.mode === 'per-individual') {
+    const u = num(event.individualDraw!.u);
+    if (event.decision === 'unchanged') return `${head} u = ${u} ≥ pm ${pm} → unchanged, still ${before}`;
+    const step = event.gaussian![0]!;
+    return `${head} u = ${u} < pm ${pm} → mutated, gene ${nameOf(event.chosenGene!.gene)} chosen → ${stepText(step)}: ${before} → ${after}`;
+  }
+  if (event.decision === 'unchanged') return `${head} no gene drew below pm ${pm} → unchanged, still ${before}`;
+  if (event.gaussian!.length === 1) {
+    const step = event.gaussian![0]!;
+    const u = event.geneDraws!.find((d) => d.gene === step.gene)!.u;
+    return `${head} gene ${nameOf(step.gene)} drew u = ${num(u)} < pm ${pm} → ${stepText(step)}: ${before} → ${after}`;
+  }
+  return `${head} genes x and y drew below pm ${pm} → ${event.gaussian!.map((s) => `${nameOf(s.gene)}: ${stepText(s)}`).join('; ')}: ${before} → ${after}`;
 }

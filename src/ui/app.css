@@ -827,3 +827,41 @@ table:has(.itemhdr) thead th:first-child { vertical-align:top; }
 .rrow:has(.bits.vars), .rrow:has(.bits.pair) { flex-wrap:wrap; }
 .rrow:has(.bits.vars) .who, .rrow:has(.bits.pair) .who { width:56px; min-width:56px; flex:none; }
 .rtarget:has(.varhdr) { padding-left:68px; }
+
+/* ---------- the landscape's operator cards ---------- */
+.lc-genes { display:flex; flex-direction:column; gap:4px; margin-top:4px; }
+.lc-gene { margin-top:2px; }
+.lc-gl { font-size:16px; }
+.lc-gd { font-size:16px; font-variant-numeric:tabular-nums; }
+.lc-gd .clamp, .lc-tab .clamp { color:var(--flip-ink); font-weight:700; }
+.lc-kids { display:flex; flex-direction:column; gap:2px; margin-top:6px; }
+.nline .axis { stroke:var(--ink2); stroke-width:2; }
+.nline text { fill:var(--ink); }
+.nline .lab { font-size:13px; font-weight:700; }
+.nline .tick { font-size:11px; fill:var(--ink2); }
+.nline .band.wide { fill:var(--flip-bg); stroke:var(--flip); stroke-width:2; stroke-dasharray:5 3; }
+.nline .band.par { fill:var(--acc-tint); stroke:var(--acc); stroke-width:2; }
+.nline .mk { stroke:var(--ink); stroke-width:2.2; }
+.nline .mk.parent { fill:var(--surface); }
+.nline .mk.child { fill:var(--ok-bg); }
+.nline .clampbar { stroke:var(--flip); stroke-width:3; }
+.lc-tab { border-collapse:collapse; font-size:16px; margin:4px 0; width:auto; }
+.lc-tab th, .lc-tab td { padding:2px 12px 2px 0; text-align:left; font-variant-numeric:tabular-nums; white-space:nowrap; height:auto; border:none; font-size:16px; }
+.lc-tab thead th { font-weight:600; color:var(--ink2); font-size:14px; text-transform:uppercase; letter-spacing:.02em; }
+.lc-tab tbody th { font-weight:600; color:var(--ink); text-transform:none; letter-spacing:0; }
+.lc-tab tr.ch td, .lc-tab tr.ch th { font-weight:700; }
+.lc-tab tr.hit td, .lc-tab tr.hit th { background:var(--flip-bg); }
+.lc-tab td.num, .lc-tab th.num { text-align:right; }
+.lc-tab td.big { color:var(--flip-ink); font-weight:800; }
+.dec { font-size:16px; color:var(--ink2); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.dec.moved { font-weight:700; }
+.lc-flip { margin:4px 0 6px; font-size:15px; }
+.lc-flip summary { cursor:pointer; font-weight:700; }
+.lc-flipblock { margin-top:4px; }
+.lc-flipblock .bit.miniflip { width:15px; height:20px; font-size:12px; margin-left:1px; }
+.projector .lc-gl, .projector .lc-gd, .projector .lc-tab th, .projector .lc-tab td { font-size:18px; }
+.projector .dec { font-size:18px; }
+.lc-tab.mt { width:100%; }
+.lc-tab.mt td { white-space:normal; }
+.lc-tab.mt th { white-space:normal; }
+.crow:has(.dec) { flex-wrap:wrap; gap:4px 14px; }

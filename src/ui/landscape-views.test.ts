@@ -126,3 +126,15 @@ describe('the variable row above the chromosome columns', () => {
     );
   });
 });
+
+describe('clamped and cut genes of a real pair', () => {
+  const real = infoOf();
+
+  test('a gene cut to a bound is marked on its number and said; a cut after gene 1 puts a dashed line after x', () => {
+    const markup = bits('5.000 −1.768', real, { clamped: [1] });
+    expect(markup).toMatch(/<span class="xv clamp">5\.000<\/span>/);
+    expect(label(markup)).toBe('Chromosome x = 5.000, y = −1.768, gene 1 clamped to the bound');
+    const cut = bits('5.000 −1.768', real, { cuts: [1] });
+    expect(cut).toMatch(/<span class="xv cut">5\.000<\/span>/);
+  });
+});

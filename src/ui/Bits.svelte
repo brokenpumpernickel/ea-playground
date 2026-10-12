@@ -42,6 +42,7 @@
     cuts = [],
     flipped = [],
     dropped = [],
+    clamped = [],
     marks,
     unders,
     blockNotes = [],
@@ -54,6 +55,8 @@
     flipped?: readonly number[];
     /** 1-based genes that repair rewrote from 1 to 0 (Lamarckian repair): marked with ✂ and a dotted outline. */
     dropped?: readonly number[];
+    /** Real-valued landscape: 1-based genes cut to a bound by crossover or mutation, marked with ▮. */
+    clamped?: readonly number[];
     marks?: readonly boolean[];
     unders?: readonly { readonly text: string; readonly flag: boolean; readonly value?: number }[];
     /** A note under each block of a trap chromosome (its mark and score, or what crossover did to it). */
@@ -96,7 +99,7 @@
   const varied = $derived(land !== undefined && land.representation !== 'real' && /^[01]+$/.test(chromosome) && chromosome.length === 2 * land.bits);
   const varGeometry = $derived(varied ? variableGeometry(land!.bits) : undefined);
   const varStyle = $derived(varGeometry ? `--vw:${varGeometry.cell}px;--vh:${varGeometry.height}px;--vf:${varGeometry.font}px;--vg:${varGeometry.gap}px;--vgg:${varGeometry.groupGap}px` : undefined);
-  const numberClass = (gene: number) => `xv${flipped.includes(gene) ? ' flip' : ''}${sources?.[gene - 1] === 'B' ? ' hatch' : ''}`;
+  const numberClass = (gene: number) => `xv${flipped.includes(gene) ? ' flip' : ''}${sources?.[gene - 1] === 'B' ? ' hatch' : ''}${clamped.includes(gene) ? ' clamp' : ''}${cuts.includes(gene) ? ' cut' : ''}`;
 
   const fromB = $derived(sources ? [...sources].flatMap((s, k) => (s === 'B' ? [k + 1] : [])) : []);
   /** A screen reader should say each letter, so letters are spelled out one by one and a space is named. */
@@ -115,6 +118,7 @@
       cuts.length > 0 ? `cut after ${geneList(cuts)}` : '',
       flipped.length > 0 ? `${geneList(flipped)} flipped` : '',
       dropped.length > 0 ? `${geneList(dropped)} dropped by repair, rewritten to 0` : '',
+      clamped.length > 0 ? `${geneList(clamped)} clamped to the bound` : '',
     ]
       .filter(Boolean)
       .join(', ')

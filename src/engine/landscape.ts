@@ -193,7 +193,7 @@ export function landscapeProblem(options: LandscapeOptions): LandscapeProblem {
     decodedBounds: [info.bounds, info.bounds],
     columns,
     knownOptimumFitness,
-    scoreText: (scores) => (minimised ? `${text(scores)}: f = ${minus(scores.objective)}, so fitness = ${minus(scores.fitness)}` : `${text(scores)}: f = ${minus(scores.objective)}, fitness ${minus(scores.fitness)}`),
+    scoreText: (scores) => `${text(scores)}: f = ${minus(scores.objective)}${minimised ? ', minimised' : ''}`,
     evaluationExplanation: `Landscape: the point (x, y)${real ? ' is read from the two genes' : ` is decoded from the ${2 * n} bits (${n} for x, then ${n} for y, in ${coding === 'gray' ? 'Gray code' : 'plain binary'}) onto ${show(info.bounds.lo)} to ${show(info.bounds.hi)}`}, and ${info.formula} is evaluated there.${minimised ? ' f is to be made small, so fitness = −f: higher fitness is always better.' : ' Higher f is better, so fitness = f.'}`,
     pointOf,
     objectiveAt,
@@ -267,4 +267,10 @@ export function landscapeDefaults(options: LandscapeOptions): { readonly options
       stop: { generationLimit: 100, targetEpsilon: epsilon, stagnationWindow: 40 },
     },
   };
+}
+
+/** The inverse of `integerOfBits`: the n bits (most significant first) that stand for the integer in plain binary, or its reflected Gray word. */
+export function bitsOfInteger(value: number, n: number, coding: 'plain' | 'gray'): number[] {
+  const word = coding === 'gray' ? value ^ (value >> 1) : value;
+  return Array.from({ length: n }, (_, k) => (word >> (n - 1 - k)) & 1);
 }

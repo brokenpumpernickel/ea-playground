@@ -100,6 +100,7 @@ export {
   type TrapProblem,
 } from './trap';
 export {
+  bitsOfInteger,
   decodeVariable,
   integerOfBits,
   landscapeDefaultEpsilon,

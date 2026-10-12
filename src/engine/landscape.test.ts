@@ -331,12 +331,12 @@ describe('the real-valued problem', () => {
 
   test('the sentence for a score reads in the problem’s own terms', () => {
     const problem = real('himmelblau');
-    expect(problem.scoreText!(problem.evaluate([1, 1]))).toBe('(1.000, 1.000): f = 106, so fitness = −106');
+    expect(problem.scoreText!(problem.evaluate([1, 1]))).toBe('(1.000, 1.000): f = 106, minimised');
     // long fractions are rounded to three decimals, so a sentence stays a sentence
-    expect(real('single-peak').scoreText!(real('single-peak').evaluate([0, 0]))).toBe('(0.000, 0.000): f = 0.535, fitness 0.535');
-    expect(real('single-peak').scoreText!(real('single-peak').evaluate([5, 5]))).toBe('(5.000, 5.000): f = 0.004, fitness 0.004');
-    expect(real('single-peak').scoreText!(real('single-peak').evaluate([-5, 5]))).toBe('(−5.000, 5.000): f = 0, fitness 0');
-    expect(real('single-peak').scoreText!(real('single-peak').evaluate([2, -1]))).toBe('(2.000, −1.000): f = 1, fitness 1');
+    expect(real('single-peak').scoreText!(real('single-peak').evaluate([0, 0]))).toBe('(0.000, 0.000): f = 0.535');
+    expect(real('single-peak').scoreText!(real('single-peak').evaluate([5, 5]))).toBe('(5.000, 5.000): f = 0.004');
+    expect(real('single-peak').scoreText!(real('single-peak').evaluate([-5, 5]))).toBe('(−5.000, 5.000): f = 0');
+    expect(real('single-peak').scoreText!(real('single-peak').evaluate([2, -1]))).toBe('(2.000, −1.000): f = 1');
   });
 
   test('fitnessAt and objectiveAt give any point of the plane, which is what the heatmap and surface draw', () => {
