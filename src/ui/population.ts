@@ -17,6 +17,8 @@ export interface PopulationRow {
   /** How many times selection has picked this individual so far; undefined until selection shows any result. */
   readonly parentCount?: number;
   readonly elite: boolean;
+  /** The decoded numbers of a problem whose solution is several (the landscape's x and y). */
+  readonly values?: readonly number[];
 }
 
 export interface PopulationTable {
@@ -66,6 +68,7 @@ export function populationTable(view: View<RunState, GaEvent>, atEnd: boolean, d
       ...(shares.has(i.id) ? { weight: shares.get(i.id)!.weight, probability: shares.get(i.id)!.probability } : {}),
       ...(sawPick ? { parentCount: picks.filter((p) => p === i.id).length } : {}),
       elite: showNew && eliteIds.has(i.id),
+      ...(i.values ? { values: i.values } : {}),
     })),
   };
 }

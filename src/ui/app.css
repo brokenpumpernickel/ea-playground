@@ -865,3 +865,17 @@ table:has(.itemhdr) thead th:first-child { vertical-align:top; }
 .lc-tab.mt td { white-space:normal; }
 .lc-tab.mt th { white-space:normal; }
 .crow:has(.dec) { flex-wrap:wrap; gap:4px 14px; }
+
+/* ---------- the landscape view: the heatmap of fitness ---------- */
+.lview { display:flex; flex-direction:column; gap:6px; height:100%; }
+.lbar { display:flex; align-items:center; gap:22px; flex-wrap:wrap; font-size:15px; }
+.lgrp { display:inline-flex; gap:6px; align-items:center; }
+.lgrp.key { color:var(--ink2); font-size:14px; }
+.tog { padding:1px 10px; border:2px solid var(--ink2); border-radius:8px; font:inherit; font-size:14px; font-weight:600; background:var(--surface); color:var(--ink); cursor:pointer; }
+.tog.on { background:var(--acc-tint); border-color:var(--acc); }
+.lplots { display:flex; gap:16px; }
+.lplots figure { margin:0; }
+.lplots figcaption { font-size:15px; font-weight:600; margin-bottom:2px; }
+.lplots figcaption i { font-weight:400; color:var(--ink2); }
+canvas.heat { border:2px solid var(--line, var(--ink2)); border-radius:8px; display:block; background:#fff; }
+.lsent { margin:2px 0 0; font-size:14px; color:var(--ink2); line-height:1.25; }

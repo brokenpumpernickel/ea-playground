@@ -4,6 +4,7 @@
   import SchemaTracker from './SchemaTracker.svelte';
   import CrossoverView from './CrossoverView.svelte';
   import EvaluationView from './EvaluationView.svelte';
+  import LandscapeView from './LandscapeView.svelte';
   import MutationView from './MutationView.svelte';
   import { evaluationModel, replacementModel } from './outcome-models';
   import PairingView from './PairingView.svelte';
@@ -39,6 +40,20 @@
       showSchema = false;
     }
   });
+  // the landscape's heatmap is the panel's second view for a landscape; the narration stays visible below it
+  const land = $derived(session.landscape);
+  let showLandscape = $state(false);
+  let zoomToPopulation = $state(false);
+  let seenLandscapeEpoch: number | undefined;
+  $effect(() => {
+    if (seenLandscapeEpoch === undefined) seenLandscapeEpoch = session.epoch;
+    else if (session.epoch !== seenLandscapeEpoch) {
+      seenLandscapeEpoch = session.epoch;
+      showLandscape = false;
+      zoomToPopulation = false;
+    }
+  });
+  const landscapeOpen = $derived(land !== undefined && showLandscape);
   const schemaOpen = $derived(blocks !== undefined && showSchema);
   const schemaText = $derived(typedSchema ?? (blocks ? schemaOfBlock(blocks, 1) : ''));
   const schemaParsed = $derived(blocks ? parseSchema(schemaText, blocks.blockSize * blocks.blocks) : undefined);
@@ -65,17 +80,25 @@
 
 <section class="panel" style="left:24px;top:172px;width:1096px;height:574px" aria-labelledby="stage-heading">
   <div class="ph">
-    <h2 id="stage-heading">{schemaOpen ? 'Schema tracker' : heading}</h2>
+    <h2 id="stage-heading">{schemaOpen ? 'Schema tracker' : landscapeOpen ? 'Landscape' : heading}</h2>
     {#if session.pending.length > 0}<span class="pendingchip" data-testid="pending-chip" title="Changed settings apply when the next generation starts">● pending: {session.pending.join(', ')}</span>{/if}
   </div>
+  {#if land}
+    <div class="tabs" role="group" aria-label="View of this panel">
+      <button class="tab" class:on={!showLandscape} type="button" aria-pressed={!showLandscape} data-testid="show-stage" onclick={() => (showLandscape = false)}>Stage view</button>
+      <button class="tab" class:on={showLandscape} type="button" aria-pressed={showLandscape} data-testid="show-landscape" onclick={() => (showLandscape = true)}>Landscape</button>
+    </div>
+  {/if}
   {#if blocks}
     <div class="tabs" role="group" aria-label="View of this panel">
       <button class="tab" class:on={!showSchema} type="button" aria-pressed={!showSchema} data-testid="show-stage" onclick={() => (showSchema = false)}>Stage view</button>
       <button class="tab" class:on={showSchema} type="button" aria-pressed={showSchema} data-testid="show-schema" onclick={() => (showSchema = true)}>Schema tracker</button>
     </div>
   {/if}
-  <div id="stagebody" style={blocks ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
-    {#if schemaOpen && blocks}
+  <div id="stagebody" style={blocks || land ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
+    {#if landscapeOpen}
+      <LandscapeView {session} bind:zoom={zoomToPopulation} />
+    {:else if schemaOpen && blocks}
       <SchemaTracker info={blocks} text={schemaText} oninput={(t) => (typedSchema = t)} history={schemaPoints} now={view.position.cycle} />
     {:else if stage === 'selection' && tournament}
       <TournamentView model={tournamentModel(view, display)} />
