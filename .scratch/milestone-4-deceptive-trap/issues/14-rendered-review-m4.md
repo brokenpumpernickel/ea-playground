@@ -1,6 +1,6 @@
 # 14 Rendered review and sign-off
 
-Status: awaiting instructor sign-off
+Status: resolved
 Type: review (needs instructor)
 Blocked by: 13
 Spec: ../spec.md
@@ -51,3 +51,7 @@ Open https://brokenpumpernickel.github.io/ea-playground/, choose Trap, switch on
 2. **The badge for a changed block sat tight under the result row** in the mutation cards (touching the flipped gene's shadow): 10 px of room added.
 
 Both are covered by a new test, `e2e/trap-selection.spec.ts` (17): for 4 × 5 tight and loose, 6 × 5 loose and 3 × 10, with tournament and with roulette selection, at both sizes in projector mode, at every micro-step of selection and pairing nothing leaves its card, no two items of a row overlap and no text is broken over several lines; and the gap under the result row is at least 10 px. 425 Playwright tests pass.
+
+### Instructor sign-off
+
+2026-10-12: after the fixes above the instructor stepped through the trap in projector mode and signed off. Criterion 8 is met; milestone 4 is complete. The next milestone (the two-dimensional landscape) can be specified.
