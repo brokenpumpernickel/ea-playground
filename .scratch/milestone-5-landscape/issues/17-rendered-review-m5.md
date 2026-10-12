@@ -1,6 +1,6 @@
 # 17 Rendered review and sign-off
 
-Status: awaiting instructor sign-off
+Status: resolved (instructor signed off)
 Type: review (needs instructor)
 Blocked by: 16
 Spec: ../spec.md
