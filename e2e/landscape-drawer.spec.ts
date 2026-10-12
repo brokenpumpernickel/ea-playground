@@ -5,6 +5,7 @@ import { gaAlgorithm, metricsOfProblem, type LandscapeOptions } from '../src/eng
 import { createRun } from '../src/run';
 import { defaultsOf, entryOf } from '../src/ui/problems';
 import { configOf, encodeConfig } from '../src/ui/run-config';
+import { statsLines } from '../src/ui/spread-model';
 
 const url = pathToFileURL(resolve('dist/index.html')).href;
 const entry = entryOf('landscape')!;
@@ -24,11 +25,11 @@ const summaryAt = (options: LandscapeOptions, g: number, seed = 42, edit: (d: Re
   const run = createRun(gaAlgorithm, { setup: { problem, init: d.init }, params: d.params, seed });
   for (let k = 0; k < g; k++) run.forwardCycle();
   const m = metricsOfProblem(run.snapshot(g).state, problem);
-  return `generation ${g} · best now ${m.best} · best so far ${m.bestSoFar}`;
+  return statsLines(m)[0];
 };
 const summary = async (page: Page) => (await page.getByTestId('summary').innerText()).split('\n')[0]!.trim();
 /**
- * The page's summary line is the engine's: the same text, and numbers equal to rounding. A browser's Math.log and
+ * The page's summary line is the engine's: the same text, and numbers equal to the three decimals the line shows. A browser's Math.log and
  * Math.cos (used by the Gaussian step) can differ from Node's in the last bits, which moves a fitness by about 1e-15.
  */
 const numberPattern = /-?\d+(\.\d+)?(e-?\d+)?/g;
@@ -36,7 +37,7 @@ const expectSummary = async (page: Page, expected: string) => {
   const got = await summary(page);
   expect(got.replace(numberPattern, '#')).toBe(expected.replace(numberPattern, '#'));
   const want = expected.match(numberPattern)!.map(Number);
-  got.match(numberPattern)!.map(Number).forEach((value, k) => expect(value).toBeCloseTo(want[k]!, 9));
+  got.match(numberPattern)!.map(Number).forEach((value, k) => expect(value).toBeCloseTo(want[k]!, 2));
 };
 
 const open = async (page: Page, options: LandscapeOptions = base, edit: (d: ReturnType<typeof defaultsOf>) => ReturnType<typeof defaultsOf> = (d) => d) => {

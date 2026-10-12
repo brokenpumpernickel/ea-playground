@@ -11,7 +11,7 @@
   const T = 28;
   const B = 138;
   const X = (generation: number) => L + ((R - L) * generation) / model.xMax;
-  const Y = (value: number) => B - ((B - T) * value) / model.yMax;
+  const Y = (value: number) => B - ((B - T) * (value - model.yMin)) / (model.yMax - model.yMin);
 
   const line = (points: readonly PlotPoint[], pick: (p: PlotPoint) => number) => points.map((p, k) => `${k ? 'L' : 'M'}${X(p.generation)},${Y(pick(p))}`).join(' ');
   const band = (points: readonly PlotPoint[]) =>
@@ -35,7 +35,7 @@
     const at = model.points[Math.min(model.now, model.points.length - 1)]!;
     const feasible = model.feasibleLine ? `, best feasible so far ${at.feasibleBestSoFar === null || at.feasibleBestSoFar === undefined ? 'none yet' : num(at.feasibleBestSoFar)}` : '';
     const zeros = model.attractor !== undefined ? ` All zeros scores ${num(model.attractor)}.` : '';
-    return `Fitness by generation, scale 0 to ${num(model.yMax)}. Generation ${at.generation}: average ${num(at.average)}, best of generation ${at.best}, best so far ${at.bestSoFar}${feasible}.${zeros}`;
+    return `Fitness by generation, scale ${num(model.yMin)} to ${num(model.yMax)}. Generation ${at.generation}: average ${num(at.average)}, best of generation ${num(at.best)}, best so far ${num(at.bestSoFar)}${feasible}.${zeros}`;
   });
 </script>
 
@@ -55,7 +55,7 @@
   {/if}
   {#if model.optimum !== undefined}
     <line x1={L} x2={R} y1={Y(model.optimum)} y2={Y(model.optimum)} stroke="var(--ink2)" stroke-width="1.5" stroke-dasharray="2 5" data-optimum={model.optimum} />
-    <text x={R} y={Y(model.optimum) - 6} text-anchor="end" style="font-size:16px">optimum {num(model.optimum)}</text>
+    <text x={R} y={model.optimum >= model.yMax ? Y(model.optimum) + 20 : Y(model.optimum) - 6} text-anchor="end" style="font-size:16px">optimum {num(model.optimum)}</text>
   {/if}
 
   <path d={band(upToNow)} fill="var(--s1)" opacity=".14" data-series="band" />

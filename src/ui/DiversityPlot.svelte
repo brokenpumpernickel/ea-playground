@@ -15,11 +15,12 @@
   const yTicks = [0, 0.5, 1];
 
   const line = (points: typeof model.points) => points.map((p, k) => `${k ? 'L' : 'M'}${X(p.generation)},${Y(p.diversity)}`).join(' ');
+  const hammingLine = (points: typeof model.points) => points.filter((p) => p.hamming !== undefined).map((p, k) => `${k ? 'L' : 'M'}${X(p.generation)},${Y(p.hamming!)}`).join(' ');
   const upToNow = $derived(model.points.filter((p) => p.generation <= model.now));
   const fromNow = $derived(model.points.filter((p) => p.generation >= model.now));
   const summary = $derived.by(() => {
     const at = model.points[Math.min(model.now, model.points.length - 1)]!;
-    return `Diversity by generation, scale 0 to 1. Generation ${at.generation}: ${num(at.diversity)}, ${at.distinct} distinct chromosomes.`;
+    return `Diversity by generation, scale 0 to 1. Generation ${at.generation}: ${num(at.diversity)}${at.hamming !== undefined ? `, Hamming ${num(at.hamming)}` : ''}, ${at.distinct} distinct chromosomes.`;
   });
 </script>
 
@@ -33,6 +34,15 @@
   {/each}
   <text x={(L + R) / 2} y={H - 6} text-anchor="middle" style="font-size:16px">generation</text>
 
+  {#if model.hammingLine}
+    <path d={hammingLine(fromNow)} fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="2 4" opacity=".3" />
+    <path d={hammingLine(upToNow)} fill="none" stroke="var(--ink)" stroke-width="3" stroke-dasharray="2 4" data-series="hamming" />
+    {#each model.points as p (p.generation)}
+      {@const x = X(p.generation)}
+      {@const y = Y(p.hamming!)}
+      <path d="M{x},{y - 8} l7,8 l-7,8 l-7,-8 Z" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.5" opacity={p.future ? 0.3 : 1} data-series="hamming" data-gen={p.generation} data-value={p.hamming} data-future={p.future}><title>generation {p.generation}: Hamming diversity {num(p.hamming!)}</title></path>
+    {/each}
+  {/if}
   <path d={line(fromNow)} fill="none" stroke="var(--s7)" stroke-width="2" opacity=".3" />
   <path d={line(upToNow)} fill="none" stroke="var(--s7)" stroke-width="2.5" data-series="diversity" />
   {#each model.points as p (p.generation)}

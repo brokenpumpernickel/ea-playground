@@ -16,7 +16,12 @@ export interface PlotPoint {
   readonly bestSoFar: number;
   /** Only for a problem that can have infeasible individuals: the best feasible fitness so far (null until there is one). */
   readonly feasibleBestSoFar?: number | null;
+  /** The diversity plotted: Hamming for the binary problems, the mean distance in decoded space (0 to 1) for the landscape. */
   readonly diversity: number;
+  /** Binary-coded landscape only: the Hamming diversity, a second line beside the decoded one. */
+  readonly hamming?: number;
+  /** Landscape only: the standard deviation of x and of y over the population, each as a share of its range. */
+  readonly spread?: readonly number[];
   readonly distinct: number;
   readonly alleleFrequencies: readonly number[];
   /** After the cursor: still plotted, but dimmed. */
@@ -29,6 +34,8 @@ export interface PlotModel {
   readonly now: number;
   readonly xMax: number;
   readonly xTicks: readonly number[];
+  /** The bottom of the fitness axis: 0, or below it for a fitness that can be negative (the minimised landscapes' −f). */
+  readonly yMin: number;
   readonly yMax: number;
   readonly yTicks: readonly number[];
   /** The best fitness any solution can have, when known; drawn as a reference line. */
@@ -37,6 +44,8 @@ export interface PlotModel {
   readonly attractor?: number;
   /** True when the plot has a line for the best feasible fitness so far. */
   readonly feasibleLine?: boolean;
+  /** True when the diversity plot has a second line, the Hamming diversity (binary-coded landscape). */
+  readonly hammingLine?: boolean;
 }
 
 const niceSteps = [1, 2, 4, 8, 10];
@@ -65,24 +74,31 @@ export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: n
       best: m.best,
       bestSoFar: m.bestSoFar,
       ...(feasibleLine ? { feasibleBestSoFar: m.feasible?.bestSoFar ?? null } : {}),
-      diversity: m.diversity,
+      diversity: m.decoded?.diversity ?? m.diversity,
+      ...(m.decoded && m.alleleFrequencies.length > 0 ? { hamming: m.diversity } : {}),
+      ...(m.decoded ? { spread: m.decoded.spread } : {}),
       distinct: m.distinct,
       alleleFrequencies: m.alleleFrequencies,
       future: g > now,
     };
   });
   const top = Math.max(optimum ?? 0, ...points.map((p) => p.max));
-  const yMax = niceCeiling(top);
+  const bottom = Math.min(optimum ?? 0, ...points.map((p) => p.min));
+  // a fitness that can be negative gets a floor at the next nice value below it, and the top is the nice ceiling above, or 0
+  const yMin = bottom < 0 ? -niceCeiling(-bottom) : 0;
+  const yMax = top > 0 || yMin === 0 ? niceCeiling(top) : 0;
   const xMax = generationAxes.find((limit) => limit >= run.lastCycle) ?? Math.ceil(run.lastCycle / 1000) * 1000;
   return {
     points,
     now,
     xMax,
     xTicks: Array.from({ length: 6 }, (_, k) => (xMax / 5) * k),
+    yMin,
     yMax,
-    yTicks: Array.from({ length: 5 }, (_, k) => (yMax / 4) * k),
+    yTicks: Array.from({ length: 5 }, (_, k) => yMin + ((yMax - yMin) / 4) * k),
     ...(optimum !== undefined ? { optimum } : {}),
     ...(attractor !== undefined ? { attractor } : {}),
     ...(feasibleLine ? { feasibleLine } : {}),
+    ...(points.some((p) => p.hamming !== undefined) ? { hammingLine: true } : {}),
   };
 }

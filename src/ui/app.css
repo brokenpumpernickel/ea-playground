@@ -909,3 +909,18 @@ tr.sel td { background:var(--acc-tint); }
 .lview { gap:4px; }
 .lview .lsent, .lview .lkey { font-size:13px; line-height:1.2; }
 .lplots figcaption { margin-bottom:0; }
+
+/* the landscape's spread panel */
+.spread { padding:6px 16px 0; box-sizing:border-box; height:128px; display:flex; flex-direction:column; gap:3px; }
+.spread .scap { font-size:14px; color:var(--ink2); line-height:1.1; white-space:nowrap; }
+.projector .spread .scap { font-size:16px; }
+.spread .srow { display:flex; align-items:center; gap:10px; height:24px; }
+.spread .sname { width:18px; font-size:19px; font-family:ui-monospace,Consolas,monospace; }
+.spread .strack { flex:1; height:18px; border:2px solid var(--ink2); border-radius:4px; box-sizing:border-box; position:relative; overflow:hidden; background:var(--surface); }
+.spread .sfill { height:100%; background:var(--seq4); border-right:2px solid var(--ink2); box-sizing:border-box; }
+.spread .sval { width:52px; text-align:right; font-size:19px; }
+.spread .shist { font-size:15px; color:var(--ink2); line-height:1.15; white-space:nowrap; font-family:ui-monospace,Consolas,monospace; }
+.projector .spread .sval, .projector .spread .sname { font-size:21px; }
+.projector .spread .shist { font-size:17px; }
+.plot .summary.landscape { font-size:16px; }
+.projector .plot .summary.landscape { font-size:18px; }
