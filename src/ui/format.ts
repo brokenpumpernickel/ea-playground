@@ -1,4 +1,4 @@
-import { formatGenes, goldberg, type Chromosome, type Problem, type ProblemColumn, type Scores } from '../engine';
+import { formatGenes, formatReal, goldberg, type Chromosome, type Problem, type ProblemColumn, type Scores } from '../engine';
 
 /** Numbers as the screen shows them: up to three decimals, with no trailing zeros (0.8, 0.144, 576). */
 export const num = (v: number): string => String(Math.round(v * 1000) / 1000);
@@ -24,7 +24,7 @@ export interface Display {
 }
 
 export const displayOf = (problem: Problem): Display => ({
-  show: (chromosome) => formatGenes(chromosome, problem.alphabet),
+  show: (chromosome) => (problem.bounds ? formatReal(chromosome, 3) : formatGenes(chromosome, problem.alphabet)),
   alphabetSize: problem.alphabet.length,
   chromosomeLength: problem.chromosomeLength,
   columns: problem.columns,

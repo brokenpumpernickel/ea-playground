@@ -112,16 +112,21 @@ function checkParams(params: unknown, problems: string[]): void {
   } else if ('selection' in params) problems.push('"params.selection.method" must be "roulette" or "tournament".');
 
   const crossover = params.crossover;
-  if (exactKeys(crossover, 'params.crossover', ['enabled', 'operator', 'probability'], [], problems)) {
+  if (exactKeys(crossover, 'params.crossover', ['enabled', 'operator', 'probability'], ['alpha'], problems)) {
     if ('enabled' in crossover && typeof crossover.enabled !== 'boolean') problems.push('"params.crossover.enabled" must be true or false.');
-    if ('operator' in crossover && !['one-point', 'two-point', 'uniform'].includes(crossover.operator as string)) problems.push('"params.crossover.operator" must be "one-point", "two-point" or "uniform".');
+    if ('operator' in crossover && !['one-point', 'two-point', 'uniform', 'blx-alpha', 'arithmetic'].includes(crossover.operator as string)) {
+      problems.push('"params.crossover.operator" must be "one-point", "two-point", "uniform", "blx-alpha" or "arithmetic".');
+    }
     if ('probability' in crossover && !isNumber(crossover.probability)) problems.push('"params.crossover.probability" must be a number.');
+    if ('alpha' in crossover && !isNumber(crossover.alpha)) problems.push('"params.crossover.alpha" must be a number.');
   }
   const mutation = params.mutation;
-  if (exactKeys(mutation, 'params.mutation', ['enabled', 'mode', 'probability'], [], problems)) {
+  if (exactKeys(mutation, 'params.mutation', ['enabled', 'mode', 'probability'], ['operator', 'sigma'], problems)) {
     if ('enabled' in mutation && typeof mutation.enabled !== 'boolean') problems.push('"params.mutation.enabled" must be true or false.');
     if ('mode' in mutation && !['per-gene', 'per-individual'].includes(mutation.mode as string)) problems.push('"params.mutation.mode" must be "per-gene" or "per-individual".');
     if ('probability' in mutation && !isNumber(mutation.probability)) problems.push('"params.mutation.probability" must be a number.');
+    if ('operator' in mutation && !['flip', 'gaussian'].includes(mutation.operator as string)) problems.push('"params.mutation.operator" must be "flip" or "gaussian".');
+    if ('sigma' in mutation && !isNumber(mutation.sigma)) problems.push('"params.mutation.sigma" must be a number.');
   }
   if ('elites' in params && !isNumber(params.elites)) problems.push('"params.elites" must be a number.');
   if ('truncation' in params) {
@@ -132,8 +137,8 @@ function checkParams(params: unknown, problems: string[]): void {
     }
   }
   const stop = params.stop;
-  if (exactKeys(stop, 'params.stop', ['generationLimit'], ['targetFitness', 'stagnationWindow'], problems)) {
-    for (const key of ['generationLimit', 'targetFitness', 'stagnationWindow']) if (key in stop && !isNumber(stop[key])) problems.push(`"params.stop.${key}" must be a number.`);
+  if (exactKeys(stop, 'params.stop', ['generationLimit'], ['targetFitness', 'targetEpsilon', 'stagnationWindow'], problems)) {
+    for (const key of ['generationLimit', 'targetFitness', 'targetEpsilon', 'stagnationWindow']) if (key in stop && !isNumber(stop[key])) problems.push(`"params.stop.${key}" must be a number.`);
   }
 }
 

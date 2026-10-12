@@ -8,7 +8,6 @@ import {
   landscapeFunctionInfo,
   landscapeFunctions,
   landscapeProblem,
-  landscapeTargetFitness,
   validateEpsilon,
   type LandscapeFunction,
   type LandscapeRepresentation,
@@ -341,13 +340,14 @@ describe('the stop criterion within ε of the optimum', () => {
     expect(landscapeDefaultEpsilon(problemOf('real', 'single-peak'))).toBeCloseTo(1e-3, 4);
   });
 
-  test('the target fitness is the optimum minus ε, and ε must be a number greater than 0', () => {
-    const p = problemOf('real', 'single-peak');
-    expect(landscapeTargetFitness(p, 0.01)).toBe(1 - 0.01);
-    expect(landscapeTargetFitness(problemOf('real', 'himmelblau'), 0.5)).toBe(-0.5);
-    for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) expect(validateEpsilon(bad)).toEqual(['ε must be a number greater than 0.']);
+  test('ε must be a number greater than 0, in the check and in the stop itself, and the stop needs a known optimum', () => {
+    for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(validateEpsilon(bad)).toEqual(['ε must be a number greater than 0.']);
+      expect(() => stopReasons(startRun(problemOf('real', 'single-peak'), { kind: 'random', size: 3 }, createRng(1)).state, { generationLimit: 5, targetEpsilon: bad }, 1)).toThrow('ε must be a number greater than 0.');
+    }
     expect(validateEpsilon(1e-3)).toEqual([]);
-    expect(() => landscapeTargetFitness(p, 0)).toThrow('ε must be a number greater than 0.');
+    const state = startRun(goldberg, { kind: 'random', size: 3 }, createRng(1)).state;
+    expect(() => stopReasons(state, { generationLimit: 5, targetEpsilon: 1 })).toThrow('Stopping within ε of the optimum needs a problem whose best fitness is known.');
   });
 
   test('the stop fires exactly when the best fitness is within ε of the optimum, never otherwise', () => {
@@ -355,20 +355,20 @@ describe('the stop criterion within ε of the optimum', () => {
     const at = (x: number, y: number) => startRun(p, { kind: 'explicit', chromosomes: [`${x} ${y}`, '-5 5'] }, createRng(1)).state;
     const state = at(2.1, -1); // fitness exp(−0.01 / 8)
     const gap = 1 - state.population[0]!.fitness;
-    const stop = (epsilon: number) => stopReasons(state, { generationLimit: 50, targetFitness: landscapeTargetFitness(p, epsilon) });
+    const stop = (epsilon: number) => stopReasons(state, { generationLimit: 50, targetEpsilon: epsilon }, p.knownOptimumFitness);
     expect(stop(gap * 1.001)).toContain('target-reached');
     expect(stop(gap * 0.999)).not.toContain('target-reached');
     expect(stop(gap * 10)).toContain('target-reached');
     expect(stop(gap / 10)).not.toContain('target-reached');
     // the optimum itself is always within any ε
-    expect(stopReasons(at(2, -1), { generationLimit: 50, targetFitness: landscapeTargetFitness(p, 1e-9) })).toContain('target-reached');
+    expect(stopReasons(at(2, -1), { generationLimit: 50, targetEpsilon: 1e-9 }, p.knownOptimumFitness)).toContain('target-reached');
   });
 
   test('it holds in a run for every representation: the criterion appears in the generation whose best-so-far first comes within ε', () => {
     for (const s of settings) {
       const p = problemOf(s.representation, 'single-peak', 10);
       const epsilon = 0.02;
-      const run = make(s, { fn: 'single-peak', seed: 3, params: { stop: { generationLimit: 60, targetFitness: landscapeTargetFitness(p, epsilon) }, elites: 1 } });
+      const run = make(s, { fn: 'single-peak', seed: 3, params: { stop: { generationLimit: 60, targetEpsilon: epsilon }, elites: 1 } });
       const result = run.runUntil((state) => state.stops.length > 0);
       expect(result.reason).toBe('condition');
       for (let c = 0; c <= run.lastCycle; c++) {

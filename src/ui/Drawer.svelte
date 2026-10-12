@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { gaAlgorithm, itemName, knapsackLimits, linkages, trapLimits } from '../engine';
+  import { gaAlgorithm, itemName, knapsackLimits, landscapeFunctionInfo, landscapeFunctions, landscapeLimits, linkages, trapLimits } from '../engine';
   import ChainEditor from './ChainEditor.svelte';
   import DrawerRow from './DrawerRow.svelte';
-  import { changes, chromosomePieces, draftOf, followedTargetFitness, optionsOf, problemOf, resetParams, toParams, toSetup, validate, type Draft, type Field } from './drawer-model';
+  import { changes, chromosomePieces, draftOf, followedTargetFitness, optionsOf, problemOf, resetParams, toParams, toSetup, validate, withRepresentation, type Draft, type Field } from './drawer-model';
   import PopulationEditor from './PopulationEditor.svelte';
   import ShareLink from './ShareLink.svelte';
   import { presets as allPresets } from './presets';
@@ -43,17 +43,19 @@
   const errors = $derived(validation.errors);
 
   /** Operator edits are checked against the run as it is, not against setup edits that have not been applied yet. */
-  const operatorFields: Field[] = ['tournamentSize', 'chain', 'crossover.operator', 'crossover.probability', 'mutation.probability', 'elites', 'truncation.lambda', 'stop.generationLimit', 'stop.target', 'stop.stagnation'];
+  const operatorFields: Field[] = ['tournamentSize', 'chain', 'crossover.operator', 'crossover.probability', 'crossover.alpha', 'mutation.probability', 'mutation.sigma', 'elites', 'truncation.lambda', 'stop.generationLimit', 'stop.target', 'stop.epsilon', 'stop.stagnation'];
   const commit = () => {
     const now = fresh();
-    const candidate: Draft = { ...$state.snapshot(draft), init: now.init, size: now.size, chromosomes: now.chromosomes, seed: now.seed, ...(now.options ? { options: now.options } : {}), ...(now.knapsack ? { knapsack: now.knapsack } : {}) };
+    // while the form holds another representation (and so its operators), nothing is applied to the running one: the restart applies it all
+    if (draft.landscape && now.landscape && draft.landscape.representation !== now.landscape.representation) return;
+    const candidate: Draft = { ...$state.snapshot(draft), init: now.init, size: now.size, chromosomes: now.chromosomes, seed: now.seed, ...(now.options ? { options: now.options } : {}), ...(now.knapsack ? { knapsack: now.knapsack } : {}), ...(now.landscape ? { landscape: now.landscape } : {}) };
     const found = validate(candidate, runProblem, sampleFitness(), entry).errors;
     if (operatorFields.some((field) => found[field] !== undefined)) return;
     if (changes(candidate, effective()).operator.length === 0) return;
     session.changeParameters(toParams(candidate));
   };
 
-  const setupFields: Field[] = ['size', 'chromosomes', 'seed', 'alphabet', 'target', 'items', 'capacity', 'handling', 'rho', 'blockSize', 'blocks', 'linkage', 'genes'];
+  const setupFields: Field[] = ['size', 'chromosomes', 'seed', 'alphabet', 'target', 'items', 'capacity', 'handling', 'rho', 'blockSize', 'blocks', 'linkage', 'genes', 'function', 'representation', 'bitsPerVariable'];
   const setupChanges = $derived.by(() => {
     void session.version;
     return setupFields.some((f) => errors[f]) ? undefined : changes(draft, effective()).reset;
@@ -61,12 +63,13 @@
   const anyError = $derived(Object.keys(errors).length > 0);
   const applyReset = () => {
     if (anyError) return;
-    const changed = changes(draft, effective()).reset;
+    const { reset: changed, notes } = changes(draft, effective());
     session.requestReset({
       setup: toSetup(draft, problem),
       seed: Number(draft.seed),
       params: resetParams(draft, runProblem),
       changed,
+      ...(notes ? { notes } : {}),
       ...(optionsOf(draft) ? { options: optionsOf(draft)! } : {}),
     });
   };
@@ -98,6 +101,24 @@
   };
 
   const followed = $derived(followedTargetFitness(draft, runProblem));
+
+  // the landscape: what the function is, which operators the representation offers
+  const fnInfo = $derived(draft.landscape ? landscapeFunctionInfo[draft.landscape.function] : undefined);
+  const binaryCoded = $derived(draft.landscape !== undefined && draft.landscape.representation !== 'real');
+  const realValued = $derived(draft.landscape?.representation === 'real');
+  const setupNotes = $derived.by(() => {
+    void session.version;
+    return anyError ? [] : (changes(draft, effective()).notes ?? []);
+  });
+  const chooseRepresentation = (value: string) => {
+    draft = withRepresentation($state.snapshot(draft) as Draft, value as 'real' | 'plain' | 'gray');
+  };
+  const chooseOperator = (value: string) => {
+    draft.crossover.operator = value as Draft['crossover']['operator'];
+    if (value === 'blx-alpha') draft.crossover.alpha ??= '0.5';
+    else delete draft.crossover.alpha;
+    commit();
+  };
 
   // "was → now" for settings that are pending
   const applied = $derived.by(() => {
@@ -178,6 +199,25 @@
 
   <div class="sec" data-section="setup">
     <h3>Run setup <span class="tag reset"><span aria-hidden="true">↺</span> needs reset</span></h3>
+    {#if draft.landscape}
+      <DrawerRow label="Function" id="function" error={errors.function} help={fnInfo ? `${fnInfo.formula}. ${fnInfo.goal === 'maximise' ? 'Higher f is better, so fitness = f.' : 'f is to be made small, so fitness = −f: higher fitness is always better.'}` : undefined}>
+        <select id="function" bind:value={draft.landscape.function} aria-describedby="function-help">
+          {#each landscapeFunctions as fn (fn)}<option value={fn}>{landscapeFunctionInfo[fn].name} ({landscapeFunctionInfo[fn].goal})</option>{/each}
+        </select>
+      </DrawerRow>
+      <DrawerRow label="Representation" id="representation" error={errors.representation} help={realValued ? 'Two real numbers, x and y. BLX-α, arithmetic crossover and Gaussian mutation are available.' : 'Each variable is written in bits (x first, then y); the bit operators of the earlier problems apply.'}>
+        <select id="representation" value={draft.landscape.representation} onchange={(e) => chooseRepresentation(e.currentTarget.value)} aria-describedby="representation-help">
+          <option value="real">Real-valued (x, y)</option>
+          <option value="plain">Binary-coded, plain binary</option>
+          <option value="gray">Binary-coded, Gray code</option>
+        </select>
+      </DrawerRow>
+      {#if binaryCoded}
+        <DrawerRow label="Bits per variable n" id="bits" error={errors.bitsPerVariable} help={`${landscapeLimits.minBits} to ${landscapeLimits.maxBits}. A chromosome has 2 × n bits: n for x, then n for y; a variable is decoded as lo + (hi − lo) · v / (2ⁿ − 1).`}>
+          <input id="bits" type="text" inputmode="numeric" bind:value={draft.landscape.bits} aria-invalid={errors.bitsPerVariable ? 'true' : undefined} aria-describedby={errors.bitsPerVariable ? 'bits-error' : 'bits-help'} />
+        </DrawerRow>
+      {/if}
+    {/if}
     {#if draft.knapsack}
       <DrawerRow label="Constraint handling" id="handling" error={errors.handling} help={handlingHelp[draft.knapsack.handling]}>
         <select id="handling" bind:value={draft.knapsack.handling} aria-describedby="handling-help">
@@ -252,7 +292,7 @@
         <input id="size" type="text" inputmode="numeric" bind:value={draft.size} aria-invalid={errors.size ? 'true' : undefined} aria-describedby={errors.size ? 'size-error' : 'size-help'} />
       </DrawerRow>
     {:else}
-      <DrawerRow label="Chromosomes" id="chromosomes" wide error={errors.chromosomes} help="One per line (spaces and commas also separate them). The table shows what each decodes to and its fitness.">
+      <DrawerRow label="Chromosomes" id="chromosomes" wide error={errors.chromosomes} help={problem.bounds ? 'One per line: x and y separated by a space or a comma (a semicolon also ends a chromosome). The table shows what each decodes to and its fitness.' : 'One per line (spaces and commas also separate them). The table shows what each decodes to and its fitness.'}>
         <PopulationEditor bind:text={draft.chromosomes} {problem} error={undefined} />
       </DrawerRow>
     {/if}
@@ -263,7 +303,7 @@
       <button class="btn primary" onclick={applyReset} disabled={anyError || !setupChanges || setupChanges.length === 0} data-testid="apply-reset">Apply and restart</button>
       <span class="help">
         {#if anyError}Fix the highlighted fields first.{#if errors['crossover.operator']} The crossover type does not fit the target (see Crossover).{/if}
-        {:else if setupChanges && setupChanges.length > 0}Changed: {setupChanges.join(', ')}. Restarts the run from generation 0.{#if setupChanges.includes('Target fitness')} The stop at “target fitness reached” moves to the new {draft.options ? "target's length" : draft.trap ? 'optimum, k × m' : "instance's optimum"} ({followed}).{/if}
+        {:else if setupChanges && setupChanges.length > 0}Changed: {setupChanges.join(', ')}. Restarts the run from generation 0.{#each setupNotes as note (note)}{' '}<span data-testid="reset-note">{note}</span>{/each}{#if setupChanges.includes('Target fitness')} The stop at “target fitness reached” moves to the new {draft.options ? "target's length" : draft.trap ? 'optimum, k × m' : "instance's optimum"} ({followed}).{/if}
         {:else}No setup changes.{/if}
       </span>
     </div>
@@ -296,12 +336,21 @@
       <label class="switch"><input id="crossover-on" type="checkbox" role="switch" checked={draft.crossover.enabled} onchange={(e) => { draft.crossover.enabled = e.currentTarget.checked; commit(); }} /> {draft.crossover.enabled ? 'ON' : 'OFF'}</label>
     </DrawerRow>
     <DrawerRow label="Type" id="crossover-type" error={errors['crossover.operator']} pending={tag('Crossover type')}>
-      <select id="crossover-type" value={draft.crossover.operator} onchange={(e) => { draft.crossover.operator = e.currentTarget.value as Draft['crossover']['operator']; commit(); }}>
+      <select id="crossover-type" value={draft.crossover.operator} onchange={(e) => chooseOperator(e.currentTarget.value)}>
         <option value="one-point">One-point</option>
-        <option value="two-point">Two-point</option>
+        <option value="two-point">Two-point{realValued ? ' (needs 3 genes)' : ''}</option>
         <option value="uniform">Uniform</option>
+        {#if realValued}
+          <option value="blx-alpha">BLX-α</option>
+          <option value="arithmetic">Arithmetic</option>
+        {/if}
       </select>
     </DrawerRow>
+    {#if draft.crossover.alpha !== undefined}
+      <DrawerRow label="α" id="crossover-alpha" error={errors['crossover.alpha']} pending={pendingFor('Crossover α', applied.crossover.alpha ?? '', draft.crossover.alpha)} help="How far a child gene may fall outside the interval between its parents' values, as a share of that interval's length on each side. 0 keeps children between their parents. Values beyond the bounds are clamped.">
+        <input id="crossover-alpha" type="text" inputmode="decimal" bind:value={draft.crossover.alpha} onchange={commit} aria-invalid={errors['crossover.alpha'] ? 'true' : undefined} aria-describedby={errors['crossover.alpha'] ? 'crossover-alpha-error' : 'crossover-alpha-help'} />
+      </DrawerRow>
+    {/if}
     <DrawerRow
       label="Probability pc"
       id="crossover-probability"
@@ -333,6 +382,11 @@
     >
       <input id="mutation-probability" type="text" inputmode="decimal" bind:value={draft.mutation.probability} onchange={commit} aria-invalid={errors['mutation.probability'] ? 'true' : undefined} />
     </DrawerRow>
+    {#if draft.mutation.sigma !== undefined}
+      <DrawerRow label="Step σ" id="mutation-sigma" error={errors['mutation.sigma']} pending={pendingFor('Mutation σ', applied.mutation.sigma ?? '', draft.mutation.sigma)} help="Gaussian mutation adds a normal step to a gene: σ × the gene's range × z, where z is a standard normal draw (from two uniform draws). Values beyond the bounds are clamped.">
+        <input id="mutation-sigma" type="text" inputmode="decimal" bind:value={draft.mutation.sigma} onchange={commit} aria-invalid={errors['mutation.sigma'] ? 'true' : undefined} aria-describedby={errors['mutation.sigma'] ? 'mutation-sigma-error' : 'mutation-sigma-help'} />
+      </DrawerRow>
+    {/if}
   </div>
 
   <div class="sec" data-section="replacement">
@@ -355,10 +409,17 @@
     <DrawerRow label="Generation limit" id="stop-limit" error={errors['stop.generationLimit']} pending={isPending('Stop criteria') ? '' : undefined}>
       <input id="stop-limit" type="text" inputmode="numeric" bind:value={draft.stop.generationLimit} onchange={commit} aria-invalid={errors['stop.generationLimit'] ? 'true' : undefined} />
     </DrawerRow>
+    {#if draft.stop.epsilon}
+      <DrawerRow label="Within ε of the optimum" id="stop-epsilon" error={errors['stop.epsilon']} help="Reported when the best fitness seen so far is at least the best possible fitness minus ε (a real-valued search never hits the optimum exactly). The default is one thousandth of the function's fitness range.">
+        <label class="switch"><input id="stop-epsilon-on" type="checkbox" role="switch" aria-label="Stop within ε of the optimum" checked={draft.stop.epsilon.enabled} onchange={(e) => { draft.stop.epsilon!.enabled = e.currentTarget.checked; commit(); }} /></label>
+        <input id="stop-epsilon" type="text" inputmode="decimal" bind:value={draft.stop.epsilon.value} onchange={commit} disabled={!draft.stop.epsilon.enabled} aria-invalid={errors['stop.epsilon'] ? 'true' : undefined} aria-describedby={errors['stop.epsilon'] ? 'stop-epsilon-error' : 'stop-epsilon-help'} />
+      </DrawerRow>
+    {:else}
     <DrawerRow label="Target fitness reached" id="stop-target" error={errors['stop.target']} help="Reported when the best fitness seen so far is at least this.">
       <label class="switch"><input id="stop-target-on" type="checkbox" role="switch" aria-label="Use a target fitness" checked={draft.stop.target.enabled} onchange={(e) => { draft.stop.target.enabled = e.currentTarget.checked; commit(); }} /></label>
       <input id="stop-target" type="text" inputmode="decimal" bind:value={draft.stop.target.value} onchange={commit} disabled={!draft.stop.target.enabled} />
     </DrawerRow>
+    {/if}
     <DrawerRow label="Stagnation window" id="stop-stagnation" error={errors['stop.stagnation']} help="Reported when best so far has not improved for this many generations.">
       <label class="switch"><input id="stop-stagnation-on" type="checkbox" role="switch" aria-label="Use a stagnation window" checked={draft.stop.stagnation.enabled} onchange={(e) => { draft.stop.stagnation.enabled = e.currentTarget.checked; commit(); }} /></label>
       <input id="stop-stagnation" type="text" inputmode="numeric" bind:value={draft.stop.stagnation.window} onchange={commit} disabled={!draft.stop.stagnation.enabled} />

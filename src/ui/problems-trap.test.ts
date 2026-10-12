@@ -5,7 +5,7 @@ describe('the trap entry', () => {
   const entry = entryOf('trap')!;
 
   test('is the fourth problem, named Trap with the logo Tr, and the others are where they were', () => {
-    expect(problemIds()).toEqual(['goldberg', 'target-string', 'knapsack', 'trap']);
+    expect(problemIds().slice(0, 4)).toEqual(['goldberg', 'target-string', 'knapsack', 'trap']);
     expect(entry.name).toBe('Trap');
     expect(entry.logo).toBe('Tr');
     expect(entry.hasOptions).toBe(true);

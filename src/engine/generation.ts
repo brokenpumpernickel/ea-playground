@@ -49,6 +49,11 @@ export interface StopConfig {
   readonly generationLimit: number;
   /** Reached when the best fitness seen so far is at least this. */
   readonly targetFitness?: number;
+  /**
+   * Reached when the best fitness seen so far is within ε of the problem's best possible fitness (at least that minus ε),
+   * for a problem whose optimum is a real number nothing ever hits exactly. ε is greater than 0.
+   */
+  readonly targetEpsilon?: number;
   /** Reached when best so far has not strictly improved for this many generations. */
   readonly stagnationWindow?: number;
 }
@@ -59,7 +64,7 @@ export type StopReason = 'generation-limit' | 'target-reached' | 'stagnation';
  * Which stop criteria currently hold. They are reported, never enforced: whoever is playing the run decides
  * whether to stop, and stepping on past a criterion keeps working.
  */
-export function stopReasons(state: RunState, stop: StopConfig): StopReason[] {
+export function stopReasons(state: RunState, stop: StopConfig, optimumFitness?: number): StopReason[] {
   if (!Number.isInteger(stop.generationLimit) || stop.generationLimit < 1) {
     throw new Error('The generation limit must be a whole number of at least 1');
   }
@@ -69,11 +74,17 @@ export function stopReasons(state: RunState, stop: StopConfig): StopReason[] {
   if (stop.targetFitness !== undefined && !Number.isFinite(stop.targetFitness)) {
     throw new Error('The target fitness must be a finite number');
   }
+  if (stop.targetEpsilon !== undefined) {
+    if (!(stop.targetEpsilon > 0 && Number.isFinite(stop.targetEpsilon))) throw new Error('ε must be a number greater than 0.');
+    if (optimumFitness === undefined) throw new Error('Stopping within ε of the optimum needs a problem whose best fitness is known.');
+  }
   const reasons: StopReason[] = [];
   if (state.generation >= stop.generationLimit) reasons.push('generation-limit');
   const best = state.feasibility ? state.feasibility.bestSoFar : state.bestFitnessSoFar;
   const lastImprovement = state.feasibility ? state.feasibility.lastImprovement : state.lastImprovementGeneration;
-  if (stop.targetFitness !== undefined && best !== null && best >= stop.targetFitness) reasons.push('target-reached');
+  const reachedTarget = stop.targetFitness !== undefined && best !== null && best >= stop.targetFitness;
+  const withinEpsilon = stop.targetEpsilon !== undefined && best !== null && best >= optimumFitness! - stop.targetEpsilon;
+  if (reachedTarget || withinEpsilon) reasons.push('target-reached');
   if (stop.stagnationWindow !== undefined && state.generation - lastImprovement >= stop.stagnationWindow) {
     reasons.push('stagnation');
   }
@@ -237,7 +248,7 @@ export function runGeneration(
   config: GenerationConfig,
   rng: Rng,
 ): { state: RunState; events: GenerationEvent[]; stops: StopReason[] } {
-  stopReasons(state, config.stop); // refuses a nonsense stop configuration before anything is drawn
+  stopReasons(state, config.stop, config.problem.knownOptimumFitness); // refuses a nonsense stop configuration before anything is drawn
   const replacement =
     config.replacement ??
     generationalReplacement(config.elites, config.truncation?.enabled ? { lambda: config.truncation.lambda } : {});
@@ -309,5 +320,5 @@ export function runGeneration(
     lastImprovementGeneration: improved ? generation : state.lastImprovementGeneration,
     ...(state.feasibility ? { feasibility: nextFeasibility(state.feasibility, offspring, generation) } : {}),
   };
-  return { state: next, events, stops: stopReasons(next, config.stop) };
+  return { state: next, events, stops: stopReasons(next, config.stop, config.problem.knownOptimumFitness) };
 }

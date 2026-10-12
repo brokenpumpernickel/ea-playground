@@ -1,5 +1,5 @@
-import { isKnapsackOptions, isStringOptions, isTrapOptions, type ProblemEntry, type ProblemOptions } from './problems';
-import { describeAlphabet, handlings, minimumGenes, operatorName, optimalBag, parseGenes, validateKnapsack, validateTrap, type Handling, type KnapsackOptions, type Linkage, type TrapOptions, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
+import { isKnapsackOptions, isLandscapeOptions, isStringOptions, isTrapOptions, defaultsOf, type ProblemEntry, type ProblemOptions } from './problems';
+import { checkReal, defaultAlpha, defaultSigma, describeAlphabet, formatReal, isRealProblem, landscapeDefaultEpsilon, landscapeDefaults, landscapeProblem, minimumGenes, operatorName, optimalBag, parseGenes, parseReal, realOnlyOperators, validateKnapsack, validateLandscape, validateTrap, type Handling, type KnapsackOptions, type LandscapeFunction, type LandscapeOptions, type LandscapeRepresentation, type Linkage, type MutationOperator, type TrapOptions, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
 
 /**
  * What the parameter drawer edits. Numbers are kept as the text the user typed, so a half-typed or wrong entry can be
@@ -25,17 +25,23 @@ export interface Draft {
   knapsack?: { items: { weight: string; value: string }[]; capacity: string; handling: Handling; rho: string };
   /** The trap's options as typed (block size and number of blocks as text); absent for the other problems. */
   trap?: { blockSize: string; blocks: string; linkage: Linkage };
+  /** The landscape's options as typed (the bits per variable as text); absent for the other problems. */
+  landscape?: { function: LandscapeFunction; representation: LandscapeRepresentation; bits: string };
   method: 'roulette' | 'tournament';
   tournamentSize: string;
   chain: ChainStepDraft[];
-  crossover: { enabled: boolean; operator: GaParams['crossover']['operator']; probability: string };
-  mutation: { enabled: boolean; mode: GaParams['mutation']['mode']; probability: string };
+  /** `alpha` (BLX-α's α) is present while the operator is BLX-α, or when a link gave one. */
+  crossover: { enabled: boolean; operator: GaParams['crossover']['operator']; probability: string; alpha?: string };
+  /** `sigma` (Gaussian mutation's σ) is present for real-valued chromosomes; `operator` only when a link named one. */
+  mutation: { enabled: boolean; mode: GaParams['mutation']['mode']; probability: string; operator?: MutationOperator; sigma?: string };
   elites: string;
   truncation: { enabled: boolean; lambda: string };
   stop: {
     generationLimit: string;
     target: { enabled: boolean; value: string };
     stagnation: { enabled: boolean; window: string };
+    /** Stop when the best fitness so far is within ε of the problem's optimum; present for the landscape, or when a link gave one. */
+    epsilon?: { enabled: boolean; value: string };
   };
 }
 
@@ -53,15 +59,22 @@ export type Field =
   | 'blocks'
   | 'linkage'
   | 'genes'
+  | 'function'
+  | 'representation'
+  | 'bitsPerVariable'
   | 'tournamentSize'
   | 'chain'
   | 'crossover.operator'
   | 'crossover.probability'
+  | 'crossover.alpha'
   | 'mutation.probability'
+  | 'mutation.operator'
+  | 'mutation.sigma'
   | 'elites'
   | 'truncation.lambda'
   | 'stop.generationLimit'
   | 'stop.target'
+  | 'stop.epsilon'
   | 'stop.stagnation';
 
 export interface Validation {
@@ -96,6 +109,7 @@ export function draftOf(params: GaParams, setup: GaSetup, seed: number, options?
         }
       : {}),
     ...(options && isTrapOptions(options) ? { trap: { blockSize: String(options.blockSize), blocks: String(options.blocks), linkage: options.linkage } } : {}),
+    ...(options && isLandscapeOptions(options) ? { landscape: { function: options.function, representation: options.representation, bits: String(options.bitsPerVariable) } } : {}),
     method: selection.method,
     tournamentSize: selection.method === 'tournament' ? String(selection.size) : '2',
     chain:
@@ -107,16 +121,36 @@ export function draftOf(params: GaParams, setup: GaSetup, seed: number, options?
             return base;
           })
         : [defaultStep('identity')],
-    crossover: { enabled: params.crossover.enabled, operator: params.crossover.operator, probability: String(params.crossover.probability) },
-    mutation: { enabled: params.mutation.enabled, mode: params.mutation.mode, probability: String(params.mutation.probability) },
+    crossover: {
+      enabled: params.crossover.enabled,
+      operator: params.crossover.operator,
+      probability: String(params.crossover.probability),
+      ...(params.crossover.alpha !== undefined ? { alpha: String(params.crossover.alpha) } : params.crossover.operator === 'blx-alpha' ? { alpha: String(defaultAlpha) } : {}),
+    },
+    mutation: {
+      enabled: params.mutation.enabled,
+      mode: params.mutation.mode,
+      probability: String(params.mutation.probability),
+      ...(params.mutation.operator !== undefined ? { operator: params.mutation.operator } : {}),
+      ...(params.mutation.sigma !== undefined ? { sigma: String(params.mutation.sigma) } : {}),
+    },
     elites: String(params.elites),
     truncation: { enabled: params.truncation?.enabled ?? false, lambda: textOf(params.truncation?.lambda, setup.init.kind === 'random' ? setup.init.size : setup.init.chromosomes.length) },
     stop: {
       generationLimit: String(params.stop.generationLimit),
       target: { enabled: params.stop.targetFitness !== undefined, value: textOf(params.stop.targetFitness, 0) },
       stagnation: { enabled: params.stop.stagnationWindow !== undefined, window: textOf(params.stop.stagnationWindow, 10) },
+      ...(params.stop.targetEpsilon !== undefined || (options && isLandscapeOptions(options))
+        ? { epsilon: { enabled: params.stop.targetEpsilon !== undefined, value: params.stop.targetEpsilon !== undefined ? String(params.stop.targetEpsilon) : defaultEpsilonText(options) } }
+        : {}),
     },
   };
+}
+
+/** The default ε of the landscape the options describe, as text (when the options are not usable, a plain 0.001). */
+function defaultEpsilonText(options: ProblemOptions | undefined): string {
+  if (!options || !isLandscapeOptions(options) || validateLandscape(options).length > 0) return '0.001';
+  return String(landscapeDefaultEpsilon(landscapeProblem(options)));
 }
 
 /** A number typed by the user, or undefined when the text is not one. */
@@ -145,6 +179,8 @@ export interface ChromosomeRow {
  * unless that character is a symbol of the alphabet (a string over letters and a space is typed one per line).
  */
 export function chromosomePieces(text: string, problem: Problem): string[] {
+  // a real-valued chromosome is several numbers separated by spaces or commas, so only a new line or a semicolon ends one
+  if (isRealProblem(problem)) return text.split(/[\r\n;]/).map((piece) => piece.trim()).filter((piece) => piece !== '');
   const separators = new Set(['\r', '\n', ';', ',', ' ', '\t']);
   for (const symbol of problem.alphabet) if (symbol !== '\n' && symbol !== '\r') separators.delete(symbol);
   return text.split('').reduce<string[]>(
@@ -160,20 +196,34 @@ export function chromosomePieces(text: string, problem: Problem): string[] {
 /** Splits the text into chromosomes and, for each, either what it decodes to or what is wrong with it. */
 export function parseChromosomes(text: string, problem: Problem): ChromosomeRow[] {
   return chromosomePieces(text, problem).map((piece, k): ChromosomeRow => {
+    if (problem.bounds) {
+      const numbers = parseReal(piece);
+      if (!numbers) return { text: piece, error: `Chromosome ${k + 1} ("${piece}") may only contain numbers separated by spaces or commas.` };
+      if (numbers.length !== problem.chromosomeLength) {
+        return { text: piece, error: `Chromosome ${k + 1} has ${numbers.length} ${numbers.length === 1 ? 'number' : 'numbers'}, but this problem needs ${problem.chromosomeLength}.` };
+      }
+      const outside = checkReal(numbers, problem.bounds);
+      if (outside.length > 0) return { text: piece, error: `Chromosome ${k + 1}: ${outside.join('; ')}.` };
+      return rowOf(problem, piece, numbers);
+    }
     const genes = parseGenes(piece, problem.alphabet);
     if (!genes) return { text: piece, error: `Chromosome ${k + 1} ("${piece}") may only contain the characters ${describeAlphabet(problem.alphabet)}.` };
     if (genes.length !== problem.chromosomeLength) {
       return { text: piece, error: `Chromosome ${k + 1} has ${genes.length} genes, but this problem needs ${problem.chromosomeLength}.` };
     }
-    const scores = problem.evaluate(genes);
-    return { text: piece, decoded: scores.decoded, fitness: scores.fitness, cells: problem.columns.map((column) => column.show(scores)), ...(problem.columns.some((c) => c.meter) ? { meters: problem.columns.map((column) => column.meter?.(scores)) } : {}) };
+    return rowOf(problem, piece, genes);
   });
+}
+
+function rowOf(problem: Problem, text: string, genes: readonly number[]): ChromosomeRow {
+  const scores = problem.evaluate(genes);
+  return { text, decoded: scores.decoded, fitness: scores.fitness, cells: problem.columns.map((column) => column.show(scores)), ...(problem.columns.some((c) => c.meter) ? { meters: problem.columns.map((column) => column.meter?.(scores)) } : {}) };
 }
 
 /* ------------------------------------------------------------------ validation */
 
 /** A chromosome of this problem, for the hint under an empty hand-edited population. */
-const exampleChromosome = (problem: Problem): string => (problem.alphabet.length === 2 ? '01101' : [...Array(problem.chromosomeLength)].map((_, k) => problem.alphabet[k % problem.alphabet.length]).join(''));
+const exampleChromosome = (problem: Problem): string => (isRealProblem(problem) ? '1.5 -2.5' : problem.alphabet.length === 2 ? '01101' : [...Array(problem.chromosomeLength)].map((_, k) => problem.alphabet[k % problem.alphabet.length]).join(''));
 
 /**
  * The problem the draft describes: the entry's problem built from the typed options, or `current` when there are none
@@ -197,6 +247,9 @@ export function optionsOf(draft: Draft): ProblemOptions | undefined {
     const read = (text: string) => numberOf(text) ?? Number.NaN;
     return { blockSize: read(draft.trap.blockSize), blocks: read(draft.trap.blocks), linkage: draft.trap.linkage };
   }
+  if (draft.landscape) {
+    return { function: draft.landscape.function, representation: draft.landscape.representation, bitsPerVariable: numberOf(draft.landscape.bits) ?? Number.NaN };
+  }
   return undefined;
 }
 
@@ -206,12 +259,13 @@ export function optimumOf(draft: Draft): number | undefined {
   if (!options) return undefined;
   if (isStringOptions(options)) return [...options.target].length;
   if (isTrapOptions(options)) return validateTrap(options).length > 0 ? undefined : options.blockSize * options.blocks;
+  if (isLandscapeOptions(options)) return undefined; // the landscape stops within ε of its optimum, which needs no target to follow it
   if (validateKnapsack(options).length > 0) return undefined;
   return optimalBag({ items: options.items, capacity: options.capacity }).value;
 }
 
 /** The drawer fields that hold a problem's own options (each problem uses its own few). */
-const optionFields = ['alphabet', 'target', 'items', 'capacity', 'handling', 'rho', 'blockSize', 'blocks', 'linkage', 'genes'] as const;
+const optionFields = ['alphabet', 'target', 'items', 'capacity', 'handling', 'rho', 'blockSize', 'blocks', 'linkage', 'genes', 'function', 'representation', 'bitsPerVariable'] as const;
 
 /**
  * `sampleFitness` is the fitness of the population the chain will next be applied to, so its messages are real.
@@ -261,6 +315,26 @@ export function validate(draft: Draft, problem: Problem, sampleFitness: readonly
   }
 
   // operators
+  const operator = draft.crossover.operator;
+  if (realOnlyOperators.includes(operator) && !isRealProblem(problem)) {
+    errors['crossover.operator'] = `${operatorName[operator]} crossover is for real-valued chromosomes; choose one-point, two-point or uniform crossover for this problem.`;
+  }
+  if (draft.crossover.alpha !== undefined) {
+    if (operator !== 'blx-alpha') errors['crossover.alpha'] = 'α belongs to BLX-α crossover; leave it out or choose BLX-α.';
+    else {
+      const alpha = numberOf(draft.crossover.alpha);
+      if (alpha === undefined || alpha < 0) errors['crossover.alpha'] = 'α must be a number of 0 or more.';
+    }
+  }
+  if (draft.mutation.sigma !== undefined) {
+    if (!isRealProblem(problem)) errors['mutation.sigma'] = 'σ belongs to Gaussian mutation of real-valued chromosomes; leave it out for this problem.';
+    else {
+      const sigma = numberOf(draft.mutation.sigma);
+      if (sigma === undefined || !(sigma > 0)) errors['mutation.sigma'] = 'σ must be a number greater than 0.';
+    }
+  }
+  if (draft.mutation.operator === 'gaussian' && !isRealProblem(problem)) errors['mutation.operator'] = 'Gaussian mutation is for real-valued chromosomes; use flip mutation for this problem.';
+  if (draft.mutation.operator === 'flip' && isRealProblem(problem)) errors['mutation.operator'] = 'Flip mutation is for symbol chromosomes; use Gaussian mutation for a real-valued problem.';
   const needed = minimumGenes[draft.crossover.operator];
   if (draft.crossover.enabled && problem.chromosomeLength < needed) {
     errors['crossover.operator'] = `${operatorName[draft.crossover.operator]} crossover needs chromosomes of at least ${needed} genes, but this problem's have ${problem.chromosomeLength}. Choose another crossover type${draft.options ? ', switch crossover off or make the target longer' : ' or switch crossover off'}.`;
@@ -285,7 +359,13 @@ export function validate(draft: Draft, problem: Problem, sampleFitness: readonly
 
   // stopping
   if (!isWhole(numberOf(draft.stop.generationLimit), 1)) errors['stop.generationLimit'] = 'The generation limit must be a whole number of at least 1.';
-  if (draft.stop.target.enabled && numberOf(draft.stop.target.value) === undefined) errors['stop.target'] = 'The target fitness must be a number.';
+  if (draft.stop.target.enabled && draft.landscape) errors['stop.target'] = 'The landscape stops within ε of its optimum; use ε instead of a target fitness.';
+  else if (draft.stop.target.enabled && numberOf(draft.stop.target.value) === undefined) errors['stop.target'] = 'The target fitness must be a number.';
+  if (draft.stop.epsilon?.enabled) {
+    const epsilon = numberOf(draft.stop.epsilon.value);
+    if (epsilon === undefined || !(epsilon > 0)) errors['stop.epsilon'] = 'ε must be a number greater than 0.';
+    else if (problem.knownOptimumFitness === undefined) errors['stop.epsilon'] = 'Stopping within ε of the optimum needs a problem whose best fitness is known.';
+  }
   if (draft.stop.stagnation.enabled && !isWhole(numberOf(draft.stop.stagnation.window), 1)) {
     errors['stop.stagnation'] = 'The stagnation window must be a whole number of at least 1.';
   }
@@ -314,13 +394,25 @@ function chainOf(steps: readonly ChainStepDraft[]): StepSpec[] | string {
 export function toParams(draft: Draft): GaParams {
   return {
     selection: draft.method === 'roulette' ? { method: 'roulette', chain: chainOf(draft.chain) as StepSpec[] } : { method: 'tournament', size: Number(draft.tournamentSize) },
-    crossover: { enabled: draft.crossover.enabled, operator: draft.crossover.operator, probability: Number(draft.crossover.probability) },
-    mutation: { enabled: draft.mutation.enabled, mode: draft.mutation.mode, probability: Number(draft.mutation.probability) },
+    crossover: {
+      enabled: draft.crossover.enabled,
+      operator: draft.crossover.operator,
+      probability: Number(draft.crossover.probability),
+      ...(draft.crossover.operator === 'blx-alpha' && draft.crossover.alpha !== undefined ? { alpha: Number(draft.crossover.alpha) } : {}),
+    },
+    mutation: {
+      enabled: draft.mutation.enabled,
+      mode: draft.mutation.mode,
+      probability: Number(draft.mutation.probability),
+      ...(draft.mutation.operator !== undefined ? { operator: draft.mutation.operator } : {}),
+      ...(draft.mutation.sigma !== undefined ? { sigma: Number(draft.mutation.sigma) } : {}),
+    },
     elites: Number(draft.elites),
     truncation: { enabled: draft.truncation.enabled, lambda: Number(draft.truncation.lambda) },
     stop: {
       generationLimit: Number(draft.stop.generationLimit),
       ...(draft.stop.target.enabled ? { targetFitness: Number(draft.stop.target.value) } : {}),
+      ...(draft.stop.epsilon?.enabled ? { targetEpsilon: Number(draft.stop.epsilon.value) } : {}),
       ...(draft.stop.stagnation.enabled ? { stagnationWindow: Number(draft.stop.stagnation.window) } : {}),
     },
   };
@@ -340,9 +432,13 @@ export interface Changes {
   readonly operator: string[];
   /** Setup that differs: it needs a reset. */
   readonly reset: string[];
+  /** Sentences the restart notice adds, such as what a change of representation resets; absent when there are none. */
+  readonly notes?: string[];
 }
 
-const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+/** JSON with the keys sorted, so two parameter sets compare equal whatever order a link listed their keys in. */
+const stable = (value: unknown): string => JSON.stringify(value, (_key, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : 1))) : v));
+const same = (a: unknown, b: unknown) => stable(a) === stable(b);
 
 /** What the draft would change compared with the run as it stands. The draft must be valid. */
 export function changes(draft: Draft, current: { params: GaParams; setup: GaSetup; seed: number; options?: ProblemOptions }): Changes {
@@ -353,9 +449,11 @@ export function changes(draft: Draft, current: { params: GaParams; setup: GaSetu
   if (next.crossover.enabled !== p.crossover.enabled) operator.push('Crossover on/off');
   if (next.crossover.operator !== p.crossover.operator) operator.push('Crossover type');
   if (next.crossover.probability !== p.crossover.probability) operator.push('Crossover probability');
+  if (next.crossover.alpha !== p.crossover.alpha) operator.push('Crossover α');
   if (next.mutation.enabled !== p.mutation.enabled) operator.push('Mutation on/off');
   if (next.mutation.mode !== p.mutation.mode) operator.push('Mutation mode');
   if (next.mutation.probability !== p.mutation.probability) operator.push('Mutation probability');
+  if (next.mutation.sigma !== p.mutation.sigma) operator.push('Mutation σ');
   if (next.elites !== p.elites) operator.push('Elites');
   if (next.truncation?.enabled !== (p.truncation?.enabled ?? false)) operator.push('Offspring truncation on/off');
   // λ only matters while truncation is on
@@ -388,9 +486,63 @@ export function changes(draft: Draft, current: { params: GaParams; setup: GaSetu
     if (numberOf(t.blocks) !== was.blocks) reset.push('Number of blocks');
     if (t.linkage !== was.linkage) reset.push('Linkage');
   }
+  const notes: string[] = [];
+  if (draft.landscape && current.options && isLandscapeOptions(current.options)) {
+    const was = current.options;
+    const l = draft.landscape;
+    if (l.function !== was.function) reset.push('Function');
+    if (l.representation !== was.representation) reset.push('Representation');
+    // the bits only matter while the representation is binary-coded in both
+    else if (l.representation !== 'real' && numberOf(l.bits) !== was.bitsPerVariable) reset.push('Bits per variable');
+    if (l.representation !== was.representation) {
+      const note = representationNote(was.representation, l.representation, p, next);
+      if (note) notes.push(note);
+    }
+  }
   if (Number(draft.seed) !== current.seed) reset.push('Seed');
   if (followedTargetFitness(draft, current.setup.problem) !== undefined) reset.push('Target fitness');
-  return { operator, reset };
+  return { operator, reset, ...(notes.length > 0 ? { notes } : {}) };
+}
+
+/* ------------------------------------------------------- the landscape's representation */
+
+const bitsOnly = (r: LandscapeRepresentation) => r !== 'real';
+
+/**
+ * The draft after the representation is switched. Real genes and bits take different operators, so a switch between
+ * them resets the crossover type and the mutation to the new representation's defaults (what is kept: whether each is
+ * switched on and the crossover probability). Plain binary and Gray code use the same operators, so that switch keeps them.
+ */
+export function withRepresentation(draft: Draft, representation: LandscapeRepresentation): Draft {
+  if (!draft.landscape) return draft;
+  const was = draft.landscape.representation;
+  const next: Draft = { ...draft, landscape: { ...draft.landscape, representation } };
+  if (bitsOnly(was) === bitsOnly(representation)) return next;
+  const defaults = landscapeDefaults({ function: draft.landscape.function, representation, bitsPerVariable: numberOf(draft.landscape.bits) ?? 10 }).params;
+  const { alpha: _alpha, ...crossover } = { ...draft.crossover };
+  const { operator: _operator, sigma: _sigma, ...mutation } = { ...draft.mutation };
+  return {
+    ...next,
+    crossover: { ...crossover, operator: defaults.crossover.operator, ...(defaults.crossover.alpha !== undefined ? { alpha: String(defaults.crossover.alpha) } : {}) },
+    mutation: { ...mutation, mode: defaults.mutation.mode, probability: String(defaults.mutation.probability), ...(defaults.mutation.sigma !== undefined ? { sigma: String(defaults.mutation.sigma) } : {}) },
+  };
+}
+
+const modeWords = (m: GaParams['mutation']) => (m.mode === 'per-gene' ? 'per gene' : 'per individual');
+const mutationWords = (m: GaParams['mutation'], real: boolean) =>
+  real ? `Gaussian, ${modeWords(m)}, pm ${m.probability}, σ = ${m.sigma ?? defaultSigma}` : `bit flip, ${modeWords(m)}, pm ${m.probability}`;
+/** The type's name; for the type being set, BLX-α also says its α. */
+const crossoverWords = (c: GaParams['crossover'], withAlpha = false) => (withAlpha && c.operator === 'blx-alpha' ? `${operatorName[c.operator]}, α = ${c.alpha ?? defaultAlpha}` : operatorName[c.operator]);
+
+/** What a change of representation resets, in one sentence for the restart notice; undefined when it resets nothing (plain ↔ Gray). */
+function representationNote(was: LandscapeRepresentation, now: LandscapeRepresentation, before: GaParams, after: GaParams): string | undefined {
+  if (bitsOnly(was) === bitsOnly(now)) return undefined;
+  const parts: string[] = [];
+  if (before.crossover.operator !== after.crossover.operator) parts.push(`crossover type (${crossoverWords(before.crossover)} → ${crossoverWords(after.crossover, true)})`);
+  const m0 = mutationWords(before.mutation, !bitsOnly(was));
+  const m1 = mutationWords(after.mutation, !bitsOnly(now));
+  if (m0 !== m1) parts.push(`mutation (${m0} → ${m1})`);
+  return parts.length === 0 ? undefined : `Reset to the new representation’s defaults: ${parts.join(', ')}.`;
 }
 
 /**

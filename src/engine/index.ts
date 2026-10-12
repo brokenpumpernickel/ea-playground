@@ -18,8 +18,10 @@ export {
 } from './weights';
 export {
   crossover,
+  defaultAlpha,
   minimumGenes,
   operatorName,
+  realOnlyOperators,
   type Child,
   type CrossoverConfig,
   type CrossoverEvent,
@@ -27,12 +29,15 @@ export {
   type Source,
 } from './crossover';
 export {
+  defaultSigma,
   mutate,
   type Mutated,
   type MutationConfig,
   type MutationEvent,
   type MutationInput,
   type MutationMode,
+  type MutationOperator,
+  type GaussianStep,
 } from './mutation';
 export {
   generationalReplacement,
@@ -98,8 +103,8 @@ export {
   decodeVariable,
   integerOfBits,
   landscapeDefaultEpsilon,
+  landscapeDefaults,
   landscapeFitnessRange,
-  landscapeTargetFitness,
   validateEpsilon,
   landscapeDefaultOptions,
   landscapeFunctionInfo,

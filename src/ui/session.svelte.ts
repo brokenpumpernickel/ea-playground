@@ -7,7 +7,7 @@ import { blockStatesModel, type BlockStatesModel } from './block-states-model';
 import { schemaHistory, type SchemaPoint, type SchemaSymbol } from './schema-model';
 import { changes, draftOf } from './drawer-model';
 import { displayOf, type Display } from './format';
-import { entryOf, type ProblemEntry, type ProblemOptions } from './problems';
+import { defaultsOf, entryOf, type ProblemEntry, type ProblemOptions } from './problems';
 import type { Preset } from './presets';
 import { configOf, type RunConfig } from './run-config';
 import { plotModel, type PlotModel } from './plot-models';
@@ -47,6 +47,8 @@ export interface PendingReset {
   readonly params: GaParams;
   /** Names of the settings that need the reset, as `changes` words them. */
   readonly changed: readonly string[];
+  /** Sentences the notice adds, such as what switching the landscape's representation resets. */
+  readonly notes?: readonly string[];
   /** Set when the reset loads a preset, by name. */
   readonly preset?: string;
   /** Set when the reset changes the running problem's own options (the string problem's alphabet and target). */
@@ -191,7 +193,8 @@ export function createSession(options: SessionOptions) {
       const switched = reset.problem ? entryOf(reset.problem.id)?.name : undefined;
       const what = switched && reset.preset ? `Loading the preset “${reset.preset}” switches to the problem ${switched} and restarts the run from generation 0.` : switched ? `Switching to the problem ${switched} restarts the run from generation 0.` : reset.preset ? `Loading the preset “${reset.preset}” restarts the run from generation 0.` : `Changing ${joinWords(reset.changed.map(settingPhrase))} restarts the run from generation 0.`;
       const n = run.lastCycle;
-      return n === 0 ? `${what} Nothing recorded will be lost.` : `${what.slice(0, -1)} and discards the ${n} recorded ${n === 1 ? 'generation' : 'generations'} (${n === 1 ? '1' : `1–${n}`}).`;
+      const lost = n === 0 ? `${what} Nothing recorded will be lost.` : `${what.slice(0, -1)} and discards the ${n} recorded ${n === 1 ? 'generation' : 'generations'} (${n === 1 ? '1' : `1–${n}`}).`;
+      return reset.notes && reset.notes.length > 0 ? `${lost} ${reset.notes.join(' ')}` : lost;
     },
     /** The configuration the run has now, with any pending parameters applied: what a share link carries. */
     get shareConfig(): RunConfig {
@@ -237,10 +240,11 @@ export function createSession(options: SessionOptions) {
       const entry = entryOf(id);
       if (!entry || id === problemId) return;
       const options = entry.defaultOptions();
+      const defaults = defaultsOf(entry, options);
       reset = {
-        setup: { problem: entry.create(options), init: entry.defaults.init },
-        seed: entry.defaults.seed,
-        params: entry.defaults.params,
+        setup: { problem: entry.create(options), init: defaults.init },
+        seed: defaults.seed,
+        params: defaults.params,
         changed: [],
         problem: { id, options },
       };

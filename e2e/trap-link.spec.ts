@@ -19,10 +19,10 @@ const bad = (change: (c: Record<string, any>) => void) => {
   return b64url(copy);
 };
 
-test('the problem menu lists Trap fourth, and choosing it restarts as the trap: the brand line, the population and the run are the engine’s', async ({ page }) => {
+test('the problem menu lists Trap fourth (and the landscape fifth), and choosing it restarts as the trap: the brand line, the population and the run are the engine’s', async ({ page }) => {
   await page.goto(url);
   await page.getByTestId('problem-button').click();
-  await expect(page.getByRole('menuitemradio')).toHaveText([/Goldberg/, /Target string/, /Knapsack/, /Trap/]);
+  await expect(page.getByRole('menuitemradio')).toHaveText([/Goldberg/, /Target string/, /Knapsack/, /Trap/, /Landscape/]);
   await page.getByRole('menuitemradio', { name: /Trap/ }).click();
   await expect(page.getByTestId('reset-notice')).toContainText('Switching to the problem Trap restarts the run from generation 0');
   await page.getByRole('button', { name: 'Restart and apply' }).click();

@@ -1,4 +1,7 @@
+import type { GaParams } from './algorithm';
 import { binaryAlphabet, formatReal, type Chromosome } from './chromosome';
+import { defaultAlpha } from './crossover';
+import { defaultSigma } from './mutation';
 import type { Bounds, Problem, ProblemColumn, Scores } from './problem';
 
 /**
@@ -244,11 +247,23 @@ export function validateEpsilon(epsilon: number): string[] {
 }
 
 /**
- * The target fitness that makes the engine's "target reached" criterion mean "within ε of the optimum": the best fitness
- * so far is at least the optimum fitness minus ε.
+ * The setup the landscape opens with for these options, as plain data. Provisional: ticket 14 of milestone 5 replaces
+ * these numbers with measured ones. The operators follow the representation: BLX-α and Gaussian mutation for real genes,
+ * one-point crossover and bit-flip mutation for the binary-coded ones; the stop "within ε of the optimum" uses the
+ * function's default ε.
  */
-export function landscapeTargetFitness(problem: Pick<LandscapeProblem, 'knownOptimumFitness'>, epsilon: number): number {
-  const problems = validateEpsilon(epsilon);
-  if (problems.length > 0) throw new Error(problems[0]);
-  return problem.knownOptimumFitness - epsilon;
+export function landscapeDefaults(options: LandscapeOptions): { readonly options: LandscapeOptions; readonly populationSize: number; readonly params: GaParams } {
+  const epsilon = landscapeDefaultEpsilon(landscapeProblem(options));
+  const real = options.representation === 'real';
+  return {
+    options,
+    populationSize: 20,
+    params: {
+      selection: { method: 'tournament', size: 3 },
+      crossover: real ? { enabled: true, operator: 'blx-alpha', probability: 0.9, alpha: defaultAlpha } : { enabled: true, operator: 'one-point', probability: 0.8 },
+      mutation: real ? { enabled: true, mode: 'per-gene', probability: 0.1, sigma: defaultSigma } : { enabled: true, mode: 'per-gene', probability: 0.02 },
+      elites: 1,
+      stop: { generationLimit: 100, targetEpsilon: epsilon, stagnationWindow: 40 },
+    },
+  };
 }
