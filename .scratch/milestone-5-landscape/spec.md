@@ -1,6 +1,6 @@
 # Milestone 5: the two-dimensional landscape
 
-Status: draft (revised: both representations selectable), awaiting the instructor's approval to break into tickets
+Status: broken into tickets (17), see `issues/`
 
 Vocabulary follows `CONTEXT.md` (including the new **Real-valued chromosome**, **Bounds**, **Blend crossover (BLX-α)**, **Arithmetic crossover**, **Gaussian mutation**, **Landscape**, **Heatmap**, **Surface** and **Trail**). Architecture follows ADRs 0001–0005 and the new **ADR 0006** (real-valued chromosomes). Where this spec and the ADRs or glossary disagree, they win and this spec is wrong. Milestones 1–4 are complete and published; this milestone builds on the problem registry, the problem-declared columns, the contexts that give views problem-specific information, the schema tracker's pattern of a second view in the stage panel, and the share-link configuration.
 
