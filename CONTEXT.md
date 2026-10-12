@@ -146,6 +146,14 @@ _Avoid_: Averaging crossover, linear crossover
 A mutation for real genes in which a gene chosen to mutate is moved by a normal random step whose standard deviation is a set share (σ) of the gene's range.
 _Avoid_: Noise, jitter
 
+**Binary coding**:
+Writing a real variable as a fixed number of bits, which stand for one of evenly spaced values between the variable's bounds. The bits of the variable are read as an ordinary binary number or, in Gray coding, as a Gray code.
+_Avoid_: Discretisation, bit encoding
+
+**Gray code**:
+A way of numbering the values so that neighbouring values differ in exactly one bit, which removes the jumps of ordinary binary, where neighbours such as 0111 and 1000 differ in every bit.
+_Avoid_: Reflected binary (the name of the construction, not of the idea students need)
+
 **Trail**:
 The positions a population had in the last few generations, drawn faded behind its present positions to show movement. It shows where individuals were, not which one descended from which.
 _Avoid_: Path, lineage

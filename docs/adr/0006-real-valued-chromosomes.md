@@ -1,8 +1,8 @@
-# A real-valued chromosome is a vector of numbers inside bounds, beside the alphabet representation
+# A problem's representation is symbols or real values; the landscape offers both
 
-Status: proposed with the milestone 5 spec (the instructor chose real-valued genes with BLX-α and arithmetic crossover over a binary-coded landscape); accepted when ticket 02 of milestone 5 is built.
+Status: proposed with the milestone 5 spec (the instructor asked for real-valued genes with BLX-α and arithmetic crossover, and to be able to choose a binary-coded landscape as well); accepted when ticket 02 of milestone 5 is built.
 
-A problem declares exactly one **representation**: *symbols* (ADR 0004: genes are positions in an alphabet) or *real* (every gene is a finite number between a lower and an upper **bound** that the problem declares for that gene). A real chromosome is still a `readonly number[]`, so selection, pairing, the weight chain, elitism, replacement, the history, the playback tiers and the run layer treat it as opaque and do not change. The places that create, alter, compare or show a gene are representation-specific:
+A problem, as configured, declares exactly one **representation**: *symbols* (ADR 0004: genes are positions in an alphabet) or *real* (every gene is a finite number between a lower and an upper **bound** that the problem declares for that gene). The two-dimensional landscape can be configured with either: a **binary-coded** landscape is a symbol problem (alphabet `0, 1`, 2·n genes) whose `evaluate` decodes the bits of each variable, in plain binary or Gray code, onto the bounds; a **real-valued** landscape is a real problem. Which of the two a landscape is belongs to its options, so changing it is a reset, and the operators on offer follow the representation (the real-only operators are refused for a symbol problem and the symbol-only mutation for a real one, with a readable message). A real chromosome is still a `readonly number[]`, so selection, pairing, the weight chain, elitism, replacement, the history, the playback tiers and the run layer treat it as opaque and do not change. The places that create, alter, compare or show a gene are representation-specific:
 
 - **Initialization** draws every gene uniformly inside its bounds (one draw each, in gene order).
 - **Crossover.** One-point, two-point and uniform crossover (discrete recombination: each child gene is a copy of a parent's gene) work on both representations unchanged. Two operators exist only for real genes: **BLX-α** (each child gene is drawn uniformly from the parents' interval widened by α times its length on each side) and **whole arithmetic crossover** (the children are λ·A + (1 − λ)·B and (1 − λ)·A + λ·B with one λ per pair).
@@ -15,7 +15,7 @@ Existing symbol runs are unchanged: the golden-run fixtures recorded before this
 
 ## Considered Options
 
-- **A binary-coded landscape** (each variable n bits mapped onto its bounds, plain binary or Gray): reuses every operator and needs no new representation, and teaches coding. Rejected by the instructor: students will implement real-valued operators next, and the course needs BLX-α and arithmetic crossover visible in a run.
+- **Only a binary-coded landscape** (each variable n bits mapped onto its bounds): reuses every operator and teaches coding, but the course needs BLX-α and arithmetic crossover visible in a run. **Only real-valued genes**: loses the comparison of what the representation does to the same points. The instructor chose to offer both.
 - **Generic chromosomes** (a type parameter for the gene, threaded through the engine): rejected again, as in ADR 0004. The shared stages never look inside a gene.
 - **A separate real-valued engine beside the symbol one**: rejected. It would duplicate the stage logic that ADR 0003 deliberately shares.
 
