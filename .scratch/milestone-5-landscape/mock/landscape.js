@@ -1,0 +1,345 @@
+/* ===== Landscape mock: hand-made data, thrown away after review. ===== */
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const f3 = (x) => (x < 0 ? '−' : '') + Math.abs(x).toFixed(3);
+const f4 = (x) => (x < 0 ? '−' : '') + Math.abs(x).toFixed(4);
+
+/* ---------- the four landscapes: objective f, fitness (f or −f), bounds ---------- */
+const FNS = {
+  single: { name: 'Single peak', min: false, lo: -5, hi: 5, f: (x, y) => Math.exp(-((x - 2) ** 2 + (y + 1) ** 2) / 8), opt: [[2, -1]], rule: 'maximise f', center: [-1.4, 1.8] },
+  two: { name: 'Two peaks', min: false, lo: -5, hi: 5, f: (x, y) => 0.6 * Math.exp(-((x + 2.5) ** 2 + (y + 2.5) ** 2) / 8) + Math.exp(-((x - 3) ** 2 + (y - 3) ** 2) / 0.5), opt: [[3, 3]], rule: 'maximise f', center: [-2.2, -2.4] },
+  rastrigin: { name: 'Rastrigin', min: true, lo: -5.12, hi: 5.12, f: (x, y) => 20 + (x * x - 10 * Math.cos(2 * Math.PI * x)) + (y * y - 10 * Math.cos(2 * Math.PI * y)), opt: [[0, 0]], rule: 'minimise f', center: [1.6, -2.1] },
+  himmel: { name: 'Himmelblau', min: true, lo: -5, hi: 5, f: (x, y) => (x * x + y - 11) ** 2 + (x + y * y - 7) ** 2, opt: [[3, 2], [-2.805118, 3.131312], [-3.77931, -3.283186], [3.584428, -1.848126]], rule: 'minimise f', center: [0, 0] },
+};
+const fit = (fn, x, y) => (fn.min ? -fn.f(x, y) : fn.f(x, y));
+const FIT_RANGE = {};
+function range(fn) {
+  const key = fn.name;
+  if (!FIT_RANGE[key]) {
+    let lo = Infinity, hi = -Infinity;
+    for (let i = 0; i <= 80; i++) for (let j = 0; j <= 80; j++) { const v = fit(fn, fn.lo + (fn.hi - fn.lo) * i / 80, fn.lo + (fn.hi - fn.lo) * j / 80); lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    FIT_RANGE[key] = [lo, hi];
+  }
+  return FIT_RANGE[key];
+}
+const RAMP = [[68, 1, 84], [72, 40, 120], [62, 74, 137], [49, 104, 142], [38, 130, 142], [31, 158, 137], [53, 183, 121], [109, 205, 89], [180, 222, 44], [253, 231, 37]];
+function ramp(t) {
+  t = Math.max(0, Math.min(1, t));
+  const p = t * (RAMP.length - 1), i = Math.min(RAMP.length - 2, Math.floor(p)), u = p - i;
+  return RAMP[i].map((c, k) => Math.round(c + (RAMP[i + 1][k] - c) * u));
+}
+const rgb = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+/* ---------- representations ---------- */
+const N_BITS = 10;
+const grayToInt = (g) => { let b = g; while ((g >>= 1)) b ^= g; return b; };
+const intToGray = (v) => v ^ (v >> 1);
+const decodeVar = (bits, rep, fn) => { const g = parseInt(bits, 2); const v = rep === 'gray' ? grayToInt(g) : g; return fn.lo + (fn.hi - fn.lo) * v / (2 ** bits.length - 1); };
+const encodeVar = (x, rep, fn) => { const v = Math.round((x - fn.lo) / (fn.hi - fn.lo) * (2 ** N_BITS - 1)); return (rep === 'gray' ? intToGray(v) : v).toString(2).padStart(N_BITS, '0'); };
+
+/* ---------- a hand-made population, a few generations back, and what the stages did ---------- */
+function lcg(seed) { let s = seed; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function population(fn, rep, n = 12, gen = 0) {
+  const r = lcg(11 + gen * 7), [cx, cy] = fn.center, spread = Math.max(0.5, 2.4 - gen * 0.35);
+  return Array.from({ length: n }, (_, i) => {
+    let x = cx + (r() - 0.5) * spread * 2, y = cy + (r() - 0.5) * spread * 2;
+    x = Math.max(fn.lo, Math.min(fn.hi, x)); y = Math.max(fn.lo, Math.min(fn.hi, y));
+    if (rep !== 'real') { const bx = encodeVar(x, rep, fn), by = encodeVar(y, rep, fn); return { id: 20 + i, bits: bx + by, x: decodeVar(bx, rep, fn), y: decodeVar(by, rep, fn) }; }
+    return { id: 20 + i, x, y };
+  }).map((p) => ({ ...p, fit: fit(fn, p.x, p.y), f: fn.f(p.x, p.y) }));
+}
+const SELECTED_ID = 24;
+
+/* ---------- canvas helpers ---------- */
+function drawMarker(ctx, kind, x, y, label, o = {}) {
+  ctx.save();
+  ctx.lineWidth = 2.2; ctx.strokeStyle = '#111'; ctx.fillStyle = o.fill || '#fff';
+  const r = 7;
+  if (kind === 'ind') { ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke(); }
+  if (kind === 'elite') { ctx.beginPath(); ctx.moveTo(x, y - r - 2); ctx.lineTo(x + r + 2, y); ctx.lineTo(x, y + r + 2); ctx.lineTo(x - r - 2, y); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  if (kind === 'best') { ctx.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? r * 0.5 : r + 3; ctx.lineTo(x + rr * Math.cos(a), y + rr * Math.sin(a)); } ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  if (kind === 'parent') { ctx.beginPath(); ctx.rect(x - r, y - r, 2 * r, 2 * r); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#111'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(o.letter || 'A', x, y + 1); }
+  if (kind === 'child') { ctx.beginPath(); ctx.moveTo(x, y - r - 1); ctx.lineTo(x + r + 1, y + r); ctx.lineTo(x - r - 1, y + r); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  if (kind === 'hidden') { ctx.setLineDash([3, 3]); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(x, y, r - 1, 0, 7); ctx.stroke(); }
+  if (o.selected) { ctx.setLineDash([]); ctx.lineWidth = 3.2; ctx.strokeStyle = '#d6470e'; ctx.beginPath(); ctx.arc(x, y, r + 7, 0, 7); ctx.stroke(); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x - r - 13, y); ctx.lineTo(x - r - 5, y); ctx.moveTo(x + r + 5, y); ctx.lineTo(x + r + 13, y); ctx.moveTo(x, y - r - 13); ctx.lineTo(x, y - r - 5); ctx.moveTo(x, y + r + 5); ctx.lineTo(x, y + r + 13); ctx.stroke(); }
+  if (label !== undefined && label !== '') {
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.lineWidth = 3; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.strokeText(label, x + r + 4, y - r); ctx.fillText(label, x + r + 4, y - r);
+  }
+  ctx.restore();
+}
+const arrow = (ctx, x1, y1, x2, y2, color = '#fff') => {
+  ctx.save(); ctx.strokeStyle = '#111'; ctx.lineWidth = 4.2; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  const a = Math.atan2(y2 - y1, x2 - x1); ctx.fillStyle = color; ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - 11 * Math.cos(a - 0.45), y2 - 11 * Math.sin(a - 0.45)); ctx.lineTo(x2 - 11 * Math.cos(a + 0.45), y2 - 11 * Math.sin(a + 0.45)); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+};
+
+/* ---------- the heatmap ---------- */
+function drawHeat(canvas, fn, pop, past, marks) {
+  const W = canvas.width, H = canvas.height, ctx = canvas.getContext('2d');
+  const L = 46, R = W - 74, T = 12, B = H - 36, pw = R - L, ph = B - T;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  const [fmin, fmax] = range(fn), G = 120;
+  const img = ctx.createImageData(pw, ph);
+  for (let py = 0; py < ph; py++) for (let px = 0; px < pw; px++) {
+    const x = fn.lo + (fn.hi - fn.lo) * px / (pw - 1), y = fn.hi - (fn.hi - fn.lo) * py / (ph - 1);
+    const c = ramp((fit(fn, x, y) - fmin) / (fmax - fmin)); const k = 4 * (py * pw + px); img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]; img.data[k + 3] = 255;
+  }
+  ctx.putImageData(img, L, T);
+  const X = (x) => L + (x - fn.lo) / (fn.hi - fn.lo) * pw, Y = (y) => B - (y - fn.lo) / (fn.hi - fn.lo) * ph;
+  // isolines (marching squares) at fixed fitness levels, labelled
+  const levels = [0.2, 0.4, 0.6, 0.8].map((t) => fmin + t * (fmax - fmin));
+  const grid = Array.from({ length: G + 1 }, (_, i) => Array.from({ length: G + 1 }, (_, j) => fit(fn, fn.lo + (fn.hi - fn.lo) * i / G, fn.lo + (fn.hi - fn.lo) * j / G)));
+  ctx.lineWidth = 1.3;
+  levels.forEach((lv, li) => {
+    ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.beginPath();
+    let labelAt = null;
+    for (let i = 0; i < G; i++) for (let j = 0; j < G; j++) {
+      const v = [grid[i][j], grid[i + 1][j], grid[i + 1][j + 1], grid[i][j + 1]], xs = [i, i + 1, i + 1, i], ys = [j, j, j + 1, j + 1], pts = [];
+      for (let e = 0; e < 4; e++) { const a = e, b = (e + 1) % 4; if ((v[a] < lv) !== (v[b] < lv)) { const t = (lv - v[a]) / (v[b] - v[a]); pts.push([xs[a] + (xs[b] - xs[a]) * t, ys[a] + (ys[b] - ys[a]) * t]); } }
+      if (pts.length >= 2) { for (let k = 0; k + 1 < pts.length; k += 2) { const p1 = pts[k], p2 = pts[k + 1]; const sx = (p) => X(fn.lo + (fn.hi - fn.lo) * p[0] / G), sy = (p) => Y(fn.lo + (fn.hi - fn.lo) * p[1] / G); ctx.moveTo(sx(p1), sy(p1)); ctx.lineTo(sx(p2), sy(p2)); if (!labelAt && li % 1 === 0 && Math.hypot(sx(p1) - (L + pw / 2), sy(p1) - (T + ph / 2)) > 40) labelAt = [sx(p1), sy(p1)]; } }
+    }
+    ctx.stroke();
+    if (fn.name !== 'Rastrigin' || li === 1) if (labelAt) { ctx.font = 'bold 11px sans-serif'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.8)'; ctx.lineWidth = 3; ctx.textAlign = 'center'; ctx.strokeText(lv.toFixed(Math.abs(lv) < 2 ? 2 : 0), labelAt[0], labelAt[1] - 2); ctx.fillText(lv.toFixed(Math.abs(lv) < 2 ? 2 : 0), labelAt[0], labelAt[1] - 2); ctx.lineWidth = 1.3; }
+  });
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.strokeRect(L, T, pw, ph);
+  // axes
+  ctx.fillStyle = '#222'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+  for (let k = 0; k <= 4; k++) { const v = fn.lo + (fn.hi - fn.lo) * k / 4; ctx.fillText(v.toFixed(1), X(v), B + 17); ctx.textAlign = 'right'; ctx.fillText(v.toFixed(1), L - 6, Y(v) + 4); ctx.textAlign = 'center'; }
+  ctx.font = 'bold 14px sans-serif'; ctx.fillText('x', L + pw / 2, B + 32); ctx.save(); ctx.translate(11, T + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('y', 0, 0); ctx.restore();
+  // colour scale
+  const sx0 = R + 18, sw = 16;
+  for (let py = 0; py < ph; py++) { ctx.fillStyle = rgb(ramp(1 - py / (ph - 1))); ctx.fillRect(sx0, T + py, sw, 1.2); }
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5; ctx.strokeRect(sx0, T, sw, ph); ctx.fillStyle = '#222'; ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
+  [1, 0.75, 0.5, 0.25, 0].forEach((t) => { const y = T + (1 - t) * ph; ctx.fillText((fmin + t * (fmax - fmin)).toFixed(Math.abs(fmax - fmin) < 5 ? 2 : 0), sx0 + sw + 4, y + (t === 1 ? 10 : t === 0 ? 0 : 4)); ctx.beginPath(); ctx.moveTo(sx0 + sw, y); ctx.lineTo(sx0 + sw + 3, y); ctx.stroke(); });
+  ctx.save(); ctx.font = 'bold 12px sans-serif'; ctx.fillText('fitness', sx0 - 4, T - 1 + 0); ctx.restore();
+  // optimum marks: × with a label
+  fn.opt.forEach((o, k) => { const x = X(o[0]), y = Y(o[1]); ctx.strokeStyle = '#111'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x - 7, y - 7); ctx.lineTo(x + 7, y + 7); ctx.moveTo(x + 7, y - 7); ctx.lineTo(x - 7, y + 7); ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(x - 7, y - 7); ctx.lineTo(x + 7, y + 7); ctx.moveTo(x + 7, y - 7); ctx.lineTo(x - 7, y + 7); ctx.stroke(); if (k === 0 || fn.opt.length < 5) { ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.8)'; ctx.lineWidth = 3; ctx.textAlign = 'left'; ctx.strokeText(fn.opt.length > 1 ? 'optimum ' + (k + 1) : 'optimum', x + 10, y + 16); ctx.fillText(fn.opt.length > 1 ? 'optimum ' + (k + 1) : 'optimum', x + 10, y + 16); } });
+  drawPopulation(ctx, pop, past, marks, (p) => [X(p.x), Y(p.y)]);
+}
+
+/* ---------- the surface ---------- */
+function surfaceModel(fn, az, el, W, H) {
+  const G = 44, [fmin, fmax] = range(fn), pts = [];
+  const cosA = Math.cos(az), sinA = Math.sin(az), cosE = Math.cos(el), sinE = Math.sin(el), D = 4.2, scale = Math.min(W, H) * 0.56;
+  const project = (x, y, f) => {
+    const u = (x - (fn.lo + fn.hi) / 2) / ((fn.hi - fn.lo) / 2), v = (y - (fn.lo + fn.hi) / 2) / ((fn.hi - fn.lo) / 2), w = ((f - fmin) / (fmax - fmin) - 0.5) * 1.1;
+    const xr = u * cosA - v * sinA, yr = u * sinA + v * cosA;
+    const depth = yr * cosE - w * sinE, k = D / (D + depth);
+    return { sx: W / 2 + xr * scale * k, sy: H / 2 + 6 - (w * cosE + yr * sinE) * scale * k, depth };
+  };
+  for (let i = 0; i <= G; i++) { pts[i] = []; for (let j = 0; j <= G; j++) { const x = fn.lo + (fn.hi - fn.lo) * i / G, y = fn.lo + (fn.hi - fn.lo) * j / G, f = fit(fn, x, y); pts[i][j] = { x, y, f, ...project(x, y, f) }; } }
+  const quads = [];
+  for (let i = 0; i < G; i++) for (let j = 0; j < G; j++) { const a = pts[i][j], b = pts[i + 1][j], c = pts[i + 1][j + 1], d = pts[i][j + 1]; quads.push({ i, j, pts: [a, b, c, d], depth: (a.depth + b.depth + c.depth + d.depth) / 4, f: (a.f + b.f + c.f + d.f) / 4 }); }
+  quads.sort((p, q) => q.depth - p.depth);
+  return { G, quads, project, fmin, fmax };
+}
+function drawSurface(canvas, fn, az, el, pop, past, marks) {
+  const W = canvas.width, H = canvas.height, ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  const m = surfaceModel(fn, az, el, W, H), id = document.createElement('canvas'); id.width = W; id.height = H;
+  const ictx = id.getContext('2d', { willReadFrequently: true }); ictx.imageSmoothingEnabled = false; ictx.fillStyle = '#000'; ictx.fillRect(0, 0, W, H);
+  const light = [-0.4, -0.5, 0.75];
+  m.quads.forEach((q, n) => {
+    const [a, b, c, d] = q.pts, ux = b.x - a.x, uy = b.y - a.y, uz = (b.f - a.f) * 6, vx = d.x - a.x, vy = d.y - a.y, vz = (d.f - a.f) * 6;
+    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; const nl = Math.hypot(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
+    const sh = 0.72 + 0.4 * Math.max(0, nx * light[0] + ny * light[1] + nz * light[2]), col = ramp((q.f - m.fmin) / (m.fmax - m.fmin)).map((v) => Math.min(255, Math.round(v * sh)));
+    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.lineTo(c.sx, c.sy); ctx.lineTo(d.sx, d.sy); ctx.closePath(); ctx.fillStyle = rgb(col); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 0.6; ctx.stroke();
+    const code = n + 1; ictx.fillStyle = `rgb(${code & 255},${(code >> 8) & 255},${(code >> 16) & 255})`; ictx.beginPath(); ictx.moveTo(a.sx, a.sy); ictx.lineTo(b.sx, b.sy); ictx.lineTo(c.sx, c.sy); ictx.lineTo(d.sx, d.sy); ictx.closePath(); ictx.fill(); q.code = code;
+  });
+  // axes frame on the floor
+  const fl = (x, y) => m.project(x, y, m.fmin), c0 = fl(fn.lo, fn.lo), c1 = fl(fn.hi, fn.lo), c2 = fl(fn.hi, fn.hi), c3 = fl(fn.lo, fn.hi);
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(c0.sx, c0.sy); ctx.lineTo(c1.sx, c1.sy); ctx.lineTo(c2.sx, c2.sy); ctx.lineTo(c3.sx, c3.sy); ctx.closePath(); ctx.stroke();
+  ctx.fillStyle = '#222'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; const mid = (p, q) => [(p.sx + q.sx) / 2, (p.sy + q.sy) / 2]; let t = mid(c0, c1); ctx.fillText('x →', t[0], t[1] + 18); t = mid(c0, c3); ctx.fillText('y →', t[0] - 18, t[1] + 4);
+  const codeByIJ = {}; m.quads.forEach((q) => (codeByIJ[q.i + ',' + q.j] = q.code));
+  const hiddenAt = (p, sx, sy) => {
+    const i = Math.min(m.G - 1, Math.max(0, Math.floor((p.x - fn.lo) / (fn.hi - fn.lo) * m.G))), j = Math.min(m.G - 1, Math.max(0, Math.floor((p.y - fn.lo) / (fn.hi - fn.lo) * m.G)));
+    const want = new Set(); for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) want.add(codeByIJ[(i + di) + ',' + (j + dj)]);
+    const px = ictx.getImageData(Math.max(0, Math.min(W - 1, Math.round(sx))), Math.max(0, Math.min(H - 1, Math.round(sy))), 1, 1).data; const code = px[0] + (px[1] << 8) + (px[2] << 16);
+    return !want.has(code);
+  };
+  const at = (p) => { const q = m.project(p.x, p.y, p.fit + (m.fmax - m.fmin) * 0.012); return [q.sx, q.sy]; };
+  drawPopulation(ctx, pop, past, marks, at, hiddenAt);
+  // optimum marks
+  fn.opt.forEach((o) => { const q = m.project(o[0], o[1], fit(fn, o[0], o[1])); ctx.strokeStyle = '#111'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(q.sx - 7, q.sy - 7); ctx.lineTo(q.sx + 7, q.sy + 7); ctx.moveTo(q.sx + 7, q.sy - 7); ctx.lineTo(q.sx - 7, q.sy + 7); ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(q.sx - 7, q.sy - 7); ctx.lineTo(q.sx + 7, q.sy + 7); ctx.moveTo(q.sx + 7, q.sy - 7); ctx.lineTo(q.sx - 7, q.sy + 7); ctx.stroke(); });
+}
+
+/* ---------- the population on a plot (the same marks on both views) ---------- */
+function drawPopulation(ctx, pop, past, marks, at, hiddenAt) {
+  // trails: the positions of earlier generations, fading
+  past.forEach((gen, k) => gen.forEach((p) => { const [x, y] = at(p); ctx.fillStyle = `rgba(255,255,255,${0.6 - k * 0.1})`; ctx.strokeStyle = `rgba(0,0,0,${0.7 - k * 0.1})`; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(x, y, 3.6, 0, 7); ctx.fill(); ctx.stroke(); }));
+  const bestId = pop.reduce((b, p) => (p.fit > b.fit ? p : b), pop[0]).id;
+  pop.forEach((p) => {
+    const [x, y] = at(p), hidden = hiddenAt ? hiddenAt(p, x, y) : false;
+    const kind = hidden ? 'hidden' : p.elite ? 'elite' : p.id === bestId ? 'best' : marks.stage === 'parents' && p.parent ? 'parent' : 'ind';
+    drawMarker(ctx, kind, x, y, hidden ? '' : String(p.id), { selected: p.id === SELECTED_ID, letter: p.parent, fill: marks.stage === 'parents' && p.parent ? '#ffe9a8' : '#fff' });
+  });
+  if (marks.stage === 'children' || marks.stage === 'mutation') (marks.children || []).forEach((c) => { const [x, y] = at(c); if (marks.stage === 'mutation' && c.before) { const [bx, by] = at(c.before); drawMarker(ctx, 'hidden', bx, by, ''); arrow(ctx, bx, by, x, y, '#ff9d5c'); } drawMarker(ctx, 'child', x, y, 'O' + c.n, { fill: '#c8f0d4' }); });
+}
+
+/* ---------- mock chrome ---------- */
+function topbar(cur, done, gen, line, menuOpen) {
+  const stages = ['Selection', 'Pairing', 'Crossover', 'Mutation', 'Evaluation', 'Replacement'];
+  const repName = { real: 'real-valued', plain: 'binary-coded', gray: 'Gray-coded' }[state.rep];
+  const menu = menuOpen ? `<ul class="menulist" style="position:absolute;left:68px;top:62px;z-index:60"><li><span>&nbsp;</span> Goldberg x²</li><li><span>&nbsp;</span> Target string</li><li><span>&nbsp;</span> Knapsack</li><li><span>&nbsp;</span> Trap</li><li class="cur"><span>✓</span> Landscape</li></ul>` : '';
+  return `<div id="top"><div id="brand" style="position:relative"><span class="logo" aria-hidden="true">Ls</span><div><div class="trow"><h1 class="t" style="margin:0">Landscape ▾</h1><span class="presetchip">${repName}</span></div><div class="s">${FN().name} · ${FN().rule} · optimum ${fmtOpt()}</div></div>${menu}</div>
+  <ol id="ribbon" style="list-style:none;margin:0">${stages.map((s, k) => `<li class="stage ${k < done ? 'done' : ''} ${k === cur ? 'cur' : ''}"><span class="n">${k < done ? '✓' : k + 1}</span><span>${s}</span></li>`).join('')}</ol>
+  <div id="gen"><div class="g">Generation ${gen}</div><div class="l">${line}</div></div></div>`;
+}
+const FN = () => FNS[state.fn];
+const fmtOpt = () => (FN().min ? 'f = 0' : '1') + (FN().opt.length > 1 ? ` (${FN().opt.length} places)` : '');
+function transport() {
+  return `<div id="transport"><button class="btn quiet">↺</button><button class="btn quiet">◂ Back <kbd>←</kbd></button><button class="btn primary">Micro-step ▸ <kbd>→</kbd></button><button class="btn quiet">◂◂</button><button class="btn">Stage ▸▸ <kbd>⇧→</kbd></button><button class="btn">Generation ⏭ <kbd>G</kbd></button><span class="vsep"></span><button class="btn">▶ Run <kbd>Space</kbd></button><button class="btn quiet">Run to stop</button><span class="vsep"></span>
+  <div id="tier"><div><input class="speed" type="range" min="0" max="3" value="0"><div class="labels" style="width:200px;margin-left:0"><span>Slow</span><span>Medium</span><span>Fast</span><span>Max</span></div></div></div><span class="vsep"></span>
+  <div id="seedbox">Seed <b>42</b> <button class="btn quiet" style="height:40px;padding:0 10px">↻ New</button></div><div id="statusline">Paused</div><span style="flex:1"></span><button class="btn quiet">◐</button><button class="btn quiet">⚙ Parameters</button><button class="btn quiet">A⁺</button></div>`;
+}
+const history = `<footer class="history"><div class="title"><b>Run history</b><span class="muted">recorded gens 0–5</span></div><div class="scrub"><svg viewBox="0 0 1440 66" width="1440" height="66"><rect x="0" y="14" width="1440" height="12" rx="6" class="track"/><rect x="0" y="14" width="1000" height="12" rx="6" class="fill"/><rect x="996" y="6" width="8" height="28" rx="3" class="thumb"/>${[0, 1, 2, 3, 4, 5].map((g) => `<text x="${(g + 0.5) * 240}" y="54" text-anchor="middle" class="${g === 4 ? 'current' : ''}">gen ${g}</text>`).join('')}</svg></div><button class="btn live" disabled>Return to live</button></footer>`;
+
+/* ---------- the right-hand table ---------- */
+function popPanel(title, pop) {
+  const fn = FN(), rep = state.rep, best = Math.max(...pop.map((p) => p.fit)), avg = pop.reduce((t, p) => t + p.fit, 0) / pop.length;
+  const showF = fn.min;
+  let head, rows;
+  if (rep === 'real') {
+    head = `<tr><th>#</th><th>Chromosome<span class="colnote">(x, y)</span></th>${showF ? '<th class="num">f(x, y)<span class="colnote">objective</span></th>' : ''}<th class="num">Fitness${showF ? '<span class="colnote">= −f</span>' : ''}</th></tr>`;
+    rows = pop.map((p) => `<tr class="${p.id === SELECTED_ID ? 'sel' : ''}"><td>${p.id === SELECTED_ID ? '▸ ' : ''}${p.id}${p.elite ? ' ★' : ''}</td><td class="pair"><span class="xy">(<b>${f3(p.x)}</b>, <b>${f3(p.y)}</b>)</span></td>${showF ? `<td class="num">${f3(p.f)}</td>` : ''}<td class="num strong">${f3(p.fit)}</td></tr>`).join('');
+  } else {
+    head = `<tr><th>#</th><th>Chromosome<div class="varhdr"><span class="vg" style="width:${N_BITS * 17 + (N_BITS - 1) * 1}px">x · ${N_BITS} bits</span><span class="vg" style="width:${N_BITS * 17 + (N_BITS - 1) * 1}px">y · ${N_BITS} bits</span></div></th><th class="num">x</th><th class="num">y</th>${showF ? '<th class="num">f</th>' : ''}<th class="num">Fitness${showF ? '<span class="colnote">= −f</span>' : ''}</th></tr>`;
+    rows = pop.map((p) => `<tr class="${p.id === SELECTED_ID ? 'sel' : ''}"><td>${p.id === SELECTED_ID ? '▸ ' : ''}${p.id}${p.elite ? ' ★' : ''}</td><td class="chr"><span class="bits grp2">${[p.bits.slice(0, N_BITS), p.bits.slice(N_BITS)].map((g) => `<span class="vgrp">${[...g].map((c) => `<span class="bit v ${c === '1' ? 'one' : ''}">${c}</span>`).join('')}</span>`).join('')}</span></td><td class="num">${f3(p.x)}</td><td class="num">${f3(p.y)}</td>${showF ? `<td class="num">${f3(p.f)}</td>` : ''}<td class="num strong">${f3(p.fit)}</td></tr>`).join('');
+  }
+  return `<section class="panel abs" style="left:1136px;top:172px;width:760px;height:542px"><div class="ph"><h2>${title}</h2><span class="r">avg ${f3(avg)} · best ${f3(best)}</span></div>
+  <div class="tablewrap" style="top:50px;padding:0 6px"><table class="ktable compact rt land"><thead>${head}</thead><tbody>${rows}</tbody></table></div></section>
+  <div id="legend" style="left:1136px;top:722px;width:760px"><span><b>★</b> elite</span><span><b>◆</b> parent</span><span><b>◇</b> offspring</span><span><b>✱</b> mutated gene</span><span><b>▸</b> selected</span></div>`;
+}
+
+/* ---------- the bottom strip ---------- */
+function strip() {
+  const fn = FN(), [fmin, fmax] = range(fn), gens = [0, 1, 2, 3, 4, 5];
+  const best = fn.min ? [-9, -6.2, -3.1, -1.9, -0.8, -0.4] : [0.31, 0.46, 0.55, 0.71, 0.78, 0.82], avg = fn.min ? [-26, -20, -15, -11, -8.5, -6.9] : [0.12, 0.19, 0.26, 0.35, 0.44, 0.5];
+  const lo = fn.min ? fmin / 4 : 0, hi = fn.min ? 0 : 1, X = (g) => 66 + 714 * g / 15, Y = (v) => 138 - 110 * (v - lo) / (hi - lo);
+  const path = (a) => a.map((v, k) => `${k ? 'L' : 'M'}${X(k)},${Y(v)}`).join(' ');
+  const ticks = [0, 0.5, 1].map((t) => { const v = lo + t * (hi - lo); return `<line class="gr" x1="66" x2="780" y1="${Y(v)}" y2="${Y(v)}"/><text x="58" y="${Y(v) + 6}" text-anchor="end">${v.toFixed(fn.min ? 0 : 1)}</text>`; }).join('');
+  const xt = [0, 3, 6, 9, 12, 15].map((g) => `<text x="${X(g)}" y="160" text-anchor="middle">${g}</text>`).join('');
+  const fitSvg = `<svg viewBox="0 0 800 188" width="100%">${ticks}${xt}<line x1="66" x2="780" y1="${Y(hi)}" y2="${Y(hi)}" stroke="var(--ink2)" stroke-dasharray="2 5"/><text x="780" y="${Y(hi) + 18}" text-anchor="end" style="font-size:16px">optimum ${fn.min ? '0 (f = 0)' : '1'}</text><path d="${path(avg)}" fill="none" stroke="var(--s1)" stroke-width="2.5"/><path d="${path(best)}" fill="none" stroke="var(--s2)" stroke-width="2.5"/>${gens.map((g) => `<circle cx="${X(g)}" cy="${Y(avg[g])}" r="5" fill="var(--s1)"/><rect x="${X(g) - 5}" y="${Y(best[g]) - 5}" width="10" height="10" fill="var(--s2)"/>`).join('')}<line x1="${X(5)}" x2="${X(5)}" y1="28" y2="138" stroke="var(--ink)" stroke-width="2"/><text class="ink" x="${X(5)}" y="20" text-anchor="middle" style="font-weight:700;font-size:16px">now</text></svg>`;
+  const dv = [0.46, 0.39, 0.31, 0.24, 0.19, 0.15], hm = [0.5, 0.44, 0.38, 0.3, 0.27, 0.22], X2 = (g) => 56 + 444 * g / 15, Y2 = (v) => 138 - 110 * v;
+  const divSvg = `<svg viewBox="0 0 520 188" width="100%">${[0, 0.5, 1].map((v) => `<line class="gr" x1="56" x2="500" y1="${Y2(v)}" y2="${Y2(v)}"/><text x="48" y="${Y2(v) + 6}" text-anchor="end">${v}</text>`).join('')}${[0, 3, 6, 9, 12, 15].map((g) => `<text x="${X2(g)}" y="160" text-anchor="middle">${g}</text>`).join('')}<path d="${dv.map((v, k) => `${k ? 'L' : 'M'}${X2(k)},${Y2(v)}`).join(' ')}" fill="none" stroke="var(--s7)" stroke-width="2.5"/>${dv.map((v, k) => `<circle cx="${X2(k)}" cy="${Y2(v)}" r="5" fill="var(--s7)"/>`).join('')}${state.rep !== 'real' ? `<path d="${hm.map((v, k) => `${k ? 'L' : 'M'}${X2(k)},${Y2(v)}`).join(' ')}" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-dasharray="2 4"/>${hm.map((v, k) => `<rect x="${X2(k) - 4}" y="${Y2(v) - 4}" width="8" height="8" transform="rotate(45 ${X2(k)} ${Y2(v)})" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/>`).join('')}` : ''}<line x1="${X2(5)}" x2="${X2(5)}" y1="28" y2="138" stroke="var(--ink)" stroke-width="2"/></svg>`;
+  const spread = `<div class="spreadp"><div class="sprow"><b>x</b><span class="spbar"><i style="width:21%"></i></span><span class="spn">0.21 of the range</span></div><div class="sprow"><b>y</b><span class="spbar"><i style="width:14%"></i></span><span class="spn">0.14 of the range</span></div><div class="spkey">standard deviation of the population, as a share of each variable’s range</div><div class="sphist">x spread, gens 0–5: .31 · .27 · .22 · .18 · .15 · .12<br>y spread, gens 0–5: .29 · .24 · .21 · .17 · .15 · .14</div></div>`;
+  return `<section class="panel plot abs" style="left:24px;top:758px;width:820px;height:244px"><div class="ph"><h2>Fitness</h2><span class="r legend"><b>●</b> average &nbsp;<b>■</b> best of gen.${fn.min ? ' &nbsp;fitness = −f' : ''}</span></div>${fitSvg}</section>
+  <section class="panel plot abs" style="left:860px;top:758px;width:540px;height:244px"><div class="ph"><h2>Diversity</h2><span class="r legend">mean distance, share of the diagonal${state.rep !== 'real' ? ' · <b>◇</b> Hamming' : ''}</span></div>${divSvg}</section>
+  <section class="panel plot abs" style="left:1416px;top:758px;width:480px;height:244px"><div class="ph"><h2>Spread</h2><span class="r legend">generation 4</span></div>${spread}<p class="summary" style="margin:2px 16px 0;font-size:15px;color:var(--ink2)">best now ${fn.min ? '−0.41' : '0.82'} · best so far ${fn.min ? '−0.41' : '0.82'} · average ${fn.min ? '−6.9' : '0.50'}</p></section>
+  ${history}`;
+}
+
+/* ---------- the Landscape view ---------- */
+const tabs = (cur) => `<div class="tabs"><span class="tab ${cur === 'stage' ? 'on' : ''}">Stage view</span><span class="tab ${cur === 'land' ? 'on' : ''}">Landscape</span></div>`;
+function landScreen() {
+  const fn = FN(), pop = population(fn, state.rep, +state.n, 4);
+  pop[1].elite = true;
+  const past = [3, 2, 1, 0].slice(0, state.trail === 0 ? 0 : state.trail === 1 ? 1 : state.trail === 3 ? 3 : 4).map((g) => population(fn, state.rep, +state.n, 4 - 1 - (3 - g)).map((p) => ({ ...p })));
+  const stagePick = { none: { stage: 'none' }, parents: { stage: 'parents' }, children: { stage: 'children' }, mutation: { stage: 'mutation' } }[state.mark];
+  const marks = { ...stagePick };
+  if (state.mark === 'parents') { pop[4].parent = 'A'; pop[7].parent = 'B'; }
+  if (state.mark === 'children' || state.mark === 'mutation') {
+    const a = pop[4], b = pop[7];
+    marks.children = [{ n: 1, x: (a.x * 0.37 + b.x * 0.63), y: (a.y * 0.37 + b.y * 0.63) }, { n: 2, x: (a.x * 0.63 + b.x * 0.37), y: (a.y * 0.63 + b.y * 0.37) }];
+    if (state.mark === 'mutation') { const c = marks.children[1]; marks.children[1] = { n: 2, x: Math.min(fn.hi, c.x + 0.9), y: c.y - 0.55, before: { ...c } }; }
+    marks.children.forEach((c) => (c.fit = fit(fn, c.x, c.y)));
+  }
+  const sel = pop.find((p) => p.id === SELECTED_ID);
+  const sentence = `${fn.name}, fitness from ${range(fn)[0].toFixed(2)} to ${range(fn)[1].toFixed(2)} over x and y from ${fn.lo} to ${fn.hi}. ${pop.length} individuals, the best at (${f3(pop.reduce((b, p) => (p.fit > b.fit ? p : b)).x)}, ${f3(pop.reduce((b, p) => (p.fit > b.fit ? p : b)).y)}). Individual ${SELECTED_ID} is selected: (${f3(sel.x)}, ${f3(sel.y)}), fitness ${f3(sel.fit)}.`;
+  const body = `<div class="lview"><div class="lbar"><span class="lgrp"><b>Trails</b> ${[0, 1, 3, 5].map((t) => `<span class="tog ${state.trail === t ? 'on' : ''}">${t === 0 ? 'off' : t + ' gen' + (t > 1 ? 's' : '')}</span>`).join('')}</span><span class="lgrp"><b>Rotate surface</b> <span class="tog">◀</span><span class="tog">▶</span><span class="tog">▲</span><span class="tog">▼</span><span class="tog">reset</span></span></div>
+  <div class="lplots"><figure><figcaption>Heatmap · ${fn.min ? 'fitness = −f(x, y)' : 'fitness = f(x, y)'}, higher is better</figcaption><canvas id="heat" width="520" height="296"></canvas></figure><figure><figcaption>Surface of the same landscape <i>(drag, or use the arrow keys)</i></figcaption><canvas id="surf" width="520" height="296"></canvas></figure></div>
+  <p class="lkey"><b>●</b> individual · <b>◆</b> elite · <b>★</b> best · <b>▢</b> parent · <b>▲</b> child · <b>×</b> optimum · dashed ring = hidden behind the ridge · <span class="selk">◎</span> selected</p><p class="lsent">${esc(sentence)}</p></div>`;
+  window.__draw = () => { drawHeat(document.getElementById('heat'), fn, pop, past, marks); drawSurface(document.getElementById('surf'), fn, state.az, state.el, pop, past, marks); };
+  return `${topbar(state.mark === 'mutation' ? 3 : 2, state.mark === 'mutation' ? 3 : 2, 5, 'being made · micro-step 1 of 3')}${transport()}<section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Landscape</h2></div>${tabs('land')}<div id="stagebody" style="top:90px;bottom:70px">${body}</div>
+  <div id="narr"><span class="m">Micro-step 1 of 3</span><span>${state.mark === 'children' ? 'Pair 1: λ = 0.37 → O1 = 0.37·A + 0.63·B, O2 = 0.63·A + 0.37·B (the children on the map)' : state.mark === 'mutation' ? 'Offspring 2: gene x drew u = 0.031 < pm → step +0.9 (clamped to the bound if it leaves)' : state.mark === 'parents' ? 'Pair 1: parents A = individual 24, B = individual 27 (squares on the map)' : 'Generation 4 shown: the population on both views'}</span></div></section>
+  ${popPanel('Population · generation 4', pop)}${strip()}`;
+}
+
+/* ---------- operator cards (real) ---------- */
+const nl = (lo, hi, marks, w = 640) => { // a number line with marks: [{v, label, cls}]
+  const X = (v) => 14 + (v - lo) / (hi - lo) * (w - 28);
+  return `<svg class="nline" viewBox="0 0 ${w} 44" width="${w}" height="44"><line x1="14" x2="${w - 14}" y1="26" y2="26" stroke="var(--ink2)" stroke-width="2"/>${marks.map((m) => m.kind === 'band' ? `<rect x="${X(m.v)}" y="19" width="${X(m.v2) - X(m.v)}" height="14" fill="${m.fill}" stroke="${m.stroke}" stroke-width="2" ${m.dash ? 'stroke-dasharray="5 3"' : ''}/>` : `<g><${m.shape === 'dia' ? `path d="M${X(m.v)},13 l7,9 l-7,9 l-7,-9 z"` : m.shape === 'tri' ? `path d="M${X(m.v)},14 l8,15 l-16,0 z"` : `circle cx="${X(m.v)}" cy="26" r="7"`} fill="${m.fill || '#fff'}" stroke="#111" stroke-width="2.2"/><text x="${X(m.v)}" y="${m.shape === 'tri' ? 42 : 10}" text-anchor="middle" style="font-size:13px;font-weight:700">${m.label}</text></g>`).join('')}</svg>`;
+};
+function crossScreen() {
+  const fn = FN(), a = { id: 24, x: -2.1, y: 1.4 }, b = { id: 27, x: 0.9, y: -0.6 };
+  let body = '';
+  if (state.op === 'blx') {
+    const alpha = 0.5, row = (name, va, vb, d1, d2, lo, hi) => {
+      const mn = Math.min(va, vb), mx = Math.max(va, vb), d = mx - mn, wl = mn - alpha * d, wh = mx + alpha * d;
+      const c1 = Math.max(lo, Math.min(hi, wl + d1 * (wh - wl))), c2 = Math.max(lo, Math.min(hi, wl + d2 * (wh - wl)));
+      return `<div class="gene"><div class="gl"><b>gene ${name}</b> · A = ${f3(va)}, B = ${f3(vb)} · d = ${f3(d)} → interval [${f3(wl)}, ${f3(wh)}]</div>${nl(Math.max(lo, wl - 0.4), Math.min(hi, wh + 0.4), [{ kind: 'band', v: wl, v2: wh, fill: 'rgba(255,157,92,.28)', stroke: '#d6470e', dash: true }, { kind: 'band', v: mn, v2: mx, fill: 'rgba(124,92,255,.25)', stroke: '#7c5cff' }, { v: va, label: 'A', shape: 'dot' }, { v: vb, label: 'B', shape: 'dot' }, { v: c1, label: 'O1', shape: 'tri', fill: '#c8f0d4' }, { v: c2, label: 'O2', shape: 'tri', fill: '#c8f0d4' }])}<div class="gd">draws u = ${d1.toFixed(3)} → <b>O1 ${f3(c1)}</b> · u = ${d2.toFixed(3)} → <b>O2 ${f3(c2)}</b>${c1 !== wl + d1 * (wh - wl) || c2 !== wl + d2 * (wh - wl) ? ' · <span class="clamp">▮ clamped to the bound</span>' : ''}</div></div>`;
+    };
+    body = `<p class="expl"><b>BLX-α</b> (α = ${alpha}): each child gene is drawn uniformly from the parents’ interval widened by α × its length on each side (dashed). Values outside the bounds are clamped.</p>${row('x', a.x, b.x, 0.71, 0.18, fn.lo, fn.hi)}${row('y', a.y, b.y, 0.93, 0.62, fn.lo, fn.hi)}`;
+  } else if (state.op === 'arith') {
+    const lam = 0.37, c1 = [lam * a.x + (1 - lam) * b.x, lam * a.y + (1 - lam) * b.y], c2 = [(1 - lam) * a.x + lam * b.x, (1 - lam) * a.y + lam * b.y];
+    body = `<p class="expl"><b>Arithmetic crossover</b>: one draw λ per pair; the children are weighted averages of the parents, so they always lie between them.</p><div class="gene"><div class="gl"><b>λ = ${lam}</b> (draw u = 0.370)</div><table class="atab"><thead><tr><th></th><th>x</th><th>y</th></tr></thead><tbody><tr><td>Parent A (individual ${a.id})</td><td>${f3(a.x)}</td><td>${f3(a.y)}</td></tr><tr><td>Parent B (individual ${b.id})</td><td>${f3(b.x)}</td><td>${f3(b.y)}</td></tr><tr class="ch"><td>O1 = ${lam}·A + ${(1 - lam).toFixed(2)}·B</td><td>${f3(c1[0])}</td><td>${f3(c1[1])}</td></tr><tr class="ch"><td>O2 = ${(1 - lam).toFixed(2)}·A + ${lam}·B</td><td>${f3(c2[0])}</td><td>${f3(c2[1])}</td></tr></tbody></table>${nl(-2.6, 1.4, [{ v: a.x, label: 'A', shape: 'dot' }, { v: b.x, label: 'B', shape: 'dot' }, { v: c1[0], label: 'O1', shape: 'tri', fill: '#c8f0d4' }, { v: c2[0], label: 'O2', shape: 'tri', fill: '#c8f0d4' }])}<div class="gd">gene x on its axis (gene y likewise)</div></div>`;
+  } else {
+    body = `<p class="expl"><b>One-point crossover</b> (discrete recombination): the genes after the cut are swapped, so each child gene is a copy of a parent’s gene.</p><div class="gene"><table class="atab"><thead><tr><th></th><th>x</th><th>y</th></tr></thead><tbody><tr><td>Parent A</td><td>${f3(a.x)}</td><td>${f3(a.y)}</td></tr><tr><td>Parent B</td><td>${f3(b.x)}</td><td>${f3(b.y)}</td></tr><tr class="ch"><td>O1 (cut after gene 1)</td><td>${f3(a.x)}</td><td class="sw">${f3(b.y)}</td></tr><tr class="ch"><td>O2</td><td class="sw">${f3(b.x)}</td><td>${f3(a.y)}</td></tr></tbody></table></div>`;
+  }
+  return `${topbar(2, 2, 5, 'being made · micro-step 1 of 3')}${transport()}<section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 3 · Crossover</h2></div>${tabs('stage')}<div id="stagebody" style="top:90px"><div class="cardwrap"><section class="card ccard current"><div class="thead"><b>Pair 1</b><span class="badge ok"><span aria-hidden="true">✓</span> recombined</span><span class="muted">u = 0.41 &lt; pc 0.9</span></div>${body}</section></div></div>
+  <div id="narr"><span class="m">Micro-step 1 of 3</span><span>Pair 1: ${state.op === 'blx' ? 'BLX-α draws per gene → O1 and O2' : state.op === 'arith' ? 'λ = 0.37 → O1 = 0.37·A + 0.63·B, O2 = 0.63·A + 0.37·B' : 'cut after gene 1 → y swapped'}</span></div></section>${popPanel('Parents · generation 4', population(fn, state.rep, 12, 4))}${strip()}`;
+}
+function mutScreen() {
+  const fn = FN(), sigma = 0.05, rng = fn.hi - fn.lo, genes = [
+    { n: 'x', before: 4.62, u: 0.031, u1: 0.842, u2: 0.117, pm: 0.15 },
+    { n: 'y', before: -1.384, u: 0.612, pm: 0.15 },
+  ].map((g) => { if (g.u1 === undefined) return g; const z = Math.sqrt(-2 * Math.log(g.u1)) * Math.cos(2 * Math.PI * g.u2); const step = sigma * rng * z; const raw = g.before + step; return { ...g, z, step, raw, after: Math.max(fn.lo, Math.min(fn.hi, raw)) }; });
+  const rows = genes.map((g) => `<tr class="${g.u < g.pm ? 'flipcell' : ''}"><td><b>${g.n}</b></td><td>${f3(g.before)}</td><td>u = ${g.u.toFixed(3)} ${g.u < g.pm ? '&lt;' : '≥'} pm ${g.pm}</td>${g.u < g.pm ? `<td>u₁ = ${g.u1}, u₂ = ${g.u2} → z = ${g.z.toFixed(3)}</td><td>σ·range·z = ${sigma}·${rng.toFixed(2)}·${g.z.toFixed(3)} = <b>${g.step >= 0 ? '+' : '−'}${Math.abs(g.step).toFixed(3)}</b></td><td><b>${f3(g.after)}</b>${g.raw !== g.after ? ` <span class="clamp">▮ clamped (was ${f3(g.raw)}, upper bound ${fn.hi})</span>` : ''}</td>` : '<td colspan="2" class="muted">no draw for z: this gene is not mutated</td><td>' + f3(g.before) + ' <span class="muted">unchanged</span></td>'}</tr>`).join('');
+  return `${topbar(3, 3, 5, 'being made · micro-step 2 of 6')}${transport()}<section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 4 · Mutation</h2></div>${tabs('stage')}<div id="stagebody" style="top:90px"><div class="cardwrap"><p class="expl"><b>Gaussian mutation</b>: each gene gets its own draw u; a gene with u &lt; pm moves by σ × range × z, z a normal draw made from two further uniform draws (Box–Muller). Values outside the bounds are clamped.</p><section class="card mcard current"><div class="crow"><span class="who">O2</span><span class="xy big">(${f3(genes[0].before)}, ${f3(genes[1].before)})</span><span class="muted">before</span></div><table class="atab mt"><thead><tr><th></th><th>before</th><th>draw</th><th>normal draw</th><th>step</th><th>after</th></tr></thead><tbody>${rows}</tbody></table><div class="crow res"><span class="who sub">result</span><span class="xy big">(<b class="fl">${f3(genes[0].after)}</b>, ${f3(genes[1].before)})</span><span class="badge flip">✱ gene x: ${f3(genes[0].before)} → ${f3(genes[0].after)}</span></div></section></div></div>
+  <div id="narr"><span class="m">Micro-step 2 of 6</span><span>Offspring 2: gene x drew u = 0.031 &lt; pm 0.15 → z = ${genes[0].z.toFixed(3)}, step ${genes[0].step.toFixed(3)}${genes[0].raw !== genes[0].after ? ', clamped to ' + fn.hi : ''}</span></div></section>${popPanel('Parents · generation 4', population(fn, state.rep, 12, 4))}${strip()}`;
+}
+function binScreen() {
+  const fn = FN(), rep = state.rep === 'real' ? 'plain' : state.rep, x = fn.lo + (fn.hi - fn.lo) * 511 / 1023; // the value just below the middle: 0111111111 in plain binary
+  const bitsOf = (r) => encodeVar(x, r, fn), plain = encodeVar(x, 'plain', fn), gray = encodeVar(x, 'gray', fn);
+  const flipTable = (r) => { const b = encodeVar(x, r, fn); return [...b].map((c, i) => { const nb = b.slice(0, i) + (c === '1' ? '0' : '1') + b.slice(i + 1); return { i: i + 1, nb, nx: decodeVar(nb, r, fn) }; }); };
+  const tbl = (r, label) => `<div class="fliptab"><div class="gl"><b>${label}</b>: x = ${f3(x)} is <span class="bits inl">${[...bitsOf(r)].map((c) => `<span class="bit v sm ${c === '1' ? 'one' : ''}">${c}</span>`).join('')}</span></div><table class="atab"><thead><tr><th>flip bit</th>${flipTable(r).map((f) => `<th>${f.i}</th>`).join('')}</tr></thead><tbody><tr><td>x becomes</td>${flipTable(r).map((f) => `<td>${f3(f.nx)}</td>`).join('')}</tr><tr><td>moves by</td>${flipTable(r).map((f) => `<td class="${Math.abs(f.nx - x) > 1 ? 'big' : ''}">${(f.nx - x >= 0 ? '+' : '−') + Math.abs(f.nx - x).toFixed(3)}</td>`).join('')}</tr></tbody></table></div>`;
+  const neighbour = (r) => { const v = Math.round((x - fn.lo) / (fn.hi - fn.lo) * (2 ** N_BITS - 1)); const a = (r === 'gray' ? intToGray(v) : v), b = (r === 'gray' ? intToGray(v + 1) : v + 1); return [...(a ^ b).toString(2)].filter((c) => c === '1').length; };
+  return `${topbar(3, 3, 5, 'being made · micro-step 2 of 6')}${transport()}<section class="panel abs" style="left:24px;top:172px;width:1096px;height:574px"><div class="ph"><h2>Stage 4 · Mutation</h2></div>${tabs('stage')}<div id="stagebody" style="top:90px"><div class="cardwrap"><p class="expl">Binary-coded: the bits of each variable are read as a number between the bounds, so every flip has a decoded size, shown here for the same value in plain binary and in Gray code. <b>Neighbouring values</b> (the next step in x) differ in <b>${neighbour('plain')} bit(s)</b> in plain binary and in <b>${neighbour('gray')}</b> in Gray code.</p>${tbl('plain', 'Plain binary')}${tbl('gray', 'Gray code')}</div></div>
+  <div id="narr"><span class="m">Micro-step 2 of 6</span><span>Offspring 2: bit 1 of x drew below pm → flipped; x moves from ${f3(x)} to ${f3(decodeVar(flipTable(rep)[0].nb, rep, fn))} (${rep === 'gray' ? 'Gray' : 'plain binary'})</span></div></section>${popPanel('Parents · generation 4', population(fn, state.rep === 'real' ? 'plain' : state.rep, 12, 4))}${strip()}`;
+}
+
+/* ---------- drawer ---------- */
+function drawer() {
+  const rep = state.rep;
+  const opts = rep === 'real' ? ['One-point', 'Two-point (needs 3 genes)', 'Uniform', 'BLX-α', 'Arithmetic'] : ['One-point', 'Two-point', 'Uniform'];
+  return `<aside class="mockdrawer" id="drawer"><div class="dh"><h2>Parameters</h2><button class="btn quiet">✕ close</button></div>
+  <div class="sec" style="padding-top:4px"><h3>Run setup <span class="tag reset">↺ needs reset</span></h3>
+   <div class="ctl"><label>Landscape</label><span class="field"><select><option>${FN().name}</option></select></span><p class="help">${FN().rule === 'maximise f' ? 'Higher f is better.' : 'The objective f is minimised; the run maximises fitness = −f, and the maps show fitness.'} Bounds ${FN().lo} to ${FN().hi} for x and y.</p></div>
+   <div class="ctl"><label>Representation</label><span class="field"><select><option>${{ real: 'Real-valued (x, y)', plain: 'Binary-coded, plain binary', gray: 'Binary-coded, Gray code' }[rep]}</option></select></span><p class="help">${rep === 'real' ? 'Two numbers; BLX-α, arithmetic and Gaussian mutation are available.' : 'Each variable is written in bits; the bit operators of the earlier problems apply.'}</p></div>
+   ${rep !== 'real' ? '<div class="ctl"><label>Bits per variable n</label><span class="field"><input type="text" value="10"></span><p class="help">4 to 12; each variable takes one of 2ⁿ evenly spaced values between its bounds. The chromosome has 2·n = 20 bits.</p></div>' : ''}
+   <div class="applyreset"><button class="btn primary">Restart and apply</button><span class="help">${state.bad ? 'Changed: Representation. Restarts the run from generation 0. Reset to the new representation’s defaults: crossover type (BLX-α → One-point), mutation (Gaussian, σ = 0.05 → bit flip, per gene, pm 0.05).' : 'No setup changes.'}</span></div></div>
+  <div class="sec"><h3>Crossover</h3><div class="ctl"><label>Type</label><span class="field"><select><option>${state.op === 'blx' ? 'BLX-α' : state.op === 'arith' ? 'Arithmetic' : 'One-point'}</option></select></span><p class="help">Offered for ${rep === 'real' ? 'real-valued chromosomes' : 'binary-coded chromosomes'}: ${opts.join(', ')}.</p></div>
+   ${rep === 'real' && state.op === 'blx' ? '<div class="ctl"><label>α</label><span class="field"><input type="text" value="0.5"></span><p class="help">How far children may fall outside the parents’ interval, as a share of its length. 0 keeps them between the parents.</p></div>' : ''}</div>
+  <div class="sec"><h3>Mutation</h3>${rep === 'real' ? '<div class="ctl"><label>σ</label><span class="field"><input type="text" value="0.05"></span><p class="help">Standard deviation of the Gaussian step, as a share of the variable’s range (here 0.05 × 10 = 0.5).</p></div>' : '<div class="ctl"><label>Mode</label><span class="field"><select><option>Per gene</option></select></span><p class="help">Each bit flips with probability pm.</p></div>'}
+   <div class="ctl"><label>Stop within ε</label><span class="field"><input type="text" value="0.001"></span><p class="help">“Target reached” means the best fitness is within ε of the optimum (fitness ${FN().min ? '0' : '1'}).</p></div></div></aside>`;
+}
+
+/* ---------- screens and controls ---------- */
+const screens = {
+  land: landScreen, cross: crossScreen, mut: mutScreen, bin: binScreen,
+  menu() { return landScreen().replace('<span class="logo" aria-hidden="true">Ls</span>', `<ul class="menulist" style="position:absolute;left:68px;top:62px;z-index:60"><li><span>&nbsp;</span> Goldberg x²</li><li><span>&nbsp;</span> Target string</li><li><span>&nbsp;</span> Knapsack</li><li><span>&nbsp;</span> Trap</li><li class="cur"><span>✓</span> Landscape</li></ul><span class="logo" aria-hidden="true">Ls</span>`); },
+  drawer() { return `${landScreen()}${drawer()}`; },
+};
+let state = { s: 'land', fn: 'two', rep: 'real', op: 'blx', trail: 3, mark: 'none', az: -0.7, el: 0.9, n: 12, bad: false, t: 'light', z: 'fit', p: '0' };
+function render() {
+  const el = document.getElementById('screen');
+  el.className = state.p === '1' ? 'projector' : '';
+  el.innerHTML = screens[state.s]();
+  document.documentElement.dataset.theme = state.t;
+  const sc = state.z === 'fit' ? Math.min(innerWidth / 1920, (innerHeight - 40) / 1080) : 1;
+  el.style.transform = `scale(${sc})`;
+  document.getElementById('stagewrap').style.height = 1080 * sc + 'px'; document.getElementById('stagewrap').style.width = 1920 * sc + 'px';
+  if (window.__draw) { window.__draw(); window.__draw = null; }
+  document.querySelectorAll('#mockbar button').forEach((b) => { const d = b.dataset; b.classList.toggle('on', d.s === state.s || d.fn === state.fn || d.rep === state.rep || d.op === state.op || (d.trail !== undefined && +d.trail === state.trail) || d.mark === state.mark || d.n === String(state.n) || d.t === state.t || d.z === state.z || d.p === state.p || (d.bad && (d.bad === '1') === state.bad)); });
+}
+document.getElementById('mockbar').addEventListener('click', (e) => {
+  const d = e.target.dataset; if (!d) return;
+  for (const k of ['s', 'fn', 'rep', 'op', 'mark', 't', 'z', 'p', 'n']) if (d[k] !== undefined) state[k] = d[k];
+  if (d.trail !== undefined) state.trail = +d.trail; if (d.bad !== undefined) state.bad = d.bad === '1'; if (d.az) { state.az += +d.az; state.el = Math.max(0.2, Math.min(1.3, state.el + (+d.el || 0))); }
+  render();
+});
+addEventListener('resize', render);
+const q = new URLSearchParams(location.search);
+for (const k of ['s', 'fn', 'rep', 'op', 'mark', 't', 'z', 'p', 'n']) if (q.get(k)) state[k] = q.get(k);
+if (q.get('trail')) state.trail = +q.get('trail'); if (q.get('bad')) state.bad = q.get('bad') === '1'; if (q.get('az')) state.az = +q.get('az'); if (q.get('el')) state.el = +q.get('el');
+render();
