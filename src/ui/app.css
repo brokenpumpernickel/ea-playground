@@ -607,9 +607,10 @@ input[type=range].speed::-moz-range-thumb { width:18px; height:18px; border-radi
 .bit.cut { border-style:dotted; border-color:var(--flip); border-width:3px; }
 .bit.cut::after { content:"✂"; position:absolute; top:-17px; left:50%; transform:translateX(-50%); color:var(--flip); font-size:17px; }
 .bagwrap { display:flex; align-items:center; gap:14px; margin-top:34px; flex:none; }
-.bagwrap .lbl { font-weight:700; white-space:nowrap; }
-.bagwrap .legend2 { white-space:nowrap; font-size:18px; color:var(--ink2); }
-.bigbar { position:relative; flex:1; height:34px; border:2px solid var(--ink2); border-radius:6px; background:var(--surface); }
+.bagwrap .lbl { font-weight:700; white-space:nowrap; flex:none; width:140px; }
+.bagwrap .legend2 { flex:1 1 0; min-width:0; font-size:18px; line-height:1.2; color:var(--ink2); }
+/* the track has one width whatever the caption beside it says, so consecutive offspring can be compared */
+.bigbar { position:relative; flex:none; width:520px; height:34px; border:2px solid var(--ink2); border-radius:6px; background:var(--surface); }
 .bigbar .seg { position:absolute; top:0; bottom:0; background:var(--seq3); border-right:2px solid var(--surface); display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; overflow:hidden; font-style:normal; }
 .bigbar .seg.ov { background:repeating-linear-gradient(135deg, var(--flip) 0 4px, var(--surface) 4px 8px); color:var(--ink); }
 .bigbar .capline { position:absolute; top:-9px; bottom:-9px; width:3px; background:var(--ink); }

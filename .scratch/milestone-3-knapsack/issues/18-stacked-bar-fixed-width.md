@@ -1,6 +1,6 @@
 # 18 The stacked bag bar keeps one width
 
-Status: open
+Status: resolved
 Type: bug (layout), found in the review of ticket 17
 Blocked by: none
 Spec: ../spec.md
@@ -15,4 +15,6 @@ In the evaluation view the stacked bar (`StackedBag.svelte`, `.bagwrap .bigbar {
 - Caption never overlaps the bar or leaves the panel at either size; existing a11y and overflow tests still pass.
 
 ## Comments
+Fixed in milestone 6, ticket 02 (`.scratch/milestone-6-tsp/issues/02-carry-over-stacked-bar.md`): the track is 520 px wide with a fixed label and a wrapping caption; `e2e/knapsack-bar-width.spec.ts` checks it at every micro-step.
+
 Reported by the instructor on 2026-10-11 while signing off ticket 17: "this knapsack indicator changes size depending on the text on the right"; to be ironed out later, not a blocker for the milestone.
