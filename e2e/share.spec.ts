@@ -97,7 +97,7 @@ for (const [name, hash, words] of [
   ['not base64url', '#v1.@@@', 'cannot be part of a share link'],
   ['not JSON', '#v1.' + Buffer.from('nope').toString('base64url'), 'cut short or damaged'],
   ['truncated', encodeConfig(good).slice(0, 50), 'cut short or damaged'],
-  ['an unknown problem', bad((c) => (c.problem = 'tsp')), 'Unknown problem "tsp"'],
+  ['an unknown problem', bad((c) => (c.problem = 'chess')), 'Unknown problem "chess"'],
   ['an unknown key', bad((c) => (c.extra = 1)), 'unknown key "extra"'],
   ['a value the drawer would refuse', bad((c) => (c.params.crossover.probability = 1.5)), 'crossover probability must be a number from 0 to 1'],
   ['a wrong type', bad((c) => (c.params.elites = 'two')), '"params.elites" must be a number'],

@@ -14,6 +14,7 @@
   import { bagContextKey, type BagGetter } from './bag-context';
   import { blockContextKey, type BlockGetter } from './block-context';
   import { landscapeContextKey, type LandscapeGetter } from './landscape-context';
+  import { tourContextKey, type TourGetter } from './tour-context';
   import { targetContextKey, type TargetGetter } from './target-context';
   import { shortcutFor } from './shortcuts';
   import StagePanel from './StagePanel.svelte';
@@ -46,6 +47,8 @@
   setContext<BlockGetter>(blockContextKey, () => session.blocks);
   // and the landscape's chromosome cells (a pair, or bits grouped by variable) need the running landscape
   setContext<LandscapeGetter>(landscapeContextKey, () => session.landscape);
+  // and a tour (a permutation of cities) is not a row of one-character genes
+  setContext<TourGetter>(tourContextKey, () => (session.problem.permutation ? { cities: session.problem.chromosomeLength } : undefined));
 
   // The screen is designed once, at 1920×1080, and scaled to fit the window.
   let scale = $state(1);

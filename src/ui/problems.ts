@@ -4,6 +4,14 @@ import {
   landscapeDefaults,
   landscapeFunctionInfo,
   landscapeProblem,
+  tspCatalogue,
+  tspDefaultOptions,
+  tspDefaults,
+  tspInstance,
+  tspProblem,
+  validateTsp,
+  validateTspFields,
+  type TspOptions,
   validateLandscape,
   validateLandscapeFields,
   type LandscapeOptions,
@@ -35,13 +43,14 @@ import { defaultParams, defaultSeed } from './config';
  * reset), how to build the engine problem from the options, and the configuration each one opens with. The problem
  * menu, share links and presets all read this list; adding a problem is adding an entry.
  */
-export type ProblemOptions = TargetStringOptions | KnapsackOptions | TrapOptions | LandscapeOptions;
+export type ProblemOptions = TargetStringOptions | KnapsackOptions | TrapOptions | LandscapeOptions | TspOptions;
 export const isStringOptions = (options: ProblemOptions): options is TargetStringOptions => 'target' in options;
 /** The target string of a string problem's options, for views that compare chromosomes with it. */
 export const targetOf = (options: ProblemOptions | undefined): string | undefined => (options && isStringOptions(options) ? options.target : undefined);
 export const isKnapsackOptions = (options: ProblemOptions): options is KnapsackOptions => 'items' in options;
 export const isTrapOptions = (options: ProblemOptions): options is TrapOptions => 'blockSize' in options;
 export const isLandscapeOptions = (options: ProblemOptions): options is LandscapeOptions => 'representation' in options;
+export const isTspOptions = (options: ProblemOptions): options is TspOptions => 'instance' in options;
 
 export interface ProblemEntry {
   readonly id: string;
@@ -50,7 +59,7 @@ export interface ProblemEntry {
   /** The two or three characters in the logo tile. */
   readonly logo: string;
   /** Which panel sits beside the diversity plot: Goldberg's share of 1s per gene, or the string problem's match rate. */
-  readonly genePanel: 'ones' | 'match-rate' | 'chosen' | 'blocks' | 'spread';
+  readonly genePanel: 'ones' | 'match-rate' | 'chosen' | 'blocks' | 'spread' | 'agreement';
   /** What the diversity plot says it measures. */
   readonly diversityNote: string;
   /** The line under the name in the brand area. */
@@ -239,7 +248,54 @@ const landscapeEntry: ProblemEntry = {
   },
 };
 
-export const problemEntries: readonly ProblemEntry[] = [goldbergEntry, targetStringEntry, knapsackEntry, trapEntry, landscapeEntry];
+const lengthText = (value: number, rule: string): string => value.toLocaleString('en-US', { minimumFractionDigits: rule === 'EUC' ? 1 : 0, maximumFractionDigits: rule === 'EUC' ? 1 : 0 });
+
+const tspEntry: ProblemEntry = {
+  id: 'tsp',
+  name: 'TSP',
+  logo: 'Ts',
+  genePanel: 'agreement',
+  diversityNote: 'share of edges not in common, 0–1',
+  subtitle(options) {
+    if (!options || !isTspOptions(options) || validateTsp(options).length > 0) return 'Evolve a tour through cities';
+    const instance = tspInstance(options);
+    return `${instance.coordinates.length} cities · optimum ${lengthText(instance.optimum, instance.rule)}`;
+  },
+  chip(options) {
+    if (!options || !isTspOptions(options) || validateTsp(options).length > 0) return undefined;
+    const name = tspCatalogue.find((c) => c.id === options.instance)!.name;
+    return options.instance === 'random' ? `${name} · seed ${options.seed}` : name;
+  },
+  hasOptions: true,
+  defaultOptions: () => ({ ...tspDefaultOptions }),
+  validateOptions(options) {
+    if (!isObject(options)) return ['"options" must be an object with "instance", "n" and "seed".'];
+    const problems: string[] = [];
+    const keys = ['instance', 'n', 'seed'];
+    for (const key of Object.keys(options)) if (!keys.includes(key)) problems.push(`"options" has an unknown key "${key}".`);
+    for (const key of keys) if (!(key in options)) problems.push(`"options" is missing "${key}".`);
+    if ('instance' in options && typeof options.instance !== 'string') problems.push('"options.instance" must be text.');
+    if ('n' in options && typeof options.n !== 'number') problems.push('"options.n" must be a number.');
+    if ('seed' in options && typeof options.seed !== 'number') problems.push('"options.seed" must be a number.');
+    if (problems.length > 0) return problems;
+    return validateTsp(options as unknown as TspOptions);
+  },
+  validateOptionFields(options) {
+    const fields = validateTspFields(options as TspOptions);
+    return { instance: fields.instance, cities: fields.n, citySeed: fields.seed };
+  },
+  create: (options) => tspProblem((options as TspOptions | undefined) ?? tspDefaultOptions),
+  get defaults() {
+    const d = tspDefaults({ ...tspDefaultOptions });
+    return { init: { kind: 'random' as const, size: d.populationSize }, params: d.params, seed: defaultSeed };
+  },
+  defaultsFor(options) {
+    const d = tspDefaults((options as TspOptions | undefined) ?? { ...tspDefaultOptions });
+    return { init: { kind: 'random' as const, size: d.populationSize }, params: d.params, seed: defaultSeed };
+  },
+};
+
+export const problemEntries: readonly ProblemEntry[] = [goldbergEntry, targetStringEntry, knapsackEntry, trapEntry, landscapeEntry, tspEntry];
 
 export const problemIds = (): string[] => problemEntries.map((p) => p.id);
 export const entryOf = (id: string): ProblemEntry | undefined => problemEntries.find((p) => p.id === id);

@@ -9,6 +9,7 @@ import {
   tspCatalogue,
   tspDefaultEpsilon,
   tspDefaultOptions,
+  tspDefaults,
   tspDistance,
   tspInstance,
   tspProblem,
@@ -325,11 +326,25 @@ describe('the problem', () => {
     }
   });
 
-  test('the default ε is half a unit for whole-number distances (so “within ε” means the optimum) and a millionth of the optimum for real ones', () => {
+  test('the default ε is half a unit for whole-number distances (so “within ε” means the optimum) and 0.000001 for real ones', () => {
     expect(tspDefaultEpsilon(tspProblem(opts('berlin52')))).toBe(0.5);
     expect(tspDefaultEpsilon(tspProblem(opts('ulysses16')))).toBe(0.5);
-    const circle = tspProblem(opts('circle', 10));
-    expect(tspDefaultEpsilon(circle)).toBeCloseTo(1e-6 * tspInstance(opts('circle', 10)).optimum, 12);
+    expect(tspDefaultEpsilon(tspProblem(opts('circle', 10)))).toBe(1e-6);
+    expect(tspDefaultEpsilon(tspProblem(opts('random', 12, 4)))).toBe(1e-6);
+  });
+});
+
+describe('how a fresh run starts', () => {
+  test('a population, the operators of a permutation (order crossover, a per-individual mutation), elites and the stops, with ε for the instance', () => {
+    for (const o of [opts('berlin52'), opts('circle', 8), opts('random', 12, 2)]) {
+      const d = tspDefaults(o);
+      expect(d.options).toEqual(o);
+      expect(d.populationSize).toBeGreaterThan(1);
+      expect(d.params.crossover).toMatchObject({ enabled: true, operator: 'ox' });
+      expect(d.params.mutation).toMatchObject({ enabled: true, mode: 'per-individual', operator: 'inversion' });
+      expect(d.params.elites).toBe(1);
+      expect(d.params.stop.targetEpsilon).toBe(tspDefaultEpsilon(tspProblem(o)));
+    }
   });
 });
 

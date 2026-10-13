@@ -130,7 +130,7 @@ describe('bad links: each is refused with a reason, and nothing is used', () => 
   });
 
   test('an unknown problem names the problems that exist', () => {
-    expect(problemsOf(edited((c) => (c.problem = 'tsp')))).toEqual(['Unknown problem "tsp"; this app knows "goldberg", "target-string", "knapsack", "trap", "landscape".']);
+    expect(problemsOf(edited((c) => (c.problem = 'chess')))).toEqual(['Unknown problem "chess"; this app knows "goldberg", "target-string", "knapsack", "trap", "landscape", "tsp".']);
   });
 
   test('a version inside the configuration that disagrees with the link', () => {

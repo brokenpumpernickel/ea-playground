@@ -1,12 +1,13 @@
+import type { GaParams } from './algorithm';
 import { canonicalRoute, formatTour, type Chromosome } from './chromosome';
 import { type Problem, type ProblemColumn, type Scores } from './problem';
 import { createRng } from '../run/rng';
-import att48 from './tsplib/att48.json';
-import berlin52 from './tsplib/berlin52.json';
-import burma14 from './tsplib/burma14.json';
-import eil51 from './tsplib/eil51.json';
-import ulysses16 from './tsplib/ulysses16.json';
-import ulysses22 from './tsplib/ulysses22.json';
+import att48 from './tsplib/att48.json' with { type: 'json' };
+import berlin52 from './tsplib/berlin52.json' with { type: 'json' };
+import burma14 from './tsplib/burma14.json' with { type: 'json' };
+import eil51 from './tsplib/eil51.json' with { type: 'json' };
+import ulysses16 from './tsplib/ulysses16.json' with { type: 'json' };
+import ulysses22 from './tsplib/ulysses22.json' with { type: 'json' };
 
 /**
  * The travelling salesperson problem (ADR 0007): a closed tour through every city once, its length the objective, fitness −length.
@@ -324,8 +325,28 @@ export function tspProblem(options: TspOptions): TspProblem {
 
 /**
  * The default ε of the stop "within ε of the optimum": half a unit when the distances are whole numbers (a tour is either the
- * optimum or at least a whole unit longer, so this means reaching it) and a millionth of the optimum for real distances.
+ * optimum or at least a whole unit longer, so this means reaching it) and 0.000001 for real distances (far below any real
+ * difference between two tours, far above the rounding of a sum).
  */
 export function tspDefaultEpsilon(problem: Pick<TspProblem, 'instance'>): number {
-  return problem.instance.rule === 'EUC' ? 1e-6 * problem.instance.optimum : 0.5;
+  return problem.instance.rule === 'EUC' ? 1e-6 : 0.5;
+}
+
+/**
+ * How a fresh run starts for these options, as plain data. Provisional: ticket 13 of milestone 6 replaces these numbers with
+ * measured ones. A permutation takes order crossover and one mutation move per mutated individual.
+ */
+export function tspDefaults(options: TspOptions): { readonly options: TspOptions; readonly populationSize: number; readonly params: GaParams } {
+  const epsilon = tspDefaultEpsilon(tspProblem(options));
+  return {
+    options,
+    populationSize: 12,
+    params: {
+      selection: { method: 'tournament', size: 2 },
+      crossover: { enabled: true, operator: 'ox', probability: 0.9 },
+      mutation: { enabled: true, mode: 'per-individual', probability: 0.4, operator: 'inversion' },
+      elites: 1,
+      stop: { generationLimit: 200, targetEpsilon: epsilon, stagnationWindow: 50 },
+    },
+  };
 }

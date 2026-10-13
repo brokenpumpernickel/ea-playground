@@ -340,7 +340,7 @@ describe('switching problem', () => {
     session.cancelReset();
     expect(session.problemEntry.id).toBe('goldberg');
     expect(session.run.lastCycle).toBe(2);
-    session.requestProblemSwitch('tsp');
+    session.requestProblemSwitch('chess');
     expect(session.resetNotice).toBeUndefined();
   });
 

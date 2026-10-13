@@ -133,6 +133,7 @@ export {
   tspCatalogue,
   tspDefaultEpsilon,
   tspDefaultOptions,
+  tspDefaults,
   tspDistance,
   tspInstance,
   tspLimits,

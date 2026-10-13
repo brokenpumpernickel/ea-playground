@@ -52,11 +52,11 @@ const unnamed = async (page: Page) => {
   return tree.split('\n').filter((line) => /^\s*- (button|textbox|combobox|slider|checkbox|switch|spinbutton|radio|menuitemradio|menuitem)(\s+\[[^\]]*\])*:?\s*$/.test(line));
 };
 
-test('the problem menu lists the landscape as the fifth problem; choosing it restarts with its own defaults through the restart notice', async ({ page }) => {
+test('the problem menu lists the landscape as the fifth problem (the TSP is the sixth); choosing it restarts with its own defaults through the restart notice', async ({ page }) => {
   const errors = errorsOf(page);
   await page.goto(url);
   await page.getByTestId('problem-button').click();
-  await expect(page.getByRole('menuitemradio')).toHaveText([/Goldberg x²/, /Target string/, /Knapsack/, /Trap/, /Landscape/]);
+  await expect(page.getByRole('menuitemradio')).toHaveText([/Goldberg x²/, /Target string/, /Knapsack/, /Trap/, /Landscape/, /TSP/]);
   await page.getByRole('menuitemradio', { name: 'Landscape' }).click();
   await expect(page.getByTestId('reset-notice')).toHaveText('Switching to the problem Landscape restarts the run from generation 0. Nothing recorded will be lost.');
   await page.getByRole('button', { name: 'Restart and apply' }).click();

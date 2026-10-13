@@ -59,7 +59,7 @@
 
 <section class="panel plot" style="left:1416px;top:758px;width:480px;height:244px" aria-labelledby="allele-heading">
   <div class="ph">
-    <h2 id="allele-heading">{rates ? 'Match rate per position' : chosen ? 'Chosen per item' : blockStates ? 'Block states' : spread ? 'Spread' : 'Share of 1s per gene'}</h2>
+    <h2 id="allele-heading">{rates ? 'Match rate per position' : chosen ? 'Chosen per item' : blockStates ? 'Block states' : spread ? 'Spread' : entry.genePanel === 'agreement' ? 'Edge agreement' : 'Share of 1s per gene'}</h2>
     <span class="r legend" data-testid="distinct">{m.distinct} of {size} distinct</span>
   </div>
   {#if rates}<MatchRateStrip {rates} />{:else if chosen}<ChosenStrip shares={chosen} />{:else if blockStates}<BlockStatesStrip model={blockStates} />{:else if spread}<SpreadPanel panel={spread} />{:else}<AlleleStrip shares={m.alleleFrequencies} />{/if}

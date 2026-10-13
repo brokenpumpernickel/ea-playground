@@ -1,5 +1,5 @@
-import { isKnapsackOptions, isLandscapeOptions, isStringOptions, isTrapOptions, defaultsOf, type ProblemEntry, type ProblemOptions } from './problems';
-import { checkReal, defaultAlpha, defaultSigma, describeAlphabet, formatReal, isRealProblem, landscapeDefaultEpsilon, landscapeDefaults, landscapeProblem, minimumGenes, operatorName, optimalBag, parseGenes, parseReal, realOnlyOperators, validateKnapsack, validateLandscape, validateTrap, type Handling, type KnapsackOptions, type LandscapeFunction, type LandscapeOptions, type LandscapeRepresentation, type Linkage, type MutationOperator, type TrapOptions, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
+import { isKnapsackOptions, isLandscapeOptions, isStringOptions, isTrapOptions, isTspOptions, defaultsOf, type ProblemEntry, type ProblemOptions } from './problems';
+import { checkReal, checkTour, formatTour, parseTour, permutationMutationOperators, permutationOperators, tspDefaultEpsilon, tspProblem, validateTsp, type TspOptions, defaultAlpha, defaultSigma, describeAlphabet, formatReal, isRealProblem, landscapeDefaultEpsilon, landscapeDefaults, landscapeProblem, minimumGenes, operatorName, optimalBag, parseGenes, parseReal, realOnlyOperators, validateKnapsack, validateLandscape, validateTrap, type Handling, type KnapsackOptions, type LandscapeFunction, type LandscapeOptions, type LandscapeRepresentation, type Linkage, type MutationOperator, type TrapOptions, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
 
 /**
  * What the parameter drawer edits. Numbers are kept as the text the user typed, so a half-typed or wrong entry can be
@@ -27,6 +27,8 @@ export interface Draft {
   trap?: { blockSize: string; blocks: string; linkage: Linkage };
   /** The landscape's options as typed (the bits per variable as text); absent for the other problems. */
   landscape?: { function: LandscapeFunction; representation: LandscapeRepresentation; bits: string };
+  /** The TSP's options as typed (the instance, and the number of cities and the seed as text); absent for the other problems. */
+  tsp?: { instance: string; n: string; seed: string };
   method: 'roulette' | 'tournament';
   tournamentSize: string;
   chain: ChainStepDraft[];
@@ -62,12 +64,16 @@ export type Field =
   | 'function'
   | 'representation'
   | 'bitsPerVariable'
+  | 'instance'
+  | 'cities'
+  | 'citySeed'
   | 'tournamentSize'
   | 'chain'
   | 'crossover.operator'
   | 'crossover.probability'
   | 'crossover.alpha'
   | 'mutation.probability'
+  | 'mutation.mode'
   | 'mutation.operator'
   | 'mutation.sigma'
   | 'elites'
@@ -110,6 +116,7 @@ export function draftOf(params: GaParams, setup: GaSetup, seed: number, options?
       : {}),
     ...(options && isTrapOptions(options) ? { trap: { blockSize: String(options.blockSize), blocks: String(options.blocks), linkage: options.linkage } } : {}),
     ...(options && isLandscapeOptions(options) ? { landscape: { function: options.function, representation: options.representation, bits: String(options.bitsPerVariable) } } : {}),
+    ...(options && isTspOptions(options) ? { tsp: { instance: options.instance, n: String(options.n), seed: String(options.seed) } } : {}),
     method: selection.method,
     tournamentSize: selection.method === 'tournament' ? String(selection.size) : '2',
     chain:
@@ -140,15 +147,16 @@ export function draftOf(params: GaParams, setup: GaSetup, seed: number, options?
       generationLimit: String(params.stop.generationLimit),
       target: { enabled: params.stop.targetFitness !== undefined, value: textOf(params.stop.targetFitness, 0) },
       stagnation: { enabled: params.stop.stagnationWindow !== undefined, window: textOf(params.stop.stagnationWindow, 10) },
-      ...(params.stop.targetEpsilon !== undefined || (options && isLandscapeOptions(options))
+      ...(params.stop.targetEpsilon !== undefined || (options && (isLandscapeOptions(options) || isTspOptions(options)))
         ? { epsilon: { enabled: params.stop.targetEpsilon !== undefined, value: params.stop.targetEpsilon !== undefined ? String(params.stop.targetEpsilon) : defaultEpsilonText(options) } }
         : {}),
     },
   };
 }
 
-/** The default ε of the landscape the options describe, as text (when the options are not usable, a plain 0.001). */
+/** The default ε of the landscape or the TSP instance the options describe, as text (when the options are not usable, a plain 0.001). */
 function defaultEpsilonText(options: ProblemOptions | undefined): string {
+  if (options && isTspOptions(options)) return validateTsp(options).length > 0 ? '0.5' : String(tspDefaultEpsilon(tspProblem(options)));
   if (!options || !isLandscapeOptions(options) || validateLandscape(options).length > 0) return '0.001';
   return String(landscapeDefaultEpsilon(landscapeProblem(options)));
 }
@@ -180,7 +188,7 @@ export interface ChromosomeRow {
  */
 export function chromosomePieces(text: string, problem: Problem): string[] {
   // a real-valued chromosome is several numbers separated by spaces or commas, so only a new line or a semicolon ends one
-  if (isRealProblem(problem)) return text.split(/[\r\n;]/).map((piece) => piece.trim()).filter((piece) => piece !== '');
+  if (isRealProblem(problem) || problem.permutation === true) return text.split(/[\r\n;]/).map((piece) => piece.trim()).filter((piece) => piece !== '');
   const separators = new Set(['\r', '\n', ';', ',', ' ', '\t']);
   for (const symbol of problem.alphabet) if (symbol !== '\n' && symbol !== '\r') separators.delete(symbol);
   return text.split('').reduce<string[]>(
@@ -196,6 +204,14 @@ export function chromosomePieces(text: string, problem: Problem): string[] {
 /** Splits the text into chromosomes and, for each, either what it decodes to or what is wrong with it. */
 export function parseChromosomes(text: string, problem: Problem): ChromosomeRow[] {
   return chromosomePieces(text, problem).map((piece, k): ChromosomeRow => {
+    if (problem.permutation) {
+      const tour = parseTour(piece);
+      if (!tour) return { text: piece, error: `Chromosome ${k + 1} ("${piece}") may only contain city numbers separated by spaces or commas.` };
+      if (tour.length !== problem.chromosomeLength) return { text: piece, error: `Chromosome ${k + 1} has ${tour.length} ${tour.length === 1 ? 'city' : 'cities'}, but this problem needs ${problem.chromosomeLength}.` };
+      const wrong = checkTour(tour, problem.chromosomeLength);
+      if (wrong.length > 0) return { text: piece, error: `Chromosome ${k + 1}: ${wrong.join('; ')}.` };
+      return rowOf(problem, piece, tour);
+    }
     if (problem.bounds) {
       const numbers = parseReal(piece);
       if (!numbers) return { text: piece, error: `Chromosome ${k + 1} ("${piece}") may only contain numbers separated by spaces or commas.` };
@@ -223,7 +239,8 @@ function rowOf(problem: Problem, text: string, genes: readonly number[]): Chromo
 /* ------------------------------------------------------------------ validation */
 
 /** A chromosome of this problem, for the hint under an empty hand-edited population. */
-const exampleChromosome = (problem: Problem): string => (isRealProblem(problem) ? '1.5 -2.5' : problem.alphabet.length === 2 ? '01101' : [...Array(problem.chromosomeLength)].map((_, k) => problem.alphabet[k % problem.alphabet.length]).join(''));
+const exampleTour = (n: number): string => (n <= 8 ? formatTour(Array.from({ length: n }, (_, k) => k)) : `${formatTour(Array.from({ length: 8 }, (_, k) => k))} … (all ${n} cities, each once)`);
+const exampleChromosome = (problem: Problem): string => (problem.permutation ? exampleTour(problem.chromosomeLength) : isRealProblem(problem) ? '1.5 -2.5' : problem.alphabet.length === 2 ? '01101' : [...Array(problem.chromosomeLength)].map((_, k) => problem.alphabet[k % problem.alphabet.length]).join(''));
 
 /**
  * The problem the draft describes: the entry's problem built from the typed options, or `current` when there are none
@@ -247,6 +264,7 @@ export function optionsOf(draft: Draft): ProblemOptions | undefined {
     const read = (text: string) => numberOf(text) ?? Number.NaN;
     return { blockSize: read(draft.trap.blockSize), blocks: read(draft.trap.blocks), linkage: draft.trap.linkage };
   }
+  if (draft.tsp) return { instance: draft.tsp.instance, n: numberOf(draft.tsp.n) ?? Number.NaN, seed: numberOf(draft.tsp.seed) ?? Number.NaN };
   if (draft.landscape) {
     return { function: draft.landscape.function, representation: draft.landscape.representation, bitsPerVariable: numberOf(draft.landscape.bits) ?? Number.NaN };
   }
@@ -259,13 +277,14 @@ export function optimumOf(draft: Draft): number | undefined {
   if (!options) return undefined;
   if (isStringOptions(options)) return [...options.target].length;
   if (isTrapOptions(options)) return validateTrap(options).length > 0 ? undefined : options.blockSize * options.blocks;
+  if (isTspOptions(options)) return undefined; // the TSP stops within ε of its optimum too
   if (isLandscapeOptions(options)) return undefined; // the landscape stops within ε of its optimum, which needs no target to follow it
   if (validateKnapsack(options).length > 0) return undefined;
   return optimalBag({ items: options.items, capacity: options.capacity }).value;
 }
 
 /** The drawer fields that hold a problem's own options (each problem uses its own few). */
-const optionFields = ['alphabet', 'target', 'items', 'capacity', 'handling', 'rho', 'blockSize', 'blocks', 'linkage', 'genes', 'function', 'representation', 'bitsPerVariable'] as const;
+const optionFields = ['alphabet', 'target', 'items', 'capacity', 'handling', 'rho', 'blockSize', 'blocks', 'linkage', 'genes', 'function', 'representation', 'bitsPerVariable', 'instance', 'cities', 'citySeed'] as const;
 
 /**
  * `sampleFitness` is the fitness of the population the chain will next be applied to, so its messages are real.
@@ -316,7 +335,12 @@ export function validate(draft: Draft, problem: Problem, sampleFitness: readonly
 
   // operators
   const operator = draft.crossover.operator;
-  if (realOnlyOperators.includes(operator) && !isRealProblem(problem)) {
+  const permutation = problem.permutation === true;
+  if (permutation && !permutationOperators.includes(operator)) {
+    errors['crossover.operator'] = `${operatorName[operator]} crossover would repeat and lose cities; choose order, partial-mapped or cycle crossover for this problem.`;
+  } else if (!permutation && permutationOperators.includes(operator)) {
+    errors['crossover.operator'] = `${operatorName[operator]} crossover is for permutation chromosomes; choose ${isRealProblem(problem) ? 'BLX-α, arithmetic, ' : ''}one-point, two-point or uniform crossover for this problem.`;
+  } else if (realOnlyOperators.includes(operator) && !isRealProblem(problem)) {
     errors['crossover.operator'] = `${operatorName[operator]} crossover is for real-valued chromosomes; choose one-point, two-point or uniform crossover for this problem.`;
   }
   if (draft.crossover.alpha !== undefined) {
@@ -333,10 +357,18 @@ export function validate(draft: Draft, problem: Problem, sampleFitness: readonly
       if (sigma === undefined || !(sigma > 0)) errors['mutation.sigma'] = 'σ must be a number greater than 0.';
     }
   }
-  if (draft.mutation.operator === 'gaussian' && !isRealProblem(problem)) errors['mutation.operator'] = 'Gaussian mutation is for real-valued chromosomes; use flip mutation for this problem.';
-  if (draft.mutation.operator === 'flip' && isRealProblem(problem)) errors['mutation.operator'] = 'Flip mutation is for symbol chromosomes; use Gaussian mutation for a real-valued problem.';
+  if (permutation) {
+    const named = draft.mutation.operator;
+    if (named === undefined) errors['mutation.operator'] = 'A permutation needs a mutation operator: choose swap, inversion or insertion.';
+    else if (!permutationMutationOperators.includes(named)) errors['mutation.operator'] = `${named === 'flip' ? 'Flip' : 'Gaussian'} mutation would repeat and lose cities; choose swap, inversion or insertion mutation for this problem.`;
+    if (draft.mutation.mode === 'per-gene') errors['mutation.mode'] = 'Per-gene mutation has no meaning for a permutation, whose genes are not independent; use per individual mutation (one draw for the tour, then one move).';
+  } else if (draft.mutation.operator !== undefined && permutationMutationOperators.includes(draft.mutation.operator)) {
+    errors['mutation.operator'] = `${draft.mutation.operator === 'swap' ? 'Swap' : draft.mutation.operator === 'inversion' ? 'Inversion' : 'Insertion'} mutation is for permutation chromosomes; use ${isRealProblem(problem) ? 'Gaussian' : 'flip'} mutation for this problem.`;
+  }
+  if (draft.mutation.operator === 'gaussian' && !isRealProblem(problem) && !permutation) errors['mutation.operator'] = 'Gaussian mutation is for real-valued chromosomes; use flip mutation for this problem.';
+  if (draft.mutation.operator === 'flip' && isRealProblem(problem) && !permutation) errors['mutation.operator'] = 'Flip mutation is for symbol chromosomes; use Gaussian mutation for a real-valued problem.';
   const needed = minimumGenes[draft.crossover.operator];
-  if (draft.crossover.enabled && problem.chromosomeLength < needed) {
+  if (draft.crossover.enabled && problem.chromosomeLength < needed && errors['crossover.operator'] === undefined) {
     errors['crossover.operator'] = `${operatorName[draft.crossover.operator]} crossover needs chromosomes of at least ${needed} genes, but this problem's have ${problem.chromosomeLength}. Choose another crossover type${draft.options ? ', switch crossover off or make the target longer' : ' or switch crossover off'}.`;
   }
   const pc = numberOf(draft.crossover.probability);
@@ -452,6 +484,8 @@ export function changes(draft: Draft, current: { params: GaParams; setup: GaSetu
   if (next.crossover.alpha !== p.crossover.alpha) operator.push('Crossover α');
   if (next.mutation.enabled !== p.mutation.enabled) operator.push('Mutation on/off');
   if (next.mutation.mode !== p.mutation.mode) operator.push('Mutation mode');
+  // (the type of a bit string's or a real vector's mutation follows its representation, which is a restart)
+  if (next.mutation.operator !== p.mutation.operator && (draft.tsp || current.setup.problem.permutation)) operator.push('Mutation type');
   if (next.mutation.probability !== p.mutation.probability) operator.push('Mutation probability');
   if (next.mutation.sigma !== p.mutation.sigma) operator.push('Mutation σ');
   if (next.elites !== p.elites) operator.push('Elites');
@@ -499,9 +533,38 @@ export function changes(draft: Draft, current: { params: GaParams; setup: GaSetu
       if (note) notes.push(note);
     }
   }
+  if (draft.tsp && current.options && isTspOptions(current.options)) {
+    const was = current.options;
+    const t = draft.tsp;
+    if (t.instance !== was.instance) reset.push('Instance');
+    else if ((t.instance === 'circle' || t.instance === 'random') && numberOf(t.n) !== was.n) reset.push('Number of cities');
+    if (t.instance === 'random' && was.instance === 'random' && numberOf(t.seed) !== was.seed) reset.push('Instance seed');
+    // the default ε follows the kind of distance; when the instance moved it, the notice says so
+    const wasText = String(p.stop.targetEpsilon);
+    const nowOptions = optionsOf(draft);
+    if (p.stop.targetEpsilon !== undefined && draft.stop.epsilon?.enabled && nowOptions && isTspOptions(nowOptions) && validateTsp(nowOptions).length === 0 && draft.stop.epsilon.value !== wasText && wasText === defaultEpsilonText(was) && draft.stop.epsilon.value === defaultEpsilonText(nowOptions)) {
+      notes.push(`ε reset to the new instance’s default (${wasText} → ${draft.stop.epsilon.value}).`);
+    }
+  }
   if (Number(draft.seed) !== current.seed) reset.push('Seed');
   if (followedTargetFitness(draft, current.setup.problem) !== undefined) reset.push('Target fitness');
   return { operator, reset, ...(notes.length > 0 ? { notes } : {}) };
+}
+
+/**
+ * The draft after the TSP's options are changed. The default ε follows the kind of distance (half a unit for whole-number
+ * distances, 0.000001 for the real ones), so a switch between the two kinds moves ε to the new default, unless the user typed
+ * another value or switched ε off.
+ */
+export function withInstance(draft: Draft, patch: Partial<{ instance: string; n: string; seed: string }>): Draft {
+  if (!draft.tsp) return draft;
+  const was = optionsOf(draft);
+  const next: Draft = { ...draft, tsp: { ...draft.tsp, ...patch } };
+  const now = optionsOf(next);
+  const epsilon = draft.stop.epsilon;
+  if (!epsilon || !epsilon.enabled || !was || !now || !isTspOptions(was) || !isTspOptions(now) || validateTsp(was).length > 0 || validateTsp(now).length > 0) return next;
+  if (epsilon.value !== defaultEpsilonText(was)) return next;
+  return { ...next, stop: { ...next.stop, epsilon: { ...epsilon, value: defaultEpsilonText(now) } } };
 }
 
 /* ------------------------------------------------------- the landscape's representation */

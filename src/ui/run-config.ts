@@ -114,8 +114,8 @@ function checkParams(params: unknown, problems: string[]): void {
   const crossover = params.crossover;
   if (exactKeys(crossover, 'params.crossover', ['enabled', 'operator', 'probability'], ['alpha'], problems)) {
     if ('enabled' in crossover && typeof crossover.enabled !== 'boolean') problems.push('"params.crossover.enabled" must be true or false.');
-    if ('operator' in crossover && !['one-point', 'two-point', 'uniform', 'blx-alpha', 'arithmetic'].includes(crossover.operator as string)) {
-      problems.push('"params.crossover.operator" must be "one-point", "two-point", "uniform", "blx-alpha" or "arithmetic".');
+    if ('operator' in crossover && !['one-point', 'two-point', 'uniform', 'blx-alpha', 'arithmetic', 'ox', 'pmx', 'cx'].includes(crossover.operator as string)) {
+      problems.push('"params.crossover.operator" must be "one-point", "two-point", "uniform", "blx-alpha", "arithmetic", "ox", "pmx" or "cx".');
     }
     if ('probability' in crossover && !isNumber(crossover.probability)) problems.push('"params.crossover.probability" must be a number.');
     if ('alpha' in crossover && !isNumber(crossover.alpha)) problems.push('"params.crossover.alpha" must be a number.');
@@ -125,7 +125,7 @@ function checkParams(params: unknown, problems: string[]): void {
     if ('enabled' in mutation && typeof mutation.enabled !== 'boolean') problems.push('"params.mutation.enabled" must be true or false.');
     if ('mode' in mutation && !['per-gene', 'per-individual'].includes(mutation.mode as string)) problems.push('"params.mutation.mode" must be "per-gene" or "per-individual".');
     if ('probability' in mutation && !isNumber(mutation.probability)) problems.push('"params.mutation.probability" must be a number.');
-    if ('operator' in mutation && !['flip', 'gaussian'].includes(mutation.operator as string)) problems.push('"params.mutation.operator" must be "flip" or "gaussian".');
+    if ('operator' in mutation && !['flip', 'gaussian', 'swap', 'inversion', 'insertion'].includes(mutation.operator as string)) problems.push('"params.mutation.operator" must be "flip", "gaussian", "swap", "inversion" or "insertion".');
     if ('sigma' in mutation && !isNumber(mutation.sigma)) problems.push('"params.mutation.sigma" must be a number.');
   }
   if ('elites' in params && !isNumber(params.elites)) problems.push('"params.elites" must be a number.');

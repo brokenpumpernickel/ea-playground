@@ -142,7 +142,7 @@ describe('bad landscape links: each is refused in the drawer’s own words, and 
       'Arithmetic crossover is for real-valued chromosomes; choose one-point, two-point or uniform crossover for this problem.',
     ]);
     expect(problemsOf(edited(base(), (c) => (c.params.crossover.operator = 'three-point')))).toEqual([
-      '"params.crossover.operator" must be "one-point", "two-point", "uniform", "blx-alpha" or "arithmetic".',
+      '"params.crossover.operator" must be "one-point", "two-point", "uniform", "blx-alpha", "arithmetic", "ox", "pmx" or "cx".',
     ]);
   });
 
@@ -176,7 +176,8 @@ describe('bad landscape links: each is refused in the drawer’s own words, and 
   test('the mutation operator, when a link names one, must be the representation’s', () => {
     expect(problemsOf(edited(base(), (c) => (c.params.mutation.operator = 'flip')))).toEqual(['Flip mutation is for symbol chromosomes; use Gaussian mutation for a real-valued problem.']);
     expect(problemsOf(edited(binary(), (c) => (c.params.mutation.operator = 'gaussian')))).toEqual(['Gaussian mutation is for real-valued chromosomes; use flip mutation for this problem.']);
-    expect(problemsOf(edited(base(), (c) => (c.params.mutation.operator = 'swap')))).toEqual(['"params.mutation.operator" must be "flip" or "gaussian".']);
+    expect(problemsOf(edited(base(), (c) => (c.params.mutation.operator = 'shuffle')))).toEqual(['"params.mutation.operator" must be "flip", "gaussian", "swap", "inversion" or "insertion".']);
+    expect(problemsOf(edited(base(), (c) => (c.params.mutation.operator = 'swap')))).toEqual(['Swap mutation is for permutation chromosomes; use Gaussian mutation for this problem.']);
     const ok = edited(base(), (c) => (c.params.mutation.operator = 'gaussian'));
     expect(decodeConfig(ok).ok).toBe(true);
   });

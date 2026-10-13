@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { gaAlgorithm, itemName, knapsackLimits, landscapeFunctionInfo, landscapeFunctions, landscapeLimits, linkages, trapLimits } from '../engine';
+  import { gaAlgorithm, itemName, knapsackLimits, landscapeFunctionInfo, landscapeFunctions, landscapeLimits, linkages, trapLimits, tspCatalogue, tspInstance, tspLimits, validateTsp } from '../engine';
   import ChainEditor from './ChainEditor.svelte';
   import DrawerRow from './DrawerRow.svelte';
-  import { changes, chromosomePieces, draftOf, followedTargetFitness, optionsOf, problemOf, resetParams, toParams, toSetup, validate, withRepresentation, type Draft, type Field } from './drawer-model';
+  import { changes, chromosomePieces, draftOf, followedTargetFitness, optionsOf, problemOf, resetParams, toParams, toSetup, validate, withInstance, withRepresentation, type Draft, type Field } from './drawer-model';
   import PopulationEditor from './PopulationEditor.svelte';
   import ShareLink from './ShareLink.svelte';
   import { presets as allPresets } from './presets';
@@ -43,19 +43,19 @@
   const errors = $derived(validation.errors);
 
   /** Operator edits are checked against the run as it is, not against setup edits that have not been applied yet. */
-  const operatorFields: Field[] = ['tournamentSize', 'chain', 'crossover.operator', 'crossover.probability', 'crossover.alpha', 'mutation.probability', 'mutation.sigma', 'elites', 'truncation.lambda', 'stop.generationLimit', 'stop.target', 'stop.epsilon', 'stop.stagnation'];
+  const operatorFields: Field[] = ['tournamentSize', 'chain', 'crossover.operator', 'crossover.probability', 'crossover.alpha', 'mutation.probability', 'mutation.mode', 'mutation.operator', 'mutation.sigma', 'elites', 'truncation.lambda', 'stop.generationLimit', 'stop.target', 'stop.epsilon', 'stop.stagnation'];
   const commit = () => {
     const now = fresh();
     // while the form holds another representation (and so its operators), nothing is applied to the running one: the restart applies it all
     if (draft.landscape && now.landscape && draft.landscape.representation !== now.landscape.representation) return;
-    const candidate: Draft = { ...$state.snapshot(draft), init: now.init, size: now.size, chromosomes: now.chromosomes, seed: now.seed, ...(now.options ? { options: now.options } : {}), ...(now.knapsack ? { knapsack: now.knapsack } : {}), ...(now.landscape ? { landscape: now.landscape } : {}) };
+    const candidate: Draft = { ...$state.snapshot(draft), init: now.init, size: now.size, chromosomes: now.chromosomes, seed: now.seed, ...(now.options ? { options: now.options } : {}), ...(now.knapsack ? { knapsack: now.knapsack } : {}), ...(now.landscape ? { landscape: now.landscape } : {}), ...(now.tsp ? { tsp: now.tsp } : {}) };
     const found = validate(candidate, runProblem, sampleFitness(), entry).errors;
     if (operatorFields.some((field) => found[field] !== undefined)) return;
     if (changes(candidate, effective()).operator.length === 0) return;
     session.changeParameters(toParams(candidate));
   };
 
-  const setupFields: Field[] = ['size', 'chromosomes', 'seed', 'alphabet', 'target', 'items', 'capacity', 'handling', 'rho', 'blockSize', 'blocks', 'linkage', 'genes', 'function', 'representation', 'bitsPerVariable'];
+  const setupFields: Field[] = ['size', 'chromosomes', 'seed', 'alphabet', 'target', 'items', 'capacity', 'handling', 'rho', 'blockSize', 'blocks', 'linkage', 'genes', 'function', 'representation', 'bitsPerVariable', 'instance', 'cities', 'citySeed'];
   const setupChanges = $derived.by(() => {
     void session.version;
     return setupFields.some((f) => errors[f]) ? undefined : changes(draft, effective()).reset;
@@ -112,6 +112,29 @@
   });
   const chooseRepresentation = (value: string) => {
     draft = withRepresentation($state.snapshot(draft) as Draft, value as 'real' | 'plain' | 'gray');
+  };
+  // the TSP: which instance, what it says about itself, which operators a permutation offers
+  const ownInstances = tspCatalogue.filter((c) => c.kind === 'own');
+  const libInstances = tspCatalogue.filter((c) => c.kind === 'tsplib');
+  const permutation = $derived(draft.tsp !== undefined);
+  const sized = $derived(draft.tsp?.instance === 'circle' || draft.tsp?.instance === 'random');
+  const lengthText = (value: number, decimals: number) => value.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  const instanceHelp = $derived.by(() => {
+    const options = draft.tsp && optionsOf(draft);
+    if (!options || !('instance' in options) || validateTsp(options).length > 0) return undefined;
+    const instance = tspInstance(options);
+    const d = instance.rule === 'EUC' ? 1 : 0;
+    const where = instance.source ? `${instance.source}. ` : '';
+    const optimum = instance.optimumSource === 'published' ? 'published; the stored optimal tour has exactly this length' : 'exact, found by Held–Karp or by the circle\'s perimeter';
+    const weak = instance.coordinates.length >= 40 ? ' A plain GA ends far from the optimum on an instance this size within a classroom number of generations; the gap to it is shown.' : '';
+    return `${instance.comment}. ${instance.coordinates.length} cities; distance rule ${instance.ruleText}. ${where}Optimum ${lengthText(instance.optimum, d)} (${optimum}); the nearest-neighbour tour from city 1 gives ${lengthText(instance.nearestNeighbour.length, d)}.${weak}`;
+  });
+  const chooseInstance = (value: string) => {
+    draft = withInstance($state.snapshot(draft) as Draft, { instance: value });
+  };
+  const chooseMutationType = (value: string) => {
+    draft.mutation.operator = value as Draft['mutation']['operator'];
+    commit();
   };
   const chooseOperator = (value: string) => {
     draft.crossover.operator = value as Draft['crossover']['operator'];
@@ -215,6 +238,28 @@
       {#if binaryCoded}
         <DrawerRow label="Bits per variable n" id="bits" error={errors.bitsPerVariable} help={`${landscapeLimits.minBits} to ${landscapeLimits.maxBits}. A chromosome has 2 × n bits: n for x, then n for y; a variable is decoded as lo + (hi − lo) · v / (2ⁿ − 1).`}>
           <input id="bits" type="text" inputmode="numeric" bind:value={draft.landscape.bits} aria-invalid={errors.bitsPerVariable ? 'true' : undefined} aria-describedby={errors.bitsPerVariable ? 'bits-error' : 'bits-help'} />
+        </DrawerRow>
+      {/if}
+    {/if}
+    {#if draft.tsp}
+      <DrawerRow label="Instance" id="instance" error={errors.instance} help={instanceHelp}>
+        <select id="instance" value={draft.tsp.instance} onchange={(e) => chooseInstance(e.currentTarget.value)} aria-describedby={errors.instance ? 'instance-error' : 'instance-help'}>
+          <optgroup label="Own instances (exact optimum)">
+            {#each ownInstances as c (c.id)}<option value={c.id}>{c.name}</option>{/each}
+          </optgroup>
+          <optgroup label="TSPLIB (Reinelt, 1991; published optimum)">
+            {#each libInstances as c (c.id)}<option value={c.id}>{c.name} · {c.cities} cities · {c.rule}</option>{/each}
+          </optgroup>
+        </select>
+      </DrawerRow>
+      {#if sized}
+        <DrawerRow label="Number of cities n" id="cities" error={errors.cities} help={`${tspLimits.minCities} to ${tspLimits.maxCities}. ${draft.tsp.instance === 'circle' ? 'The cities are evenly spaced on a circle.' : 'The cities are placed at random in a square, from the instance seed below.'}`}>
+          <input id="cities" type="text" inputmode="numeric" bind:value={draft.tsp.n} aria-invalid={errors.cities ? 'true' : undefined} aria-describedby={errors.cities ? 'cities-error' : 'cities-help'} />
+        </DrawerRow>
+      {/if}
+      {#if draft.tsp.instance === 'random'}
+        <DrawerRow label="Instance seed" id="city-seed" error={errors.citySeed} help="Which cities the random instance has; the same seed and n always give the same map. (The run's own seed, below, decides the population and the operators' draws.)">
+          <input id="city-seed" type="text" inputmode="numeric" bind:value={draft.tsp.seed} aria-invalid={errors.citySeed ? 'true' : undefined} aria-describedby={errors.citySeed ? 'city-seed-error' : 'city-seed-help'} />
         </DrawerRow>
       {/if}
     {/if}
@@ -335,14 +380,20 @@
     <DrawerRow label="Crossover" id="crossover-on" pending={tag('Crossover on/off')} help="Off: selection still runs, but each pair of parents passes to the offspring as copies, with no recombination.">
       <label class="switch"><input id="crossover-on" type="checkbox" role="switch" checked={draft.crossover.enabled} onchange={(e) => { draft.crossover.enabled = e.currentTarget.checked; commit(); }} /> {draft.crossover.enabled ? 'ON' : 'OFF'}</label>
     </DrawerRow>
-    <DrawerRow label="Type" id="crossover-type" error={errors['crossover.operator']} pending={tag('Crossover type')}>
+    <DrawerRow label="Type" id="crossover-type" error={errors['crossover.operator']} pending={tag('Crossover type')} help={permutation ? 'Offered for permutations: order, partial-mapped and cycle crossover. One-point, two-point and uniform crossover would repeat and lose cities, so they are not offered.' : undefined}>
       <select id="crossover-type" value={draft.crossover.operator} onchange={(e) => chooseOperator(e.currentTarget.value)}>
-        <option value="one-point">One-point</option>
-        <option value="two-point">Two-point{realValued ? ' (needs 3 genes)' : ''}</option>
-        <option value="uniform">Uniform</option>
-        {#if realValued}
-          <option value="blx-alpha">BLX-α</option>
-          <option value="arithmetic">Arithmetic</option>
+        {#if permutation}
+          <option value="ox">Order crossover (OX)</option>
+          <option value="pmx">Partial-mapped (PMX)</option>
+          <option value="cx">Cycle (CX)</option>
+        {:else}
+          <option value="one-point">One-point</option>
+          <option value="two-point">Two-point{realValued ? ' (needs 3 genes)' : ''}</option>
+          <option value="uniform">Uniform</option>
+          {#if realValued}
+            <option value="blx-alpha">BLX-α</option>
+            <option value="arithmetic">Arithmetic</option>
+          {/if}
         {/if}
       </select>
     </DrawerRow>
@@ -367,18 +418,28 @@
     <DrawerRow label="Mutation" id="mutation-on" pending={tag('Mutation on/off')} help="Off: every offspring passes through unchanged.">
       <label class="switch"><input id="mutation-on" type="checkbox" role="switch" checked={draft.mutation.enabled} onchange={(e) => { draft.mutation.enabled = e.currentTarget.checked; commit(); }} /> {draft.mutation.enabled ? 'ON' : 'OFF'}</label>
     </DrawerRow>
+    {#if permutation}
+      <DrawerRow label="Type" id="mutation-operator" error={errors['mutation.operator'] ?? errors['mutation.mode']} pending={tag('Mutation type')} help="One move per mutated individual: swap exchanges two cities, inversion reverses the slice between two positions (a 2-opt move), insertion takes a city out and puts it back elsewhere.">
+        <select id="mutation-operator" value={draft.mutation.operator} onchange={(e) => chooseMutationType(e.currentTarget.value)} aria-describedby="mutation-operator-help">
+          <option value="swap">Swap</option>
+          <option value="inversion">Inversion (2-opt move)</option>
+          <option value="insertion">Insertion</option>
+        </select>
+      </DrawerRow>
+    {:else}
     <DrawerRow label="Mode" id="mutation-mode" pending={tag('Mutation mode')}>
       <select id="mutation-mode" value={draft.mutation.mode} onchange={(e) => { draft.mutation.mode = e.currentTarget.value as Draft['mutation']['mode']; commit(); }}>
         <option value="per-gene">Per gene</option>
         <option value="per-individual">Per individual</option>
       </select>
     </DrawerRow>
+    {/if}
     <DrawerRow
       label="Probability pm"
       id="mutation-probability"
       error={errors['mutation.probability']}
       pending={pendingFor('Mutation probability', applied.mutation.probability, draft.mutation.probability)}
-      help="Per gene: every gene of every offspring draws u and flips if u < pm. Per individual: one draw per offspring decides whether it is mutated at all, then one more draw picks the single gene that flips."
+      help={permutation ? 'Applies per individual, not per city: one draw u per offspring decides whether its tour is mutated at all (u < pm), then the positions are drawn and one move is made.' : 'Per gene: every gene of every offspring draws u and flips if u < pm. Per individual: one draw per offspring decides whether it is mutated at all, then one more draw picks the single gene that flips.'}
     >
       <input id="mutation-probability" type="text" inputmode="decimal" bind:value={draft.mutation.probability} onchange={commit} aria-invalid={errors['mutation.probability'] ? 'true' : undefined} />
     </DrawerRow>
@@ -410,7 +471,7 @@
       <input id="stop-limit" type="text" inputmode="numeric" bind:value={draft.stop.generationLimit} onchange={commit} aria-invalid={errors['stop.generationLimit'] ? 'true' : undefined} />
     </DrawerRow>
     {#if draft.stop.epsilon}
-      <DrawerRow label="Within ε of the optimum" id="stop-epsilon" error={errors['stop.epsilon']} help="Reported when the best fitness seen so far is at least the best possible fitness minus ε (a real-valued search never hits the optimum exactly). The default is one thousandth of the function's fitness range.">
+      <DrawerRow label="Within ε of the optimum" id="stop-epsilon" error={errors['stop.epsilon']} help={permutation ? 'Reported when the best tour so far is within ε of the optimum: its fitness is at least the best possible fitness minus ε. The default is half a unit for whole-number distances, so it means reaching the optimum, and 0.000001 for real ones.' : "Reported when the best fitness seen so far is at least the best possible fitness minus ε (a real-valued search never hits the optimum exactly). The default is one thousandth of the function's fitness range."}>
         <label class="switch"><input id="stop-epsilon-on" type="checkbox" role="switch" aria-label="Stop within ε of the optimum" checked={draft.stop.epsilon.enabled} onchange={(e) => { draft.stop.epsilon!.enabled = e.currentTarget.checked; commit(); }} /></label>
         <input id="stop-epsilon" type="text" inputmode="decimal" bind:value={draft.stop.epsilon.value} onchange={commit} disabled={!draft.stop.epsilon.enabled} aria-invalid={errors['stop.epsilon'] ? 'true' : undefined} aria-describedby={errors['stop.epsilon'] ? 'stop-epsilon-error' : 'stop-epsilon-help'} />
       </DrawerRow>

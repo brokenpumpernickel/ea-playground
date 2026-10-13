@@ -1,4 +1,4 @@
-import { formatGenes, formatReal, goldberg, type Chromosome, type LandscapeProblem, type Problem, type ProblemColumn, type Scores } from '../engine';
+import { formatGenes, formatReal, formatTour, goldberg, type Chromosome, type LandscapeProblem, type Problem, type ProblemColumn, type Scores } from '../engine';
 import { landscapeInfoOf, type LandscapeInfo } from './landscape-context';
 
 /** Numbers as the screen shows them: up to three decimals, with no trailing zeros (0.8, 0.144, 576). */
@@ -27,7 +27,7 @@ export interface Display {
 }
 
 export const displayOf = (problem: Problem): Display => ({
-  show: (chromosome) => (problem.bounds ? formatReal(chromosome, 3) : formatGenes(chromosome, problem.alphabet)),
+  show: (chromosome) => (problem.permutation ? formatTour(chromosome) : problem.bounds ? formatReal(chromosome, 3) : formatGenes(chromosome, problem.alphabet)),
   alphabetSize: problem.alphabet.length,
   chromosomeLength: problem.chromosomeLength,
   columns: problem.columns,

@@ -6,15 +6,16 @@ import { entryOf, problemEntries, problemIds } from './problems';
 import { configOf, decodeConfig, encodeConfig, setupOf } from './run-config';
 
 describe('the problem registry', () => {
-  test('lists Goldberg, the target string, the knapsack, the trap and the landscape, in that order, with distinct ids and names', () => {
-    expect(problemIds()).toEqual(['goldberg', 'target-string', 'knapsack', 'trap', 'landscape']);
-    expect(new Set(problemEntries.map((p) => p.name)).size).toBe(5);
+  test('lists Goldberg, the target string, the knapsack, the trap, the landscape and the TSP, in that order, with distinct ids and names', () => {
+    expect(problemIds()).toEqual(['goldberg', 'target-string', 'knapsack', 'trap', 'landscape', 'tsp']);
+    expect(new Set(problemEntries.map((p) => p.name)).size).toBe(6);
+    expect(entryOf('tsp')!.name).toBe('TSP');
     expect(entryOf('landscape')!.name).toBe('Landscape');
     expect(entryOf('trap')!.name).toBe('Trap');
     expect(entryOf('knapsack')!.name).toBe('Knapsack');
     expect(entryOf('goldberg')!.name).toBe('Goldberg x²');
     expect(entryOf('target-string')!.name).toBe('Target string');
-    expect(entryOf('tsp')).toBeUndefined();
+    expect(entryOf('chess')).toBeUndefined();
   });
 
   test.each(problemEntries.map((p) => [p.name, p] as const))('%s: its defaults make a valid configuration that runs', (_name, entry) => {

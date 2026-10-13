@@ -7,7 +7,7 @@ describe('the landscape entry', () => {
   const good = (): Record<string, unknown> => ({ function: 'two-peaks', representation: 'gray', bitsPerVariable: 8 });
 
   test('is the fifth problem, named Landscape with the logo Ls, and the others are where they were', () => {
-    expect(problemIds()).toEqual(['goldberg', 'target-string', 'knapsack', 'trap', 'landscape']);
+    expect(problemIds()).toEqual(['goldberg', 'target-string', 'knapsack', 'trap', 'landscape', 'tsp']);
     expect(entry.name).toBe('Landscape');
     expect(entry.logo).toBe('Ls');
     expect(entry.hasOptions).toBe(true);

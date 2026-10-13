@@ -9,6 +9,7 @@
   import { geneList } from './format';
   import { bitsSentence, realPair, realSentence, variableGeometry } from './landscape-cells';
   import { landscapeContextKey, type LandscapeGetter } from './landscape-context';
+  import { tourContextKey, type TourGetter } from './tour-context';
   import { targetContextKey, type TargetGetter } from './target-context';
 
   /**
@@ -92,6 +93,10 @@
   const tightBlocks = $derived(blocked && blocks!.linkage === 'tight');
   const noteOf = (b: number) => blockNotes.find((n) => n.block === b + 1);
 
+  const getTour = getContext<TourGetter | undefined>(tourContextKey);
+  /** A tour of the running TSP, shown as its city numbers (the layout of long tours is the table's own business). */
+  const tour = $derived(getTour?.() !== undefined && /^\d+( \d+)*$/.test(chromosome));
+
   const getLand = getContext<LandscapeGetter | undefined>(landscapeContextKey);
   const land = $derived(getLand?.());
   /** The two numbers of a real-valued landscape chromosome, when this is one. */
@@ -131,7 +136,7 @@
 
 {#snippet gene(bit: string, k: number)}{#if unders || (wideColumns && blocked)}<span class="gcell">{@render cell(bit, k)}<span class="under" class:flag={unders?.[k]?.flag} data-gene={k + 1} data-u={unders?.[k]?.value} aria-hidden="true">{unders?.[k]?.text ?? ''}</span></span>{:else}{@render cell(bit, k)}{/if}{/snippet}
 
-<span
+{#if tour}<span class="bits tourtext" role="img" aria-label={`Tour of ${chromosome.split(' ').length} cities: ${chromosome}`} data-bits={chromosome} data-sources={sources ? sources.join('') : undefined} data-cuts={cuts.length > 0 ? cuts.join(',') : undefined} data-flipped={flipped.length > 0 ? flipped.join(',') : undefined}>{chromosome}</span>{:else}<span
   class="bits"
   class:withunders={unders}
   class:crowded={varied && unders !== undefined && chromosome.length > printAllDrawsUpTo}
@@ -146,4 +151,4 @@
   data-sources={sources ? sources.join('') : undefined}
   data-cuts={cuts.length > 0 ? cuts.join(',') : undefined}
   data-flipped={flipped.length > 0 ? flipped.join(',') : undefined}
-  data-dropped={dropped.length > 0 ? dropped.join(',') : undefined}>{#if pair}<span class="xy"><span aria-hidden="true">(</span><span class={numberClass(1)}>{pair.x}</span><span aria-hidden="true">, </span><span class={numberClass(2)}>{pair.y}</span><span aria-hidden="true">)</span></span>{:else if varied}{#each [0, 1] as v (v)}<span class="vgrp" data-variable={v === 0 ? 'x' : 'y'}>{#each [...chromosome].slice(v * land!.bits, (v + 1) * land!.bits) as bit, j (j)}{@render gene(bit, v * land!.bits + j)}{/each}</span>{/each}{:else if tightBlocks}{#each blocks!.blockGenes as genes, b (b)}<span class="blk" data-block={b + 1}>{#each genes as g (g)}{@render gene(chromosome[g]!, g)}{/each}{#if noteOf(b)}<span class="bnote {noteOf(b)!.state}" aria-hidden="true">{noteOf(b)!.text}</span>{/if}</span>{/each}{:else}{#each [...chromosome] as bit, k (k)}{@render gene(bit, k)}{/each}{#if blocked && blockNotes.length > 0}<span class="bnotes" aria-hidden="true">{#each blockNotes as note (note.block)}<span class="bnote {note.state}">block {note.block}: {note.text}</span>{/each}</span>{/if}{/if}</span>
+  data-dropped={dropped.length > 0 ? dropped.join(',') : undefined}>{#if pair}<span class="xy"><span aria-hidden="true">(</span><span class={numberClass(1)}>{pair.x}</span><span aria-hidden="true">, </span><span class={numberClass(2)}>{pair.y}</span><span aria-hidden="true">)</span></span>{:else if varied}{#each [0, 1] as v (v)}<span class="vgrp" data-variable={v === 0 ? 'x' : 'y'}>{#each [...chromosome].slice(v * land!.bits, (v + 1) * land!.bits) as bit, j (j)}{@render gene(bit, v * land!.bits + j)}{/each}</span>{/each}{:else if tightBlocks}{#each blocks!.blockGenes as genes, b (b)}<span class="blk" data-block={b + 1}>{#each genes as g (g)}{@render gene(chromosome[g]!, g)}{/each}{#if noteOf(b)}<span class="bnote {noteOf(b)!.state}" aria-hidden="true">{noteOf(b)!.text}</span>{/if}</span>{/each}{:else}{#each [...chromosome] as bit, k (k)}{@render gene(bit, k)}{/each}{#if blocked && blockNotes.length > 0}<span class="bnotes" aria-hidden="true">{#each blockNotes as note (note.block)}<span class="bnote {note.state}">block {note.block}: {note.text}</span>{/each}</span>{/if}{/if}</span>{/if}
