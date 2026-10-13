@@ -11,6 +11,7 @@ import {
   tspDefaultOptions,
   tspDefaults,
   tspDistance,
+  tspPlaces,
   tspInstance,
   tspProblem,
   validateTsp,
@@ -386,3 +387,33 @@ describe('the options', () => {
 
 // the length of the shortest tour through the two clusters, found by Held–Karp and, independently, by brute force over all 11! tours once, off line (the two agree to the last digit)
 const CLUSTERS_OPTIMUM = 548.3163389389227;
+
+describe('where a city is drawn and how a length and a gap are written', () => {
+  test('a plain instance is drawn at its coordinates', () => {
+    const berlin = tspInstance(opts('berlin52'));
+    expect(tspPlaces(berlin)[0]).toEqual(berlin.coordinates[0]);
+    expect(tspPlaces(berlin)).toHaveLength(52);
+  });
+
+  test('a GEO instance is drawn with longitude across and latitude up, in degrees (degrees.minutes → decimal degrees)', () => {
+    const ulysses = tspInstance(opts('ulysses16'));
+    // city 1 of ulysses16 is at latitude 38.24 and longitude 20.42, that is 38°24′ north and 20°42′ east
+    expect(ulysses.coordinates[0]).toEqual([38.24, 20.42]);
+    const [x, y] = tspPlaces(ulysses)[0]!;
+    expect(x).toBeCloseTo(20.7, 9);
+    expect(y).toBeCloseTo(38.4, 9);
+    // a negative minute-value keeps its sign: -20.30 is 20°30′ west
+    expect(tspPlaces({ ...ulysses, coordinates: [[-10.3, -20.3]] })[0]).toEqual([expect.closeTo(-20.5, 9), expect.closeTo(-10.5, 9)]);
+  });
+
+  test('the problem writes a length with thousands separators and the rule’s decimals, and a gap in per cent, never below 0', () => {
+    const berlin = tspProblem(opts('berlin52'));
+    expect(berlin.lengthText(7542)).toBe('7,542');
+    expect(berlin.lengthText(14004)).toBe('14,004');
+    expect(berlin.gapText(14004)).toBe('85.7%');
+    expect(berlin.gapText(7542)).toBe('0.0%');
+    expect(berlin.gapText(7000)).toBe('0.0%');
+    const circle = tspProblem(opts('circle', 8));
+    expect(circle.lengthText(12.345)).toBe('12.3');
+  });
+});

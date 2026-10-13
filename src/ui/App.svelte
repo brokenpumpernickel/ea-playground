@@ -48,7 +48,7 @@
   // and the landscape's chromosome cells (a pair, or bits grouped by variable) need the running landscape
   setContext<LandscapeGetter>(landscapeContextKey, () => session.landscape);
   // and a tour (a permutation of cities) is not a row of one-character genes
-  setContext<TourGetter>(tourContextKey, () => (session.problem.permutation ? { cities: session.problem.chromosomeLength } : undefined));
+  setContext<TourGetter>(tourContextKey, () => session.tour);
 
   // The screen is designed once, at 1920×1080, and scaled to fit the window.
   let scale = $state(1);

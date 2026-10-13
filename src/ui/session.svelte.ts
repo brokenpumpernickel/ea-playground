@@ -1,9 +1,10 @@
-import { gaAlgorithm, metricsOfProblem, type KnapsackProblem, type LandscapeProblem, type TrapProblem, type Problem, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
+import { gaAlgorithm, metricsOfProblem, type KnapsackProblem, type TspProblem, type LandscapeProblem, type TrapProblem, type Problem, type GaEvent, type GaParams, type GaSetup, type GenerationMetrics, type RunState } from '../engine';
 import { createPlayback, createRun, type AnimationFlags, type Playback, type PlaybackStatus, type Position, type Run, type Scheduler, type Tier, type View } from '../run';
 import { defaultParams, defaultSeed, defaultSetup } from './config';
 import type { BagInfo } from './bag-context';
 import { blockInfoOf, type BlockInfo } from './block-context';
 import { landscapeInfoOf, type LandscapeInfo } from './landscape-context';
+import { tourInfoOf, type TourInfo } from './tour-cells';
 import { blockStatesModel, type BlockStatesModel } from './block-states-model';
 import { schemaHistory, type SchemaPoint, type SchemaSymbol } from './schema-model';
 import { changes, draftOf } from './drawer-model';
@@ -227,6 +228,12 @@ export function createSession(options: SessionOptions) {
       void version;
       const p = run.setup.problem as Partial<LandscapeProblem>;
       return p.pointOf && p.info && p.options ? landscapeInfoOf(run.setup.problem as LandscapeProblem) : undefined;
+    },
+    /** The running TSP as the views need it (the number of cities, the places, the words for a length); absent for other problems. */
+    get tour(): TourInfo | undefined {
+      void version;
+      const p = run.setup.problem;
+      return p.permutation ? tourInfoOf(p as TspProblem) : undefined;
     },
     /** The individual highlighted in the table and on the landscape views. */
     get selectedId(): number | undefined {

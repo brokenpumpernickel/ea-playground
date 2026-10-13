@@ -9,6 +9,7 @@
   import { geneList } from './format';
   import { bitsSentence, realPair, realSentence, variableGeometry } from './landscape-cells';
   import { landscapeContextKey, type LandscapeGetter } from './landscape-context';
+  import { thumbnail, tourLabel, tourParts } from './tour-cells';
   import { tourContextKey, type TourGetter } from './tour-context';
   import { targetContextKey, type TargetGetter } from './target-context';
 
@@ -94,8 +95,21 @@
   const noteOf = (b: number) => blockNotes.find((n) => n.block === b + 1);
 
   const getTour = getContext<TourGetter | undefined>(tourContextKey);
-  /** A tour of the running TSP, shown as its city numbers (the layout of long tours is the table's own business). */
-  const tour = $derived(getTour?.() !== undefined && /^\d+( \d+)*$/.test(chromosome));
+  const tourInfo = $derived(getTour?.());
+  /** The city numbers of this chromosome when it is a tour of the running TSP (the table of a permutation problem draws it so). */
+  const tourCities = $derived.by(() => {
+    if (!tourInfo || !/^\d+( \d+)*$/.test(chromosome)) return undefined;
+    const cities = chromosome.split(' ').map(Number);
+    return cities.length === tourInfo.cities ? cities : undefined;
+  });
+  const parts = $derived(tourCities ? tourParts(tourCities) : undefined);
+  /** What a screen reader hears: the tour, then the marks the operator views put on it, as one more sentence. */
+  const tourName = $derived.by(() => {
+    if (!tourCities) return undefined;
+    const marked = [fromB.length > 0 ? `${geneList(fromB)} from parent B` : '', cuts.length > 0 ? `cut after ${geneList(cuts)}` : '', flipped.length > 0 ? `${geneList(flipped)} changed by mutation` : ''].filter(Boolean).join(', ');
+    return `${tourLabel(tourInfo!, tourCities.map((c) => c - 1))}${marked ? ` ${marked.charAt(0).toUpperCase()}${marked.slice(1)}.` : ''}`;
+  });
+  const picture = $derived(tourCities && parts && !parts.whole ? thumbnail(tourInfo!.places, tourCities.map((c) => c - 1)) : undefined);
 
   const getLand = getContext<LandscapeGetter | undefined>(landscapeContextKey);
   const land = $derived(getLand?.());
@@ -136,7 +150,18 @@
 
 {#snippet gene(bit: string, k: number)}{#if unders || (wideColumns && blocked)}<span class="gcell">{@render cell(bit, k)}<span class="under" class:flag={unders?.[k]?.flag} data-gene={k + 1} data-u={unders?.[k]?.value} aria-hidden="true">{unders?.[k]?.text ?? ''}</span></span>{:else}{@render cell(bit, k)}{/if}{/snippet}
 
-{#if tour}<span class="bits tourtext" role="img" aria-label={`Tour of ${chromosome.split(' ').length} cities: ${chromosome}`} data-bits={chromosome} data-sources={sources ? sources.join('') : undefined} data-cuts={cuts.length > 0 ? cuts.join(',') : undefined} data-flipped={flipped.length > 0 ? flipped.join(',') : undefined}>{chromosome}</span>{:else}<span
+{#if tourCities}
+  <span
+    class="bits tourbits"
+    class:trunc={!parts?.whole}
+    role="img"
+    aria-label={tourName}
+    data-bits={chromosome}
+    data-sources={sources ? sources.join('') : undefined}
+    data-cuts={cuts.length > 0 ? cuts.join(',') : undefined}
+    data-flipped={flipped.length > 0 ? flipped.join(',') : undefined}
+    >{#if parts?.whole}{#each tourCities as city, k}<b class="bit sm tour" class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{city}</b>{/each}{:else if parts}<svg class="thumb" viewBox={`0 0 ${picture!.width} ${picture!.height}`} width={picture!.width} height={picture!.height} aria-hidden="true" data-path={picture!.path}><path d={picture!.path} /></svg><span class="seq" aria-hidden="true" data-testid="tour-shortened"><span data-part="head">{parts.head.join(' ')}</span> <span class="muted" data-part="hidden">… {parts.hidden} more …</span> <span data-part="tail">{parts.tail.join(' ')}</span></span>{/if}</span>
+{:else}<span
   class="bits"
   class:withunders={unders}
   class:crowded={varied && unders !== undefined && chromosome.length > printAllDrawsUpTo}

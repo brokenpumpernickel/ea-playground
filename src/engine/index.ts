@@ -137,6 +137,7 @@ export {
   tspDistance,
   tspInstance,
   tspLimits,
+  tspPlaces,
   tspProblem,
   validateTsp,
   validateTspFields,

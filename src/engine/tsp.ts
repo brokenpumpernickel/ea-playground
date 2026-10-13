@@ -31,6 +31,20 @@ const geoRadians = (x: number): number => {
   return (3.141592 * (degrees + (5 * (x - degrees)) / 3)) / 180;
 };
 
+const geoDegrees = (x: number): number => {
+  const degrees = Math.trunc(x);
+  return degrees + (5 * (x - degrees)) / 3;
+};
+
+/**
+ * Where each city is drawn, as (across, up): the coordinates themselves, except for a GEO instance, whose latitude and longitude
+ * (degrees.minutes) are turned into decimal degrees and swapped so that longitude runs across and latitude up, as on a map.
+ */
+export function tspPlaces(instance: Pick<TspInstance, 'rule' | 'coordinates'>): readonly Point[] {
+  if (instance.rule !== 'GEO') return instance.coordinates;
+  return instance.coordinates.map((c): Point => [geoDegrees(c[1]), geoDegrees(c[0])]);
+}
+
 /** The distance between two places under a rule (TSPLIB's definitions; GEO takes latitude and longitude as degrees.minutes). */
 export function tspDistance(rule: DistanceRule, a: Point, b: Point): number {
   if (rule === 'EUC') return Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -285,6 +299,10 @@ export type TspProblem = Problem & {
   lengthOf(tour: Chromosome): number;
   /** How much longer than the optimum a length is, as a share of the optimum. */
   gapOf(length: number): number;
+  /** A length as the screen writes it: thousands separators, one decimal for real distances. */
+  lengthText(length: number): string;
+  /** The gap as the screen writes it: per cent with one decimal, never below 0. */
+  gapText(length: number): string;
 };
 
 const minus = (text: string): string => text.replace('-', '−');
@@ -316,6 +334,8 @@ export function tspProblem(options: TspOptions): TspProblem {
     evaluationExplanation: `TSP: the closed length of the tour is added up, edge by edge, under the distance rule of ${instance.name} (${instance.ruleText}); fitness = −length, so a shorter tour has the higher fitness.`,
     lengthOf,
     gapOf,
+    lengthText: length,
+    gapText: percent,
     evaluate(chromosome): Scores {
       const total = lengthOf(chromosome);
       return { decoded: formatTour(canonicalRoute(chromosome)), objective: total, fitness: 0 - total };
