@@ -23,4 +23,4 @@ Existing symbol and real runs are unchanged: the golden-run fixtures recorded be
 
 ## Consequences
 
-Anything that compares chromosomes for equality compares arrays exactly; the distinct counts and the diversity of a permutation problem are the exceptions and say so. The metrics gain a representation-specific branch (edge-based diversity and the edge-agreement panel), as the landscape's gained decoded-space measures. A TSP chromosome of up to 100 genes is longer than any before it, so the table and the operator cards need a long-chromosome layout, settled in the milestone's mock.
+Anything that compares chromosomes for equality compares arrays exactly; the distinct counts and the diversity of a permutation problem are the exceptions and say so. The metrics gain a representation-specific branch (edge-based diversity and the edge-agreement panel), as the landscape's gained decoded-space measures. A TSP chromosome of up to 52 genes is longer than any before it, so the table and the operator cards need a long-chromosome layout, settled in the milestone's mock.
