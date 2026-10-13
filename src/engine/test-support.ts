@@ -32,3 +32,20 @@ export function realSphere(bounds: readonly Bounds[]): Problem {
     },
   };
 }
+
+/**
+ * A small permutation problem for tests of the representation (ADR 0007): n cities on a line at x = 0, 1, 2 …, the closed
+ * tour length as the objective (the shortest tour goes out and back, 2·(n − 1)), fitness its negative.
+ */
+export function tourLine(n: number): Problem {
+  return {
+    chromosomeLength: n,
+    alphabet: [],
+    permutation: true,
+    columns: [],
+    evaluate(chromosome) {
+      const objective = chromosome.reduce((total, city, k) => total + Math.abs(city - chromosome[(k + 1) % chromosome.length]!), 0);
+      return { decoded: chromosome.map((c) => c + 1).join(' '), objective, fitness: 0 - objective };
+    },
+  };
+}

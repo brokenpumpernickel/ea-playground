@@ -1,4 +1,4 @@
-import { checkReal, parseGenes, parseReal, type Chromosome } from './chromosome';
+import { checkReal, checkTour, parseGenes, parseReal, parseTour, type Chromosome } from './chromosome';
 import type { Bounds, Problem, Scores } from './problem';
 import type { Rng } from '../run/rng';
 
@@ -73,6 +73,17 @@ export function initialize(
 
 function randomChromosomes(problem: Problem, size: number, rng: Rng): Chromosome[] {
   if (!Number.isInteger(size) || size < 1) throw new Error('Population size must be a whole number of at least 1');
+  if (problem.permutation) {
+    // a Fisher–Yates shuffle of the cities 0 … n − 1: for i from n − 1 down to 1 one draw u picks j = ⌊u·(i + 1)⌋ and genes i and j swap (n − 1 draws), individuals in order
+    return Array.from({ length: size }, () => {
+      const tour = Array.from({ length: problem.chromosomeLength }, (_, city) => city);
+      for (let i = tour.length - 1; i >= 1; i--) {
+        const j = Math.floor(rng.next() * (i + 1));
+        [tour[i], tour[j]] = [tour[j]!, tour[i]!];
+      }
+      return tour;
+    });
+  }
   if (problem.bounds) {
     // a real gene is lo + uÂ·(hi âˆ’ lo), one draw per gene, genes in order, individuals in order
     const bounds = problem.bounds;
@@ -85,6 +96,7 @@ function randomChromosomes(problem: Problem, size: number, rng: Rng): Chromosome
 
 function explicitChromosomes(problem: Problem, texts: readonly string[]): Chromosome[] {
   if (texts.length === 0) throw new Error('The initial population needs at least one chromosome');
+  if (problem.permutation) return texts.map((text, k) => explicitTour(problem.chromosomeLength, text, `Chromosome ${k + 1}`));
   if (problem.bounds) return texts.map((text, k) => explicitReal(problem.bounds!, text, `Chromosome ${k + 1}`));
   return texts.map((text, k) => {
     const label = `Chromosome ${k + 1}`;
@@ -95,6 +107,15 @@ function explicitChromosomes(problem: Problem, texts: readonly string[]): Chromo
     }
     return genes;
   });
+}
+
+function explicitTour(n: number, text: string, label: string): Chromosome {
+  const tour = parseTour(text);
+  if (!tour) throw new Error(`${label} ("${text}") may only contain city numbers separated by spaces`);
+  if (tour.length !== n) throw new Error(`${label} has ${tour.length} ${tour.length === 1 ? 'city' : 'cities'}, but this problem needs ${n}`);
+  const wrong = checkTour(tour, n);
+  if (wrong.length > 0) throw new Error(`${label}: ${wrong.join('; ')}`);
+  return tour;
 }
 
 function explicitReal(bounds: readonly Bounds[], text: string, label: string): Chromosome {

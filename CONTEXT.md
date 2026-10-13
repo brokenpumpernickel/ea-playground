@@ -197,7 +197,7 @@ The three permutation mutations: exchange two cities, reverse the slice between 
 _Avoid_: Reversal (use inversion), shift
 
 **Edge agreement**:
-For each edge of the best tour so far, the share of the population that also uses it; a population that agrees on most edges has converged.
+For each edge of the best tour of the generation, the share of the population that also uses it; a population that agrees on most edges has converged.
 _Avoid_: Edge frequency, consensus
 
 **Gap to the optimum**:

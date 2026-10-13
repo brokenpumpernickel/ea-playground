@@ -62,6 +62,9 @@ export interface Bounds {
 /** True when the problem's genes are numbers inside bounds (ADR 0006) rather than symbols of an alphabet. */
 export const isRealProblem = (problem: Pick<Problem, 'bounds'>): boolean => problem.bounds !== undefined;
 
+/** True when the problem's chromosomes are permutations of its cities (ADR 0007): every gene is a city, each city once. */
+export const isPermutationProblem = (problem: Pick<Problem, 'permutation'>): boolean => problem.permutation === true;
+
 export interface Problem {
   readonly chromosomeLength: number;
   /**
@@ -69,6 +72,11 @@ export interface Problem {
    * A real-valued problem (one with `bounds`) has no alphabet: this is empty and its genes are the numbers themselves.
    */
   readonly alphabet: readonly string[];
+  /**
+   * True for a permutation problem (ADR 0007, the TSP): the chromosome is a permutation of the genes 0 to n − 1 (the cities,
+   * shown from 1), n being `chromosomeLength`. Like a real problem it has no alphabet. Absent for the other problems.
+   */
+  readonly permutation?: true;
   /** Present for a real-valued problem: the bounds of each gene, in gene order (ADR 0006); absent for the symbol problems. */
   readonly bounds?: readonly Bounds[];
   /**

@@ -1,7 +1,7 @@
-export { binaryAlphabet, formatBits, formatGenes, parseBits, parseGenes, checkReal, formatReal, parseReal, type Bit, type Chromosome, type Gene } from './chromosome';
+export { binaryAlphabet, formatBits, formatGenes, parseBits, parseGenes, checkReal, formatReal, parseReal, canonicalRoute, checkTour, edgeKey, formatTour, parseTour, tourEdgeSet, type Bit, type Chromosome, type Gene } from './chromosome';
 export { goldberg } from './goldberg';
 export { describeAlphabet, initialize, type Individual, type Initialization, type Origin, type SetupEvent } from './initialize';
-export { fitnessColumn, isRealProblem, type Bounds, type Landscape, type Problem, type ProblemColumn, type Scores } from './problem';
+export { fitnessColumn, isPermutationProblem, isRealProblem, type Bounds, type Landscape, type Problem, type ProblemColumn, type Scores } from './problem';
 export { createRng, type Rng, type SeededRng } from '../run/rng';
 export { matingPoolSize, pair, type Pair, type PairingEvent } from './pairing';
 export { rouletteSelect, type SelectionEntry, type SelectionEvent, type SelectionResult } from './selection';

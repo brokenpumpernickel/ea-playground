@@ -72,3 +72,60 @@ export function parseBits(text: string): Chromosome {
 export function formatBits(chromosome: Chromosome): string {
   return chromosome.join('');
 }
+
+/** [0, 4, 2, 1, 3] → '1 5 3 2 4': a tour as the city numbers a student reads, from 1 (and as the data and share links keep it). */
+export function formatTour(tour: Chromosome): string {
+  return tour.map((city) => city + 1).join(' ');
+}
+
+/**
+ * '1 5 3 2 4' → [0, 4, 2, 1, 3]. Whole numbers separated by spaces or commas, read from 1; anything else (a word, a
+ * decimal, a sign) gives undefined so the caller can say what was wrong. Whether they make a permutation is `checkTour`'s question.
+ */
+export function parseTour(text: string): Chromosome | undefined {
+  const trimmed = text.trim();
+  if (trimmed === '') return undefined;
+  const tokens = trimmed.split(/[\s,]+/);
+  return tokens.every((token) => /^\d+$/.test(token)) ? tokens.map((token) => Number(token) - 1) : undefined;
+}
+
+/**
+ * What is wrong with a tour of n cities, in words: a city that appears more than once, a number that is not one of the
+ * cities, then the cities that are missing, in order. An empty list means it is a permutation of the n cities.
+ */
+export function checkTour(tour: Chromosome, n: number): string[] {
+  const counts = new Map<number, number>();
+  for (const city of tour) counts.set(city, (counts.get(city) ?? 0) + 1);
+  const problems: string[] = [];
+  for (const [city, count] of counts) {
+    if (!(city >= 0 && city < n)) problems.push(`city ${city + 1} is not one of the ${n} cities (1 to ${n})`);
+    else if (count === 2) problems.push(`city ${city + 1} appears twice`);
+    else if (count > 2) problems.push(`city ${city + 1} appears ${count} times`);
+  }
+  for (let city = 0; city < n; city++) if (!counts.has(city)) problems.push(`city ${city + 1} is missing`);
+  return problems;
+}
+
+/**
+ * The tour as the route it is, not the array it happens to be: starting at city 1 (gene 0) and going in the direction
+ * whose second city is the lower one, so that every rotation and reversal of a tour gives the same route.
+ */
+export function canonicalRoute(tour: Chromosome): Chromosome {
+  const start = tour.indexOf(0);
+  if (start < 0) return [...tour];
+  const rotated = [...tour.slice(start), ...tour.slice(0, start)];
+  return rotated.length > 2 && rotated[1]! > rotated[rotated.length - 1]! ? [rotated[0]!, ...rotated.slice(1).reverse()] : rotated;
+}
+
+/** The edge between two cities, the same whichever way round they are given: '1-3'. */
+export function edgeKey(a: number, b: number): string {
+  return a < b ? `${a}-${b}` : `${b}-${a}`;
+}
+
+/** The edges of a closed tour as keys, so rotations and reversals of one route give equal sets. n cities have n edges; two have one; one city has none. */
+export function tourEdgeSet(tour: Chromosome): ReadonlySet<string> {
+  const edges = new Set<string>();
+  if (tour.length < 2) return edges;
+  tour.forEach((city, k) => edges.add(edgeKey(city, tour[(k + 1) % tour.length]!)));
+  return edges;
+}

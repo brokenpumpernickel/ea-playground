@@ -1,3 +1,4 @@
+import { canonicalRoute, edgeKey, tourEdgeSet } from './chromosome';
 import type { RunState } from './generation';
 import type { Bounds, Problem } from './problem';
 
@@ -36,6 +37,13 @@ export interface GenerationMetrics {
    * `diversity` stays the Hamming one; for a real-valued run it is this same number.
    */
   readonly decoded?: { readonly diversity: number; readonly spread: readonly number[] };
+  /**
+   * Only for a permutation problem (ADR 0007): `diversity` is the mean, over all pairs of individuals, of the share of edges the
+   * two tours do not have in common (0 when every tour is the same route, 1 when no pair shares an edge) and `distinct` counts
+   * distinct routes (rotations and reversals are one route). `bestRoute` is the best individual's tour (the first one if several
+   * tie) and `agreement` has, for each of its edges in tour order, the share of the population that uses that edge.
+   */
+  readonly tour?: { readonly distinctRoutes: number; readonly bestRoute: readonly number[]; readonly agreement: readonly number[] };
 }
 
 function feasibleMetrics(state: RunState): NonNullable<GenerationMetrics['feasible']> {
@@ -46,7 +54,8 @@ function feasibleMetrics(state: RunState): NonNullable<GenerationMetrics['feasib
 const cache = new WeakMap<RunState, { readonly alphabetSize: number; readonly bounds: readonly Bounds[] | undefined; readonly metrics: GenerationMetrics }>();
 
 /** The metrics of a state for the problem it belongs to: symbol counts for an alphabet, distances inside the bounds for a real problem. */
-export function metricsOfProblem(state: RunState, problem: Pick<Problem, 'alphabet' | 'bounds' | 'decodedBounds'>): GenerationMetrics {
+export function metricsOfProblem(state: RunState, problem: Pick<Problem, 'alphabet' | 'bounds' | 'decodedBounds' | 'permutation'>): GenerationMetrics {
+  if (problem.permutation) return tourMetrics(state);
   const base = metricsOf(state, problem.alphabet.length, problem.bounds);
   const decodedBounds = problem.decodedBounds;
   if (!decodedBounds) return base;
@@ -58,6 +67,46 @@ export function metricsOfProblem(state: RunState, problem: Pick<Problem, 'alphab
   });
   const metrics: GenerationMetrics = { ...base, decoded: { diversity: pointsDiversity(points, decodedBounds), spread: spreadOf(points, decodedBounds) } };
   decodedCache.set(state, { base, decodedBounds, metrics });
+  return metrics;
+}
+
+const tourCache = new WeakMap<RunState, GenerationMetrics>();
+
+/** The metrics of a population of tours: fitness as always, the edge-based measures for what a permutation has instead of alleles. */
+function tourMetrics(state: RunState): GenerationMetrics {
+  const known = tourCache.get(state);
+  if (known) return known;
+  const population = state.population;
+  const size = population.length;
+  if (size === 0) throw new Error('Cannot compute metrics for an empty population');
+  const fitness = population.map((i) => i.fitness);
+  const edgeSets = population.map((i) => tourEdgeSet(i.chromosome));
+  const counts = new Map<string, number>();
+  for (const edges of edgeSets) for (const edge of edges) counts.set(edge, (counts.get(edge) ?? 0) + 1);
+  // a pair shares an edge when both have it: c·(c − 1)/2 pairs for an edge that c individuals have
+  let sharedPairs = 0;
+  for (const c of counts.values()) sharedPairs += (c * (c - 1)) / 2;
+  const edgesPerTour = edgeSets[0]!.size;
+  const pairs = (size * (size - 1)) / 2;
+  const best = population.reduce((b, i) => (i.fitness > b.fitness ? i : b));
+  const n = best.chromosome.length;
+  const bestEdges = n < 2 ? [] : [...new Set(best.chromosome.map((city, k) => edgeKey(city, best.chromosome[(k + 1) % n]!)))];
+  const routes = new Set(population.map((i) => canonicalRoute(i.chromosome).join(',')));
+  const metrics: GenerationMetrics = {
+    generation: state.generation,
+    best: Math.max(...fitness),
+    worst: Math.min(...fitness),
+    average: fitness.reduce((sum, f) => sum + f, 0) / size,
+    bestSoFar: state.bestFitnessSoFar,
+    evaluations: state.evaluations,
+    diversity: pairs === 0 || edgesPerTour === 0 ? 0 : 1 - sharedPairs / pairs / edgesPerTour,
+    distinct: routes.size,
+    alleleFrequencies: [],
+    symbolCounts: [],
+    ...(state.feasibility ? { feasible: feasibleMetrics(state) } : {}),
+    tour: { distinctRoutes: routes.size, bestRoute: [...best.chromosome], agreement: bestEdges.map((edge) => (counts.get(edge) ?? 0) / size) },
+  };
+  tourCache.set(state, metrics);
   return metrics;
 }
 

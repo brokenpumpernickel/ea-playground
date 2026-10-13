@@ -1,6 +1,6 @@
 # A problem's representation may be a permutation of cities
 
-Status: proposed (milestone 6 spec; accepted when the engine holds a permutation problem, ticket 02 of that milestone).
+Status: accepted (milestone 6, ticket 03: the engine holds a permutation problem; the operators follow in tickets 04 and 05).
 
 A problem, as configured, declares exactly one **representation**: *symbols* (ADR 0004), *real* (ADR 0006) or now *permutation*: the chromosome has n genes, each a city, and every city appears exactly once. The TSP is the first and, for now, only permutation problem.
 
