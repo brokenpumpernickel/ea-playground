@@ -126,3 +126,22 @@ export {
   type LandscapeRepresentation,
   type Point,
 } from './landscape';
+export {
+  heldKarp,
+  nearestNeighbourTour,
+  tourLength,
+  tspCatalogue,
+  tspDefaultEpsilon,
+  tspDefaultOptions,
+  tspDistance,
+  tspInstance,
+  tspLimits,
+  tspProblem,
+  validateTsp,
+  validateTspFields,
+  type DistanceRule,
+  type TspCatalogueEntry,
+  type TspInstance,
+  type TspOptions,
+  type TspProblem,
+} from './tsp';
