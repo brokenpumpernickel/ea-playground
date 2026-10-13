@@ -1,11 +1,17 @@
-import type { Chromosome, Gene } from './chromosome';
+import { edgeKey, tourEdgeSet, type Chromosome, type Gene } from './chromosome';
 import type { Bounds } from './problem';
 import type { Rng } from '../run/rng';
 
 export type MutationMode = 'per-gene' | 'per-individual';
 
-/** Flip (or replace) changes a symbol of an alphabet; Gaussian adds a normal step to a real number (ADR 0006). */
-export type MutationOperator = 'flip' | 'gaussian';
+/**
+ * Flip (or replace) changes a symbol of an alphabet; Gaussian adds a normal step to a real number (ADR 0006); swap, inversion and
+ * insertion move cities of a permutation (ADR 0007).
+ */
+export type MutationOperator = 'flip' | 'gaussian' | 'swap' | 'inversion' | 'insertion';
+
+/** The operators that need permutation chromosomes (ADR 0007). */
+export const permutationMutationOperators: readonly MutationOperator[] = ['swap', 'inversion', 'insertion'];
 
 /** The default σ of Gaussian mutation: the standard deviation of a step as a share of the gene's range. */
 export const defaultSigma = 0.05;
@@ -15,7 +21,7 @@ export interface MutationConfig {
   readonly mode: MutationMode;
   /** Per gene: the chance each gene flips. Compared with a draw u: the operation happens when u < probability. */
   readonly probability: number;
-  /** Absent means the representation's operator: flip for symbols, Gaussian for real genes. Naming the wrong one is refused. */
+  /** Absent means the representation's operator: flip for symbols, Gaussian for real genes (a permutation has three, so it must name one). Naming the wrong one is refused. */
   readonly operator?: MutationOperator;
   /** Gaussian only: σ, greater than 0, default `defaultSigma`. */
   readonly sigma?: number;
@@ -83,6 +89,15 @@ export interface MutationEvent {
    */
   readonly sigma?: number;
   readonly gaussian?: readonly GaussianStep[];
+  /**
+   * Permutation mutation, when the individual was mutated (positions and cities are 0-based here, as in the crossover events;
+   * `flipped` stays 1-based and lists the positions whose city changed). The draws after the decision draw u are r1 then r2:
+   * i = ⌊r1·n⌋ and, of the other n − 1 positions in order, the ⌊r2·(n − 1)⌋-th, j. Swap and inversion use the two sorted
+   * (`first` < `second`); insertion takes the city at `first` (= i) out and puts it at position `second` (= j).
+   */
+  readonly move?: { readonly kind: 'swap' | 'inversion' | 'insertion'; readonly first: number; readonly second: number; readonly r: readonly [number, number] };
+  /** Permutation mutation: the edges the move removed (in the order of the tour before) and added (in the order of the tour after), as pairs of cities. */
+  readonly edges?: { readonly removed: readonly (readonly [number, number])[]; readonly added: readonly (readonly [number, number])[] };
 }
 
 export function mutate(
@@ -93,8 +108,14 @@ export function mutate(
   alphabetSize = 2,
   /** The bounds of a real-valued problem's genes; with them the mutation is Gaussian, without them it is flip/replace. */
   bounds?: readonly Bounds[],
+  /** True for a permutation problem (ADR 0007), which takes only swap, inversion and insertion, one move per mutated individual. */
+  permutation = false,
 ): { mutated: Mutated[]; events: MutationEvent[] } {
   if (!(config.probability >= 0 && config.probability <= 1)) throw new Error('Mutation probability must be between 0 and 1');
+  if (permutation) return mutatePermutations(offspring, config, rng);
+  if (config.operator && permutationMutationOperators.includes(config.operator)) {
+    throw new Error(`${permutationOperatorName[config.operator]} mutation is for permutation chromosomes; use ${bounds ? 'Gaussian' : 'flip'} mutation for this problem`);
+  }
   const operator = config.operator ?? (bounds ? 'gaussian' : 'flip');
   if (operator === 'gaussian' && !bounds) throw new Error('Gaussian mutation is for real-valued chromosomes; use flip mutation for this problem');
   if (operator === 'flip' && bounds) throw new Error('Flip mutation is for symbol chromosomes; use Gaussian mutation for a real-valued problem');
@@ -128,6 +149,71 @@ export function mutate(
       ...draws.record,
       ...('draws' in replaced && replaced.draws.length > 0 ? { replacements: replaced.draws } : {}),
       ...('steps' in replaced ? { sigma, ...(replaced.steps.length > 0 ? { gaussian: replaced.steps } : {}) } : {}),
+    });
+  }
+  return { mutated, events };
+}
+
+const permutationOperatorName: Record<string, string> = { swap: 'Swap', inversion: 'Inversion', insertion: 'Insertion' };
+
+/** The permutation mutations: one draw u per individual, then, if it is below pm, the two position draws. */
+function mutatePermutations(offspring: readonly MutationInput[], config: MutationConfig, rng: Rng): { mutated: Mutated[]; events: MutationEvent[] } {
+  const operator = config.operator;
+  if (operator === undefined) throw new Error('A permutation needs a mutation operator: choose swap, inversion or insertion');
+  if (!permutationMutationOperators.includes(operator)) {
+    throw new Error(`${operator === 'flip' ? 'Flip' : 'Gaussian'} mutation would repeat and lose cities; choose swap, inversion or insertion mutation for this problem`);
+  }
+  if (config.mode === 'per-gene') {
+    throw new Error('Per-gene mutation has no meaning for a permutation, whose genes are not independent; use per individual mutation (one draw for the tour, then one move)');
+  }
+  const kind = operator as 'swap' | 'inversion' | 'insertion';
+  const mutated: Mutated[] = [];
+  const events: MutationEvent[] = [];
+  for (const input of offspring) {
+    const before = input.chromosome;
+    const n = before.length;
+    if (config.enabled && n < 2) throw new Error(`${permutationOperatorName[kind]} mutation needs a tour of at least 2 cities, but the tour has ${n}`);
+    // a switched-off mutation draws nothing at all
+    const u = config.enabled ? rng.next() : undefined;
+    const mutates = u !== undefined && u < config.probability;
+    let after: Gene[] = [...before];
+    let move: NonNullable<MutationEvent['move']> | undefined;
+    if (mutates) {
+      const r1 = rng.next();
+      const r2 = rng.next();
+      const i = Math.floor(r1 * n);
+      const k = Math.floor(r2 * (n - 1));
+      const j = k < i ? k : k + 1;
+      const [first, second] = kind === 'insertion' ? [i, j] : i < j ? [i, j] : [j, i];
+      move = { kind, first, second, r: [r1, r2] };
+      if (kind === 'swap') {
+        after[first] = before[second]!;
+        after[second] = before[first]!;
+      } else if (kind === 'inversion') {
+        after = [...before.slice(0, first), ...before.slice(first, second + 1).reverse(), ...before.slice(second + 1)];
+      } else {
+        const [city] = after.splice(first, 1);
+        after.splice(second, 0, city!);
+      }
+    }
+    const flipped = before.flatMap((city, p) => (city !== after[p] ? [p + 1] : []));
+    mutated.push({ offspring: input.offspring, chromosome: after, flipped });
+    const was = tourEdgeSet(before);
+    const now = tourEdgeSet(after);
+    const pairs = (t: readonly Gene[]) => t.map((city, p) => [city, t[(p + 1) % n]!] as [number, number]);
+    events.push({
+      stage: 'mutation',
+      kind: 'individual',
+      offspring: input.offspring,
+      mode: 'per-individual',
+      decision: !config.enabled ? 'bypassed' : mutates ? 'mutated' : 'unchanged',
+      ...(config.enabled ? {} : { reason: 'switched-off' as const }),
+      threshold: config.probability,
+      before: [...before],
+      after: [...after],
+      flipped,
+      ...(u === undefined ? {} : { individualDraw: { u } }),
+      ...(move ? { move, edges: { removed: n < 2 ? [] : pairs(before).filter(([a, b]) => !now.has(edgeKey(a, b))), added: n < 2 ? [] : pairs(after).filter(([a, b]) => !was.has(edgeKey(a, b))) } } : {}),
     });
   }
   return { mutated, events };

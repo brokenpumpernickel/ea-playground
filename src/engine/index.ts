@@ -34,6 +34,7 @@ export {
 export {
   defaultSigma,
   mutate,
+  permutationMutationOperators,
   type Mutated,
   type MutationConfig,
   type MutationEvent,

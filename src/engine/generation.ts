@@ -275,7 +275,7 @@ export function runGeneration(
   events.push(...paired.events);
   const crossed = crossover(state.population, paired.pairs, config.crossover, rng, config.problem.bounds, config.problem.permutation === true);
   events.push(...crossed.events);
-  const mutated = mutate(crossed.offspring, config.mutation, rng, config.problem.alphabet.length, config.problem.bounds);
+  const mutated = mutate(crossed.offspring, config.mutation, rng, config.problem.alphabet.length, config.problem.bounds, config.problem.permutation === true);
   events.push(...mutated.events);
 
   // 5. evaluation of the offspring: they become individuals with ids, scores and provenance
