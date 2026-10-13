@@ -962,3 +962,36 @@ table.tsp th:nth-child(3) { width:78px; }
 table.tsp th:nth-child(4) { width:78px; }
 table.tsp th:nth-child(5) { width:92px; }
 table.tsp td:nth-child(2) { padding-left:4px; padding-right:4px; overflow:visible; }
+
+/* the TSP's operator cards: strips of cities whose cell shrinks with the number of cities (--tc), and their marks */
+.bits.tourbits.strip { gap:2px; flex-wrap:nowrap; }
+.bit.tour.st { width:var(--tc); height:calc(var(--tc) * 1.12); font-size:calc(var(--tc) * .6); padding:0; border-radius:calc(var(--tc) * .2); border-width:1.5px; }
+.bit.tour.st.slice { border:2.5px solid var(--ink); background-color:var(--acc-tint); }
+.bit.tour.st.slice.dashed { border-style:dashed; }
+.bit.tour.st.mapped { outline:2.5px solid var(--flip); outline-offset:0; }
+.bit.tour.st.mapped::after { content:"↻"; position:absolute; top:-12px; right:-5px; font-size:14px; font-weight:800; color:var(--flip-ink); }
+.bit.tour.st.flip { border-width:2px; }
+.bit.tour.st.cyc1 { border-bottom:calc(var(--tc) * .16) solid var(--ink2); }
+.bit.tour.st.cyc2 { border-bottom:calc(var(--tc) * .16) dotted var(--ink2); }
+.bit.tour.st.cyc3 { border-bottom:calc(var(--tc) * .16) dashed var(--ink2); }
+.bit.tour.st.cyc4 { border-bottom:calc(var(--tc) * .16) double var(--ink2); }
+.tcard { display:flex; flex-direction:column; gap:1px; margin-top:2px; }
+.tcard .crow.prow { gap:12px; margin:1px 0; }
+.tcard .crow .who { width:60px; font-size:18px; }
+.tcard .cutline { margin:0 0 2px; font-size:16px; color:var(--ink2); }
+.tcard .maprow, .tcard .fillnote, .tcard .lengths, .tcard .tkey { margin:0; font-size:14px; line-height:1.2; color:var(--ink2); }
+.tcard .fillnote .badge { font-size:13px; padding:0 8px; }
+.thead .cuts::before { content:"· "; }
+.tcard .maprow { margin-left:72px; }
+.tcard .fillnote { margin-left:72px; }
+.tcard .tkey { margin-top:2px; }
+.tcard .lengths { color:var(--ink); }
+.tcard .maprow b { color:var(--ink); }
+.tmcard .thead2 { display:flex; flex-wrap:wrap; align-items:center; gap:4px 14px; }
+.tmcard .thead2 .drawtext { font-size:19px; }
+.tmcard .crow.prow { gap:12px; margin:3px 0; }
+.tmcard .edgeline { margin:2px 0 0 72px; font-size:16px; }
+.tmcard .edgeline .rm { color:var(--flip-ink); font-weight:700; }
+.thumb.small { border-width:1px; border-radius:4px; }
+.bits.tourbits.brief { gap:8px; }
+.bits.tourbits.brief .seq { font-size:14px; }

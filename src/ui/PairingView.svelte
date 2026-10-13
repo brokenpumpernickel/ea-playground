@@ -22,7 +22,7 @@
             {#each [{ slot: pair.slotA, parent: pair.a }, { slot: pair.slotB, parent: pair.b }] as side (side.slot)}
               <div class="parent">
                 <span class="muted">slot {side.slot} ← individual {side.parent.id}</span>
-                <Bits chromosome={side.parent.bits} small />
+                <Bits chromosome={side.parent.bits} small form="brief" />
                 {#if typeof side.parent.x === 'number'}<span class="muted">x = {side.parent.x}</span>{/if}
               </div>
             {/each}

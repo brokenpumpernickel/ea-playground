@@ -46,7 +46,7 @@
         {#each model.rows as row (row.offspring)}
           <tr use:revealWhenCurrent={row.current} class:hl={row.current} aria-current={row.current ? 'true' : undefined} data-offspring={row.offspring} data-state={row.revealed ? 'revealed' : 'pending'}>
             <td><span class="who">O{row.offspring}</span></td>
-            <td><Bits chromosome={row.bits} small flipped={row.flipped} dropped={row.dropped ?? []} blockNotes={blocks && row.revealed ? blockNotes(blocks, row.bits) : []} /></td>
+            <td><Bits chromosome={row.bits} small form="brief" flipped={row.flipped} dropped={row.dropped ?? []} blockNotes={blocks && row.revealed ? blockNotes(blocks, row.bits) : []} /></td>
             {#if row.revealed}
               {#if model.explains}<td class="why" data-col="what happened">{row.why?.summary}</td>{/if}
               {#each shownColumns as { column, c } (column.header)}

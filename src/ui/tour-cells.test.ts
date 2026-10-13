@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { tspInstance, tspProblem, type TspOptions } from '../engine';
-import { routeDetail, routeOf, thumbnail, tourHeader, tourInfoOf, tourLabel, tourParts, tourSentence, wholeTourUpTo } from './tour-cells';
+import { briefParts, briefTour, routeDetail, routeOf, stripCell, thumbnail, tourHeader, tourInfoOf, tourLabel, tourParts, tourSentence, wholeTourUpTo } from './tour-cells';
 
 const opts = (instance: string, n = 10, seed = 1): TspOptions => ({ instance, n, seed });
 const range = (n: number) => Array.from({ length: n }, (_, k) => k + 1);
@@ -146,5 +146,33 @@ describe('the canonical route of a chromosome', () => {
     const a = routeOf('4 2 6 1 3 5').route;
     expect(routeOf('1 3 5 4 2 6').route).toEqual(a);
     expect(routeOf('6 2 4 5 3 1').route).toEqual(a);
+  });
+});
+
+describe('the brief form and the strip cells', () => {
+  test('a tour of up to 9 cities is written whole in a line of narration; a longer one is cut to its first five and last two', () => {
+    expect(briefTour([3, 1, 2])).toBe('3 1 2');
+    expect(briefTour(range(9))).toBe('1 2 3 4 5 6 7 8 9');
+    expect(briefTour(range(10))).toBe('1 2 3 4 5 … 3 more … 9 10');
+    expect(briefTour(range(52))).toBe('1 2 3 4 5 … 45 more … 51 52');
+  });
+
+  test('the cell of a strip shrinks with the number of cities: 30, 22, 20, 16 px', () => {
+    expect([5, 16].map(stripCell)).toEqual([30, 30]);
+    expect([17, 24].map(stripCell)).toEqual([22, 22]);
+    expect([25, 36].map(stripCell)).toEqual([20, 20]);
+    expect([37, 52].map(stripCell)).toEqual([16, 16]);
+    expect(stripCell(53)).toBe(14);
+  });
+});
+
+describe('what the brief form shows', () => {
+  test('is briefTour’s cut, as parts', () => {
+    expect(briefParts(range(9))).toEqual({ whole: true, head: range(9), hidden: 0, tail: [] });
+    expect(briefParts(range(16))).toEqual({ whole: false, head: [1, 2, 3, 4, 5], hidden: 9, tail: [15, 16] });
+    for (const n of [9, 10, 16, 17, 52]) {
+      const parts = briefParts(range(n));
+      expect(`${parts.head.join(' ')}${parts.whole ? '' : ` … ${parts.hidden} more … ${parts.tail.join(' ')}`}`).toBe(briefTour(range(n)));
+    }
   });
 });

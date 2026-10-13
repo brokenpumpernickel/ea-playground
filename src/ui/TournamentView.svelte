@@ -28,7 +28,7 @@
           <ul class="contestants">
             {#each card.contestants as c, k (k)}
               <li data-winner={c.winner ? 'true' : undefined} class:win={c.winner}>
-                <Bits chromosome={c.bits} small />
+                <Bits chromosome={c.bits} small form="brief" />
                 <span>individual {c.id}</span>
                 <span class="muted">fitness {num(c.fitness)}</span>
                 {#if c.winner}<span aria-hidden="true">✓</span>{/if}

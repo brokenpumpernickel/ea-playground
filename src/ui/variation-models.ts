@@ -2,6 +2,7 @@ import { formatReal, type Bounds, type CrossoverConfig, type GaEvent, type Mutat
 import { goldbergDisplay, type Display } from './format';
 import type { View } from '../run';
 import { num } from './format';
+import { tourMutationNotes, tourPairNotes, type TourMutationNotes, type TourPairNotes } from './tour-variation';
 
 /**
  * The data the crossover and mutation views draw, worked out from the events visible at the cursor plus the stage's
@@ -64,9 +65,13 @@ export interface PairResult {
   readonly lambda?: number;
   /** Empty until the cursor reaches this pair. */
   readonly children: readonly ChildView[];
+  /** The TSP: what the slice, the fill, the mapping, the cycles and the lengths of this pair were; absent for the other problems. */
+  readonly tour?: TourPairNotes;
 }
 
 export interface CrossoverModel {
+  /** True for the TSP: the chromosomes are tours, and the pairs are drawn as strips of cities. */
+  readonly tour: boolean;
   /** True for a real-valued landscape: the genes are numbers, and BLX-α and arithmetic crossover exist. */
   readonly real: boolean;
   readonly enabled: boolean;
@@ -132,6 +137,7 @@ export function crossoverModel(view: GaView, config: CrossoverConfig, display: D
       ...(blend ? { blend } : {}),
       ...(event.lambda !== undefined ? { lambda: event.lambda } : {}),
       children,
+      ...(display.tour ? { tour: tourPairNotes(event, arrays.get(parents.parentAId)!, arrays.get(parents.parentBId)!, display.tour) } : {}),
     };
   });
 
@@ -141,10 +147,17 @@ export function crossoverModel(view: GaView, config: CrossoverConfig, display: D
       : config.operator === 'arithmetic'
         ? 'arithmetic: one draw λ per pair; the children are λ·A + (1 − λ)·B and (1 − λ)·A + λ·B, so they always lie between the parents'
         : config.operator;
-  const explanation = config.enabled
-    ? `One draw u per pair: recombine (${operatorWords}) if u < pc (${num(config.probability)}), otherwise the pair is a bypass and its children are copies of the parents.`
-    : 'Crossover is switched off, so every pair is a bypass: the children are copies of the parents. No random number is drawn.';
-  return { real, enabled: config.enabled, operator: config.operator, probability: config.probability, explanation, pairs };
+  const tourWords: Record<string, string> = {
+    ox: 'OX keeps one parent’s slice in place (outlined) and fills the rest in the other parent’s order (hatched).',
+    pmx: 'PMX takes one parent’s slice (hatched, outlined) and repairs repeats through the mapping between the slices (↻).',
+    cx: 'CX gives whole cycles of positions to the children from alternate parents; no cut is drawn.',
+  };
+  const explanation = !config.enabled
+    ? 'Crossover is switched off, so every pair is a bypass: the children are copies of the parents. No random number is drawn.'
+    : display.tour
+      ? `${tourWords[config.operator] ?? ''} One-point crossover would repeat and lose cities. One draw u per pair: recombine if u < pc (${num(config.probability)}), otherwise bypass (copies).`
+      : `One draw u per pair: recombine (${operatorWords}) if u < pc (${num(config.probability)}), otherwise the pair is a bypass and its children are copies of the parents.`;
+  return { tour: display.tour !== undefined, real, enabled: config.enabled, operator: config.operator, probability: config.probability, explanation, pairs };
 }
 
 /* ------------------------------------------------------------------ mutation */
@@ -170,6 +183,8 @@ export interface MutationRow {
   readonly gaussian?: { readonly sigma: number; readonly genes: readonly GaussianGeneView[] };
   /** Binary-coded landscape: where the offspring was and is in decoded space, and how far it moved. */
   readonly points?: { readonly before: Point; readonly after: Point; readonly dx: number; readonly dy: number; readonly moved: number };
+  /** The TSP: the move, the draws behind it, the edges it changed and what it did to the length; absent for the other problems. */
+  readonly tour?: TourMutationNotes;
 }
 
 /** One gene of a Gaussian mutation row: its decision draw (per-gene mode), and when it mutated the draws, step and clamping. */
@@ -192,6 +207,10 @@ export interface GaussianGeneView {
 }
 
 export interface MutationModel {
+  /** True for the TSP: the offspring are tours, and each draws one move. */
+  readonly tour: boolean;
+  /** The TSP's operator, when `tour` is true. */
+  readonly tourOperator?: MutationConfig['operator'];
   /** True for a real-valued landscape: Gaussian mutation. */
   readonly real: boolean;
   /** More than two symbols per gene: a mutated gene becomes one of several others, picked by a further draw. */
@@ -259,6 +278,7 @@ export function mutationModel(view: GaView, config: MutationConfig, display: Dis
       ...(event.chosenGene ? { chosenGene: event.chosenGene } : {}),
       ...(gaussian ? { gaussian } : {}),
       ...(points ? { points } : {}),
+      ...(display.tour ? { tour: tourMutationNotes(event, display.tour) } : {}),
     };
   });
 
@@ -270,12 +290,21 @@ export function mutationModel(view: GaView, config: MutationConfig, display: Dis
     : '';
   const sigma = num(config.sigma ?? 0.05);
   const gaussianWords = ` A gene that mutates moves by σ × its range × z (σ = ${sigma}), z a normal draw made from two further uniform draws (Box–Muller); values outside the bounds are clamped.`;
+  const tourWords: Record<string, string> = {
+    swap: 'Swap: two positions are drawn and their cities exchange places. At most four edges change.',
+    inversion: 'Inversion (a 2-opt move): two positions are drawn and the slice between them is reversed. At most two edges change.',
+    insertion: 'Insertion: a city is taken out and put back at another position, the cities between moving up by one. At most three edges change.',
+  };
   const explanation = !config.enabled
     ? 'Mutation is switched off, so every offspring passes through unchanged. No random number is drawn.'
-    : config.mode === 'per-gene'
+    : display.tour
+      ? `${tourWords[config.operator ?? 'inversion'] ?? ''} The probability pm (${pm}) is per individual, not per city: one draw u decides whether this tour is mutated at all, then the positions are drawn. A permutation has no independent genes to flip.`
+      : config.mode === 'per-gene'
       ? `${real ? 'Gaussian mutation: every' : 'Every'} gene of every offspring gets its own draw u; the gene ${real ? 'mutates' : 'flips'} if u < pm (${pm}).${real ? gaussianWords : replacement}`
       : `${real ? 'Gaussian mutation: each' : 'Each'} offspring gets one draw u. If u < pm (${pm}) it is mutated, and one more draw picks the single gene that ${real ? 'mutates' : 'flips'}.${real ? gaussianWords : replacement}`;
   return {
+    tour: display.tour !== undefined,
+    ...(display.tour ? { tourOperator: config.operator } : {}),
     real,
     multiSymbol,
     enabled: config.enabled,

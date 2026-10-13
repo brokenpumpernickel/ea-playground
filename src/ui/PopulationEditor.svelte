@@ -28,7 +28,7 @@
           {#if row.error}
             <td colspan={problem.columns.length + 1} class="err">{row.text}</td>
           {:else}
-            <td>{#if problem.bounds}<span class="xy" data-testid="real-chromosome">{row.text}</span>{:else}<Bits chromosome={row.text} small />{/if}</td>
+            <td>{#if problem.bounds}<span class="xy" data-testid="real-chromosome">{row.text}</span>{:else}<Bits chromosome={row.text} small form="brief" />{/if}</td>
             {#each problem.columns as column, c (column.header)}
               <td class="num" class:meter={row.meters?.[c]} data-col={column.header.toLowerCase()}>{#if row.meters?.[c]}<CapacityBar value={row.meters[c]!.value} limit={row.meters[c]!.limit} /> {/if}{row.cells?.[c]}</td>
             {/each}

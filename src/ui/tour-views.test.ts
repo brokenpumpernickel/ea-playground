@@ -38,7 +38,7 @@ describe('a tour of up to 16 cities in a TSP screen', () => {
     expect(all[3]!.classes).toContain('cutafter'); // the line is drawn after the fourth city
     expect(all[4]!.classes).not.toContain('cutafter');
     expect(all[1]!.classes).toContain('flip');
-    expect(label(markup)).toMatch(/over the optimum 6,859\. Genes 9, 10, 11, 12, 13, 14, 15 and 16 from parent B, cut after gene 4, gene 2 changed by mutation\.$/);
+    expect(label(markup)).toMatch(/over the optimum 6,859\. Positions 9, 10, 11, 12, 13, 14, 15 and 16 from parent B, cut after position 4, position 2 changed by mutation\.$/);
   });
 
   test('a chromosome that is not a tour of this problem is drawn as before (no tour in the context, another length, not numbers)', () => {
@@ -82,5 +82,79 @@ describe('a tour of more than 16 cities', () => {
     const ownInfo = infoOf(own);
     const optimal = [...tspInstance(own).optimalTour];
     expect(cells(bits(optimal.map((c) => c + 1).join(' '), ownInfo)).map((c) => c.text)).toEqual(optimal.map((c) => String(c + 1)));
+  });
+});
+
+describe('a tour as a strip in an operator card', () => {
+  const o = opts('ulysses16');
+  const info = infoOf(o);
+  const text = '5 11 9 10 6 7 14 12 13 16 1 3 2 8 4 15';
+  const strip = (props: Record<string, unknown> = {}, chromosome = text, i: TourInfo = info) => bits(chromosome, i, { form: 'strip', ...props });
+
+  test('draws every city of any tour in a cell whose size follows the number of cities', () => {
+    expect(cells(strip()).map((c) => c.text)).toEqual(text.split(' '));
+    expect(strip()).toMatch(/style="--tc:30px"/);
+    const berlin = infoOf(opts('berlin52'));
+    const long = [...Array(52).keys()].map((k) => k + 1).join(' ');
+    expect(cells(strip({}, long, berlin)).map((c) => c.text)).toHaveLength(52);
+    expect(strip({}, long, berlin)).toMatch(/style="--tc:16px"/);
+    expect(strip({}, long, berlin)).not.toContain('class="thumb"');
+    const small = infoOf(opts('circle', 22 > 15 ? 8 : 8));
+    expect(strip({}, '1 2 3 4 5 6 7 8', small)).toMatch(/style="--tc:30px"/);
+  });
+
+  test('outlines the slice, dashed when asked, and says it in the name', () => {
+    const markup = strip({ slice: { from: 4, to: 7 }, sliceDashed: true });
+    const all = cells(markup);
+    expect(all.filter((c) => c.classes.includes('slice')).map((c) => c.text)).toEqual(['10', '6', '7', '14']);
+    expect(all.filter((c) => c.classes.includes('dashed'))).toHaveLength(4);
+    expect(markup).toContain('data-slice="4-7"');
+    expect(label(markup)).toContain('Slice: positions 4 to 7.');
+    expect(cells(strip({ slice: { from: 4, to: 7 } })).some((c) => c.classes.includes('dashed'))).toBe(false);
+  });
+
+  test('marks the cities that followed the mapping and says which in the name', () => {
+    const markup = strip({ followed: [2, 9] });
+    expect(cells(markup).filter((c) => c.classes.includes('mapped')).map((c) => c.text)).toEqual(['11', '13']);
+    expect(markup).toContain('data-followed="2,9"');
+    expect(label(markup)).toContain('Positions 2 and 9 followed the mapping.');
+  });
+
+  test('names a city’s cycle by the line under it: 1, 2, 3, and 4 for the fourth and every later cycle', () => {
+    const cycles = [1, 2, 3, 4, 5, 6, 1, 1, 2, 2, 3, 3, 4, 4, 5, 6];
+    const all = cells(strip({ cycles }));
+    expect(all.map((c) => c.classes.find((k) => /^cyc\d$/.test(k)))).toEqual(cycles.map((c) => `cyc${Math.min(c, 4)}`));
+    expect(strip({ cycles })).toContain(`data-cycles="${cycles.join(',')}"`);
+    expect(cells(strip()).some((c) => c.classes.some((k) => /^cyc/.test(k)))).toBe(false);
+  });
+
+  test('marks a city mutation changed with the ✱ class and says so in the name', () => {
+    const markup = strip({ flipped: [3, 9] });
+    expect(cells(markup).filter((c) => c.classes.includes('flip')).map((c) => c.text)).toEqual(['9', '13']);
+    expect(label(markup)).toContain('Positions 3 and 9 changed by mutation.');
+  });
+});
+
+describe('a tour in the brief form of the crowded views', () => {
+  const info = infoOf(opts('ulysses16'));
+  const text = '5 11 9 10 6 7 14 12 13 16 1 3 2 8 4 15';
+
+  test('is a small thumbnail, the first five and the last two cities and the number between, and keeps the whole route in its name', () => {
+    const markup = bits(text, info, { form: 'brief' });
+    expect(cells(markup)).toEqual([]);
+    expect(markup).toContain('class="thumb small"');
+    expect(markup).toContain('width="44"');
+    expect(/data-part="head">([^<]*)</.exec(markup)![1]).toBe('5 11 9 10 6');
+    expect(/data-part="hidden">([^<]*)</.exec(markup)![1]).toBe('… 9 more …');
+    expect(/data-part="tail">([^<]*)</.exec(markup)![1]).toBe('8 4 15'.split(' ').slice(1).join(' '));
+    expect(label(markup)).toContain('5, 11, 9, 10, 6, 7, 14, 12, 13, 16, 1, 3, 2, 8, 4, 15, then back to 5');
+  });
+
+  test('a tour of up to nine cities is written whole beside its thumbnail', () => {
+    const small = infoOf(opts('circle', 8));
+    const markup = bits('3 1 2 8 7 6 5 4', small, { form: 'brief' });
+    expect(markup).toContain('class="thumb small"');
+    expect(markup).not.toContain('data-part="hidden"');
+    expect(markup).toMatch(/data-part="head">3 1 2 8 7 6 5 4</);
   });
 });

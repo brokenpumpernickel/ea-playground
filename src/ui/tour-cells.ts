@@ -125,3 +125,20 @@ export function routeOf(chromosome: string): { readonly route: readonly number[]
   const tour = chromosome.split(' ').map((c) => Number(c) - 1);
   return { route: canonicalRoute(tour).map((c) => c + 1), start: tour[0]! + 1 };
 }
+
+/** The brief form of a tour for a line of narration: the whole of a tour of up to 9 cities, else the first five, the number between and the last two. */
+export function briefTour(cities: readonly number[]): string {
+  if (cities.length <= 9) return cities.join(' ');
+  return `${cities.slice(0, 5).join(' ')} … ${cities.length - 7} more … ${cities.slice(-2).join(' ')}`;
+}
+
+/** The size of a city's cell in a strip of the operator views, by the number of cities: 30 px up to 16 cities, 22 up to 24, 20 up to 36, 16 up to 52 (one row at 1920 × 1080), 14 beyond. */
+export function stripCell(cities: number): 30 | 22 | 20 | 16 | 14 {
+  return cities <= 16 ? 30 : cities <= 24 ? 22 : cities <= 36 ? 20 : cities <= 52 ? 16 : 14;
+}
+
+/** What the brief form of a tour shows: the whole of it up to 9 cities, else the first five and the last two with the number between. */
+export function briefParts(cities: readonly number[]): TourParts {
+  if (cities.length <= 9) return { whole: true, head: cities, hidden: 0, tail: [] };
+  return { whole: false, head: cities.slice(0, 5), hidden: cities.length - 7, tail: cities.slice(-2) };
+}

@@ -12,6 +12,7 @@
   import { landscapeContextKey, type LandscapeGetter } from './landscape-context';
   import { revealWhenCurrent } from './reveal';
   import TargetRow from './TargetRow.svelte';
+  import TourMutationCard from './TourMutationCard.svelte';
   import type { MutationModel, MutationRow } from './variation-models';
 
   let { model }: { model: MutationModel } = $props();
@@ -66,8 +67,12 @@
 
 <div class="mutation">
   <p class="expl">{model.explanation}</p>
-  {#if flipSource}<FlipTable chromosome={flipSource} />{/if}
-  {#if model.real}
+  {#if flipSource && !model.tour}<FlipTable chromosome={flipSource} />{/if}
+  {#if model.tour}
+    <div class="mwrap mcards">
+      {#each model.rows as row (row.offspring)}<TourMutationCard {row} {model} />{/each}
+    </div>
+  {:else if model.real}
     <div class="mwrap mcards">
       {#each model.rows as row (row.offspring)}
         <section use:revealWhenCurrent={row.current} class="card mcard" class:current={row.current} class:pending={!row.revealed} aria-current={row.current ? 'true' : undefined} data-offspring={row.offspring} data-state={row.revealed ? 'revealed' : 'pending'} aria-label={`Offspring ${row.offspring}`}>

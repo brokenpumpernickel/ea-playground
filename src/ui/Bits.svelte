@@ -9,7 +9,7 @@
   import { geneList } from './format';
   import { bitsSentence, realPair, realSentence, variableGeometry } from './landscape-cells';
   import { landscapeContextKey, type LandscapeGetter } from './landscape-context';
-  import { thumbnail, tourLabel, tourParts } from './tour-cells';
+  import { briefParts, stripCell, thumbnail, tourLabel, tourParts } from './tour-cells';
   import { tourContextKey, type TourGetter } from './tour-context';
   import { targetContextKey, type TargetGetter } from './target-context';
 
@@ -50,6 +50,11 @@
     unders,
     blockNotes = [],
     wideColumns = false,
+    form = 'table',
+    slice,
+    sliceDashed = false,
+    followed = [],
+    cycles,
   }: {
     chromosome: string;
     small?: boolean;
@@ -66,6 +71,19 @@
     blockNotes?: readonly BlockNote[];
     /** The mutation card's top row: every gene's column is a little wider than its cell, whether or not the draws are printed yet. */
     wideColumns?: boolean;
+    /**
+     * A tour (TSP): `table` shows the whole tour in cells up to 16 cities and a thumbnail with the first seven and last three
+     * above; `brief` is the thumbnail with the first five and last two, for the crowded views; `strip` is every city in a cell
+     * whose size follows the number of cities, for the operator cards.
+     */
+    form?: 'table' | 'brief' | 'strip';
+    /** A tour's slice (OX, PMX) as positions from 1, inclusive: the cells are outlined, dashed when `sliceDashed`. */
+    slice?: { readonly from: number; readonly to: number };
+    sliceDashed?: boolean;
+    /** PMX: positions from 1 whose city followed the mapping, marked ↻. */
+    followed?: readonly number[];
+    /** CX: the cycle (from 1) of each position, named by the line under the city. */
+    cycles?: readonly number[];
   } = $props();
 
   const letters = $derived(!/^[01]*$/.test(chromosome));
@@ -102,14 +120,28 @@
     const cities = chromosome.split(' ').map(Number);
     return cities.length === tourInfo.cities ? cities : undefined;
   });
-  const parts = $derived(tourCities ? tourParts(tourCities) : undefined);
+  const parts = $derived(tourCities ? (form === 'brief' ? briefParts(tourCities) : tourParts(tourCities)) : undefined);
+  const stripped = $derived(form === 'strip' && tourCities !== undefined);
+  const cellSize = $derived(tourCities ? stripCell(tourCities.length) : 30);
+  const stripStyle = $derived(stripped ? `--tc:${cellSize}px` : undefined);
+  const inSlice = (k: number) => slice !== undefined && k + 1 >= slice.from && k + 1 <= slice.to;
+  const cycleClass = (k: number) => (cycles && cycles[k] ? `cyc${Math.min(cycles[k]!, 4)}` : '');
   /** What a screen reader hears: the tour, then the marks the operator views put on it, as one more sentence. */
   const tourName = $derived.by(() => {
     if (!tourCities) return undefined;
-    const marked = [fromB.length > 0 ? `${geneList(fromB)} from parent B` : '', cuts.length > 0 ? `cut after ${geneList(cuts)}` : '', flipped.length > 0 ? `${geneList(flipped)} changed by mutation` : ''].filter(Boolean).join(', ');
+    const marked = [
+      slice ? `slice: positions ${slice.from} to ${slice.to}` : '',
+      fromB.length > 0 ? `${positions(fromB)} from parent B` : '',
+      cuts.length > 0 ? `cut after ${positions(cuts)}` : '',
+      followed.length > 0 ? `${positions(followed)} followed the mapping` : '',
+      flipped.length > 0 ? `${positions(flipped)} changed by mutation` : '',
+    ]
+      .filter(Boolean)
+      .join(', ');
     return `${tourLabel(tourInfo!, tourCities.map((c) => c - 1))}${marked ? ` ${marked.charAt(0).toUpperCase()}${marked.slice(1)}.` : ''}`;
   });
-  const picture = $derived(tourCities && parts && !parts.whole ? thumbnail(tourInfo!.places, tourCities.map((c) => c - 1)) : undefined);
+  const picture = $derived(tourCities && parts && !parts.whole ? (form === 'brief' ? thumbnail(tourInfo!.places, tourCities.map((c) => c - 1), 44, 30) : thumbnail(tourInfo!.places, tourCities.map((c) => c - 1))) : undefined);
+  const wholeCells = $derived(stripped || (form === 'table' && parts?.whole === true));
 
   const getLand = getContext<LandscapeGetter | undefined>(landscapeContextKey);
   const land = $derived(getLand?.());
@@ -153,14 +185,20 @@
 {#if tourCities}
   <span
     class="bits tourbits"
-    class:trunc={!parts?.whole}
+    class:trunc={!wholeCells}
+    class:strip={stripped}
+    class:brief={form === 'brief'}
+    style={stripStyle}
     role="img"
     aria-label={tourName}
     data-bits={chromosome}
     data-sources={sources ? sources.join('') : undefined}
     data-cuts={cuts.length > 0 ? cuts.join(',') : undefined}
     data-flipped={flipped.length > 0 ? flipped.join(',') : undefined}
-    >{#if parts?.whole}{#each tourCities as city, k}<b class="bit sm tour" class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} aria-hidden="true">{city}</b>{/each}{:else if parts}<svg class="thumb" viewBox={`0 0 ${picture!.width} ${picture!.height}`} width={picture!.width} height={picture!.height} aria-hidden="true" data-path={picture!.path}><path d={picture!.path} /></svg><span class="seq" aria-hidden="true" data-testid="tour-shortened"><span data-part="head">{parts.head.join(' ')}</span> <span class="muted" data-part="hidden">… {parts.hidden} more …</span> <span data-part="tail">{parts.tail.join(' ')}</span></span>{/if}</span>
+    data-slice={slice ? `${slice.from}-${slice.to}` : undefined}
+    data-followed={followed.length > 0 ? followed.join(',') : undefined}
+    data-cycles={cycles ? cycles.join(',') : undefined}
+    >{#if wholeCells}{#each tourCities as city, k}<b class="bit sm tour {cycleClass(k)}" class:st={stripped} class:hatch={sources?.[k] === 'B'} class:flip={flipped.includes(k + 1)} class:cutafter={cuts.includes(k + 1)} class:slice={inSlice(k)} class:dashed={inSlice(k) && sliceDashed} class:mapped={followed.includes(k + 1)} aria-hidden="true">{city}</b>{/each}{:else if parts}<svg class="thumb" class:small={form === 'brief'} viewBox={`0 0 ${picture?.width ?? 44} ${picture?.height ?? 30}`} width={picture?.width ?? 44} height={picture?.height ?? 30} aria-hidden="true" data-path={picture?.path}>{#if picture}<path d={picture.path} />{:else}<path d={thumbnail(tourInfo!.places, tourCities.map((c) => c - 1), 44, 30).path} />{/if}</svg><span class="seq" aria-hidden="true" data-testid="tour-shortened"><span data-part="head">{parts.head.join(' ')}</span>{#if !parts.whole} <span class="muted" data-part="hidden">… {parts.hidden} more …</span> <span data-part="tail">{parts.tail.join(' ')}</span>{/if}</span>{/if}</span>
 {:else}<span
   class="bits"
   class:withunders={unders}

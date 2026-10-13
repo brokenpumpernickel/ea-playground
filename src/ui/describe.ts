@@ -2,6 +2,8 @@ import { formatReal, type GaEvent, type MutationEvent } from '../engine';
 import { goldbergDisplay, type Display } from './format';
 import { geneList, num } from './format';
 import { realPair, realPairText } from './landscape-cells';
+import { briefTour } from './tour-cells';
+import { tourMutationNotes } from './tour-variation';
 
 /** Plain-language sentences for what the engine recorded, so every number a view shows can be traced to an event. */
 
@@ -34,6 +36,8 @@ function replaced(event: MutationEvent, display: Display): string {
 /** A real chromosome as the pair "(x, y)" for a sentence; any other chromosome as the display shows it. */
 const shower = (display: Display) => (chromosome: readonly number[]): string => {
   const text = display.show(chromosome);
+  // a tour of many cities does not fit a line of narration: its first and last cities, and how many are between
+  if (display.tour) return briefTour(text.split(' ').map(Number));
   const pair = display.landscape?.representation === 'real' ? realPair(text) : undefined;
   return pair ? realPairText(pair) : text;
 };
@@ -99,6 +103,18 @@ function describeWith(event: GaEvent, display: Display): string {
 
     case 'crossover': {
       const [first, second] = event.children;
+      if (display.tour) {
+        const info = display.tour;
+        const lengths = event.children.filter((c) => !c.discarded).map((c) => info.lengthText(info.lengthOf(c.chromosome))).join(' and ');
+        const dropped = second!.discarded ? ' · second child dropped' : '';
+        if (event.decision === 'bypassed') {
+          const why = event.reason === 'switched-off' ? 'crossover is off' : `u = ${num(event.draw!.u)} ≥ pc ${num(event.draw!.threshold)}`;
+          return `Pair ${event.pair}: ${why} → bypassed: children are copies, ${lengths}${dropped}`;
+        }
+        const operator = event.operator.toUpperCase();
+        const where = event.cuts ? `${operator}, slice positions ${event.cuts[0]! + 1} to ${event.cuts[1]}` : `${operator}, ${event.cycles!.length} ${event.cycles!.length === 1 ? 'cycle' : 'cycles'}`;
+        return `Pair ${event.pair}: u = ${num(event.draw!.u)} < pc ${num(event.draw!.threshold)} → ${where} → children ${lengths}${dropped}`;
+      }
       const kids = `${formatBits(first!.chromosome)} and ${formatBits(second!.chromosome)}`;
       const dropped = second!.discarded ? ' · second child dropped' : '';
       const head = `Pair ${event.pair}:`;
@@ -125,6 +141,13 @@ function describeWith(event: GaEvent, display: Display): string {
       const after = formatBits(event.after);
       const head = `Offspring ${event.offspring}:`;
       const pm = num(event.threshold);
+      if (display.tour) {
+        const notes = tourMutationNotes(event, display.tour);
+        if (event.decision === 'bypassed') return `${head} mutation is off → unchanged (${notes.lengthText})`;
+        const u = num(event.individualDraw!.u);
+        if (event.decision === 'unchanged') return `${head} u = ${u} ≥ pm ${pm} → unchanged (${notes.lengthText})`;
+        return `${head} u = ${u} < pm ${pm} → ${notes.moveText}: ${notes.lengthText}`;
+      }
       if (real) return describeGaussian(event, head, pm, before, after);
       if (event.decision === 'bypassed') return `${head} mutation is off → unchanged (${before})`;
       if (event.mode === 'per-individual') {
@@ -144,7 +167,7 @@ function describeWith(event: GaEvent, display: Display): string {
       const i = event.individual;
       const steps = (display.explainEvaluation?.(event.repairedFrom ?? i.chromosome).details ?? []).map((d) => `${d}; `).join('');
       const chromosome = event.repairedFrom ? `${formatBits(event.repairedFrom)} → repaired to ${formatBits(i.chromosome)}` : formatBits(i.chromosome);
-      return `Offspring ${event.offspring}: ${real ? '' : `${chromosome} → `}${steps}${scored(i, display, ' → ')}fitness ${fit(i.fitness)} (individual ${i.id})`;
+      return `Offspring ${event.offspring}: ${real || display.tour ? '' : `${chromosome} → `}${steps}${scored(i, display, ' → ')}fitness ${fit(i.fitness)} (individual ${i.id})`;
     }
 
     case 'replacement': {

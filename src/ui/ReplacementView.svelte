@@ -28,7 +28,7 @@
       {#each model.old as row (row.id)}
         <div class="rrow" class:dim={row.fate === 'replaced'} data-old={row.id} data-fate={row.fate}>
           <span class="who">#{row.id}</span>
-          <Bits chromosome={row.bits} small blockNotes={notes(row.bits)} />
+          <Bits chromosome={row.bits} small form="brief" blockNotes={notes(row.bits)} />
           <span class="fit">{num(row.fitness)}</span>
           {#if row.fate === 'elite'}<span class="badge ok" title="elite: carried over unchanged" aria-label="elite, carried over unchanged">★</span>
           {:else if row.fate === 'replaced'}<span class="badge x" title="replaced" aria-label="replaced">✕</span>{/if}
@@ -44,7 +44,7 @@
       {#each model.offspring as row (row.id)}
         <div class="rrow" class:dim={row.fate === 'discarded'} data-offspring={row.offspring} data-fate={row.fate}>
           <span class="who">O{row.offspring}</span>
-          <Bits chromosome={row.bits} small blockNotes={notes(row.bits)} />
+          <Bits chromosome={row.bits} small form="brief" blockNotes={notes(row.bits)} />
           <span class="fit">{num(row.fitness)}</span>
           {#if row.fate === 'survives'}<span class="badge ok"><span aria-hidden="true">✓</span> survives</span>
           {:else if row.fate === 'discarded'}<span class="badge x"><span aria-hidden="true">✕</span> discarded</span>{/if}
@@ -63,7 +63,7 @@
       {#each model.next as row, k (row.id)}
         <div class="rrow" data-next={row.id} data-source={row.source}>
           <span class="who">{k + 1}.</span>
-          <Bits chromosome={row.bits} small blockNotes={notes(row.bits)} />
+          <Bits chromosome={row.bits} small form="brief" blockNotes={notes(row.bits)} />
           <span class="fit">{num(row.fitness)}</span>
           {#if row.source === 'elite'}<span class="badge ok" title="elite carried over from the old population">★ #{row.id}</span>{:else}<span class="badge" title="offspring {row.offspring}">◇ O{row.offspring}</span>{/if}
         </div>

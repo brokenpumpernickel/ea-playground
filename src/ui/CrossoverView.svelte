@@ -8,6 +8,7 @@
   import { geneList, num } from './format';
   import { landscapeContextKey, type LandscapeGetter } from './landscape-context';
   import RealCrossoverCard from './RealCrossoverCard.svelte';
+  import TourCrossoverCard from './TourCrossoverCard.svelte';
   import { revealWhenCurrent } from './reveal';
   import TargetRow from './TargetRow.svelte';
   import type { CrossoverModel, PairResult } from './variation-models';
@@ -29,7 +30,9 @@
   const outcome = (pair: PairResult): string => {
     if (pair.decision === 'recombined') {
       const where =
-        pair.blend !== undefined
+        pair.tour !== undefined
+          ? pair.tour.operator.toUpperCase()
+          : pair.blend !== undefined
           ? `BLX-α draws (α = ${num(pair.alpha ?? 0.5)})`
           : pair.lambda !== undefined
             ? `λ = ${num(pair.lambda)}`
@@ -58,10 +61,13 @@
           {:else}
             {#if pair.decision === 'recombined'}<span class="badge ok"><span aria-hidden="true">✓</span> recombined</span>{:else}<span class="badge bypass"><span aria-hidden="true">⤼</span> BYPASS</span>{/if}
             <span class="muted">{outcome(pair)}</span>
+            {#if pair.tour?.cutText}<span class="muted cuts" data-testid="tour-cut">{pair.tour.cutText}</span>{/if}
             {#if splitsOf(pair)}{@const split = splitsOf(pair)!}<span class="badge" class:flip={split.split > 0} class:ok={split.split === 0} data-testid="block-split"><span aria-hidden="true">{split.split > 0 ? '◧' : '●'}</span> {split.text}</span>{/if}
           {/if}
         </div>
-        {#if pair.revealed && blends(pair)}
+        {#if pair.revealed && pair.tour}
+          <TourCrossoverCard {pair} />
+        {:else if pair.revealed && blends(pair)}
           <RealCrossoverCard {pair} bounds={land!.bounds} />
         {:else if pair.revealed}
           <div class="cbody">
@@ -91,6 +97,8 @@
   </div>
   {#if model.real && (model.operator === 'blx-alpha' || model.operator === 'arithmetic')}
     <p class="key"><b>●</b> parent · <b>▲</b> child · <b>dashed band</b> = the interval BLX-α draws from · <b>solid band</b> = between the parents · <b>▮</b> cut to a bound</p>
+  {:else if model.tour}
+    <!-- the card carries its own key: what plain, hatched, outlined and underlined mean depends on the operator -->
   {:else}
     <p class="key">plain gene = inherited from parent A · <b>hatched</b> gene = inherited from parent B · <b>dashed line</b> = cut point{#if land && land.representation !== 'real'} · <b>→</b> = the point the bits decode to, and how far each child is from each parent{/if}</p>
   {/if}
