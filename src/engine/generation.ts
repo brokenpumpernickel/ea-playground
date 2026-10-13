@@ -273,7 +273,7 @@ export function runGeneration(
   // 2. pairing (no draws), 3. crossover, 4. mutation
   const paired = pair(selected.pool, offspringCount);
   events.push(...paired.events);
-  const crossed = crossover(state.population, paired.pairs, config.crossover, rng, config.problem.bounds);
+  const crossed = crossover(state.population, paired.pairs, config.crossover, rng, config.problem.bounds, config.problem.permutation === true);
   events.push(...crossed.events);
   const mutated = mutate(crossed.offspring, config.mutation, rng, config.problem.alphabet.length, config.problem.bounds);
   events.push(...mutated.events);

@@ -21,11 +21,14 @@ export {
   defaultAlpha,
   minimumGenes,
   operatorName,
+  permutationOperators,
   realOnlyOperators,
   type Child,
   type CrossoverConfig,
   type CrossoverEvent,
   type CrossoverOperator,
+  type OrderFill,
+  type PmxChild,
   type Source,
 } from './crossover';
 export {
