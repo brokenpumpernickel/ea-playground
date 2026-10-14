@@ -1,4 +1,4 @@
-import { canonicalRoute, tspPlaces, type TspProblem } from '../engine';
+import { canonicalRoute, tspPlaces, type TspInstance, type TspProblem } from '../engine';
 
 /** Up to this many cities a table cell shows the whole tour; a longer tour is shortened and drawn as a thumbnail beside it. */
 export const wholeTourUpTo = 16;
@@ -10,6 +10,8 @@ const routeCut = 46;
 
 /** What a running TSP gives the views: how many cities, where they are drawn, and the words for a length, a gap and a tour. */
 export interface TourInfo {
+  /** The instance itself: its name, rule, optimal tour and nearest-neighbour tour. */
+  readonly instance: TspInstance;
   /** How many cities a tour visits. */
   readonly cities: number;
   /** Where each city is drawn, (across, up): longitude across and latitude up for a GEO instance. */
@@ -32,6 +34,7 @@ export function tourInfoOf(problem: TspProblem): TourInfo {
   if (known) return known;
   const lengthOf = (tour: readonly number[]): number => problem.lengthOf(tour);
   const info: TourInfo = {
+    instance: problem.instance,
     cities: problem.chromosomeLength,
     places: tspPlaces(problem.instance),
     optimum: problem.instance.optimum,

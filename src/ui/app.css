@@ -995,3 +995,35 @@ table.tsp td:nth-child(2) { padding-left:4px; padding-right:4px; overflow:visibl
 .thumb.small { border-width:1px; border-radius:4px; }
 .bits.tourbits.brief { gap:8px; }
 .bits.tourbits.brief .seq { font-size:14px; }
+
+/* the TSP's route map: the second view of the stage panel */
+.rmview { display:flex; flex-direction:column; gap:4px; height:100%; }
+.rmrow { display:flex; gap:20px; align-items:flex-start; }
+.rmmap { border:2px solid var(--axis); border-radius:8px; background:var(--surface); display:block; flex:none; }
+.rmmap line { stroke-linecap:round; fill:none; }
+.rmmap .re-population line { stroke:var(--ink2); opacity:.38; }
+.rmmap .re-population.dim line { opacity:.14; }
+.rmmap .re-optimal line { stroke:var(--ink2); stroke-width:2.5; stroke-dasharray:11 6; }
+.rmmap .re-best line { stroke:var(--ink); stroke-width:4.5; }
+.rmmap .re-selected line { stroke:var(--flip); stroke-width:3.5; stroke-dasharray:1 7; }
+.rmmap .re-unchanged line { stroke:var(--ink2); stroke-width:2.5; opacity:.7; }
+.rmmap .re-child line { stroke-width:4; }
+.rmmap .re-child line.origin-shared { stroke:var(--ink2); stroke-width:2.5; opacity:.8; }
+.rmmap .re-child line.origin-fromA { stroke:var(--s1); }
+.rmmap .re-child line.origin-fromB { stroke:var(--s3); stroke-dasharray:10 6; }
+.rmmap .re-child line.origin-new { stroke:var(--flip); stroke-dasharray:1 7; stroke-width:4.5; }
+.rmmap .re-added line { stroke:var(--s1); stroke-width:5; }
+.rmmap .re-removed line { stroke:var(--flip-ink); stroke-width:3; stroke-dasharray:7 6; }
+.rmmap .cross { fill:var(--flip-ink); font-size:20px; font-weight:800; paint-order:stroke; stroke:var(--surface); stroke-width:4px; }
+.rmmap .city { fill:var(--surface); stroke:var(--ink); stroke-width:2; }
+.rmmap .city.ringed { stroke-width:3.5; fill:var(--acc-tint); }
+.rmmap .cl { fill:var(--ink); font-weight:600; paint-order:stroke; stroke:var(--surface); stroke-width:3px; stroke-linejoin:round; }
+.rmmap .axes { fill:var(--ink2); font-size:12px; }
+.rmstats { width:290px; flex:none; border-collapse:collapse; }
+.rmstats caption { text-align:left; font-weight:800; font-size:19px; padding:0 0 4px; }
+.rmstats th, .rmstats td { font-size:17px; padding:3px 8px 3px 0; height:auto; border:0; text-transform:none; letter-spacing:0; color:var(--ink); font-weight:500; text-align:left; white-space:nowrap; }
+.rmstats td.num { text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
+.rmstats td.gap, .rmstats td.note { color:var(--ink2); font-weight:500; text-align:right; padding-right:0; }
+.rmstats tr.sep th, .rmstats tr.sep td { border-top:1px solid var(--axis); padding-top:8px; }
+.rmkey .k { font-weight:800; }
+.rmkey .k-a { color:var(--s1); } .rmkey .k-b { color:var(--s3); } .rmkey .k-new, .rmkey .k-sel { color:var(--flip); } .rmkey .k-rm { color:var(--flip-ink); }

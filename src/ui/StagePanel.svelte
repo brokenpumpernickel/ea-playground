@@ -9,6 +9,7 @@
   import MutationView from './MutationView.svelte';
   import { evaluationModel, replacementModel } from './outcome-models';
   import PairingView from './PairingView.svelte';
+  import RouteMapView from './RouteMapView.svelte';
   import ReplacementView from './ReplacementView.svelte';
   import RouletteView from './RouletteView.svelte';
   import { pairingModel, selectionModel, tournamentModel } from './selection-models';
@@ -61,6 +62,24 @@
       }
     }
   });
+  // the TSP's route map is the panel's second view for a tour; like the landscape's, it is a view setting that a restart keeps
+  const tour = $derived(session.tour);
+  let showMap = $state(false);
+  let showPopulationEdges = $state(true);
+  let showOptimalTour = $state(false);
+  let seenTourEpoch: number | undefined;
+  $effect(() => {
+    if (seenTourEpoch === undefined) seenTourEpoch = session.epoch;
+    else if (session.epoch !== seenTourEpoch) {
+      seenTourEpoch = session.epoch;
+      if (tour === undefined) {
+        showMap = false;
+        showPopulationEdges = true;
+        showOptimalTour = false;
+      }
+    }
+  });
+  const mapOpen = $derived(tour !== undefined && showMap);
   const landscapeOpen = $derived(land !== undefined && showLandscape);
   const schemaOpen = $derived(blocks !== undefined && showSchema);
   const schemaText = $derived(typedSchema ?? (blocks ? schemaOfBlock(blocks, 1) : ''));
@@ -88,7 +107,7 @@
 
 <section class="panel" style="left:24px;top:172px;width:1096px;height:574px" aria-labelledby="stage-heading">
   <div class="ph">
-    <h2 id="stage-heading">{schemaOpen ? 'Schema tracker' : landscapeOpen ? 'Landscape' : heading}</h2>
+    <h2 id="stage-heading">{schemaOpen ? 'Schema tracker' : landscapeOpen ? 'Landscape' : mapOpen ? (stage === 'crossover' || stage === 'mutation' ? `Route map · ${stage}` : 'Route map') : heading}</h2>
     {#if session.pending.length > 0}<span class="pendingchip" data-testid="pending-chip" title="Changed settings apply when the next generation starts">● pending: {session.pending.join(', ')}</span>{/if}
   </div>
   {#if land}
@@ -97,14 +116,22 @@
       <button class="tab" class:on={showLandscape} type="button" aria-pressed={showLandscape} data-testid="show-landscape" onclick={() => (showLandscape = true)}>Landscape</button>
     </div>
   {/if}
+  {#if tour}
+    <div class="tabs" role="group" aria-label="View of this panel">
+      <button class="tab" class:on={!showMap} type="button" aria-pressed={!showMap} data-testid="show-stage" onclick={() => (showMap = false)}>Stage view</button>
+      <button class="tab" class:on={showMap} type="button" aria-pressed={showMap} data-testid="show-map" onclick={() => (showMap = true)}>Route map</button>
+    </div>
+  {/if}
   {#if blocks}
     <div class="tabs" role="group" aria-label="View of this panel">
       <button class="tab" class:on={!showSchema} type="button" aria-pressed={!showSchema} data-testid="show-stage" onclick={() => (showSchema = false)}>Stage view</button>
       <button class="tab" class:on={showSchema} type="button" aria-pressed={showSchema} data-testid="show-schema" onclick={() => (showSchema = true)}>Schema tracker</button>
     </div>
   {/if}
-  <div id="stagebody" style={blocks || land ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
-    {#if landscapeOpen}
+  <div id="stagebody" style={blocks || land || tour ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
+    {#if mapOpen}
+      <RouteMapView {session} bind:showPopulation={showPopulationEdges} bind:showOptimal={showOptimalTour} />
+    {:else if landscapeOpen}
       <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} bind:trail />
     {:else if schemaOpen && blocks}
       <SchemaTracker info={blocks} text={schemaText} oninput={(t) => (typedSchema = t)} history={schemaPoints} now={view.position.cycle} />
