@@ -17,11 +17,12 @@ const SIZES: [string, TspOptions][] = [
   ['52 cities', { instance: 'berlin52', n: 10, seed: 1 }],
 ];
 
-const open = async (page: Page, options: TspOptions, seed = 42) => {
+const open = async (page: Page, options: TspOptions, seed = 42, projector = false) => {
   const d = defaultsOf(entry, options);
   await page.goto('about:blank');
   await page.goto(url + encodeConfig(configOf({ problem: entry.create(options), init: d.init }, d.params, seed, 'tsp', options)));
   await expect(page.getByTestId('problem-button')).toHaveText(/TSP/);
+  if (projector) await page.getByRole('button', { name: 'Projector mode' }).click();
 };
 const engine = (options: TspOptions, generations: number, seed = 42) => {
   const d = defaultsOf(entry, options);
@@ -181,15 +182,16 @@ test.describe('the reference lines of the fitness plot', () => {
   }
 });
 
+for (const projector of [false, true]) {
 for (const [width, height] of [
   [1920, 1080],
   [1366, 768],
 ] as const) {
-  test.describe(`at ${width}×${height}`, () => {
+  test.describe(`at ${width}×${height}${projector ? ' in projector mode' : ''}`, () => {
     for (const [label, options] of SIZES) {
       test(`${label}: the three panels keep their places and their text stays inside them at every micro-step of two generations`, async ({ page }) => {
         await page.setViewportSize({ width, height });
-        await open(page, options);
+        await open(page, options, 42, projector);
         const seen = new Set<string>();
         for (let k = 0; k < 2 * 80; k++) {
           await page.keyboard.press('ArrowRight');
@@ -228,6 +230,7 @@ for (const [width, height] of [
       });
     }
   });
+}
 }
 
 test('the other problems keep their strip: the allele bars and no nearest-neighbour line', async ({ page }) => {

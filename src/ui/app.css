@@ -1041,3 +1041,11 @@ svg[data-plot="fitness"] text.refl { paint-order:stroke; stroke:var(--surface); 
 .sphist { font-size:14px; color:var(--ink); }
 .plot .summary.tourstats { font-size:14px; line-height:1.2; margin-top:3px; }
 .projector .spkey { font-size:14px; } .projector .sphist { font-size:15px; } .projector .plot .summary.tourstats { font-size:15px; }
+.rmview .lbar select { font:inherit; font-size:15px; padding:1px 6px; border:2px solid var(--ink2); border-radius:8px; background:var(--surface); color:var(--ink); max-width:230px; }
+/* the longest preset name (a TSP one) would push the select over the label of its own row */
+#drawer #preset { max-width:420px; text-overflow:ellipsis; }
+/* a tour card's header keeps each part whole and in one line where it fits; in projector mode the strips are square so a card with a mapping still fits its panel */
+.ccard:has(.tcard) .thead { flex-wrap:wrap; font-size:18px; }
+.ccard:has(.tcard) .thead > * { white-space:nowrap; }
+.ccard:has(.tcard) .thead .cuts { font-size:16px; }
+.projector .bit.tour.st { height:var(--tc); font-size:calc(var(--tc) * .56); }

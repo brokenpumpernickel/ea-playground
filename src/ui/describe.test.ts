@@ -139,6 +139,16 @@ describe('evaluation and replacement', () => {
     expect(lines(withElite, (e) => e.stage === 'replacement')).toEqual(['Next population: individuals 2 (elite), 5, 6, 7']);
   });
 
+  test('a population too long for one line is listed by its first ten individuals and the number in all, elites marked', () => {
+    const ids = Array.from({ length: 20 }, (_, k) => 30 + k);
+    expect(describeEvent({ stage: 'replacement', kind: 'summary', elites: [30, 31], population: ids })).toBe('Next population: individuals 30 (elite), 31 (elite), 32, 33, 34, 35, 36, 37, 38, 39, … (20 in all)');
+    // twelve still fit
+    expect(describeEvent({ stage: 'replacement', kind: 'summary', elites: [], population: ids.slice(0, 12) })).toBe(`Next population: individuals ${ids.slice(0, 12).join(', ')}`);
+    // and the rest of the sentence is kept
+    const ranking = ids.slice(0, 3).map((id, k) => ({ individualId: id, offspring: k + 1, rank: k + 1, kept: false }));
+    expect(describeEvent({ stage: 'replacement', kind: 'summary', elites: [], population: ids, ranking })).toBe('Next population: individuals 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, … (20 in all). Discarded: 3 offspring (ranks 1–3)');
+  });
+
   test('with truncation the discarded offspring are listed with their rank', () => {
     const [line] = lines(generation({ elites: 1, truncation: { enabled: true, lambda: 4 } }), (e) => e.stage === 'replacement');
     expect(line).toBe('Next population: individuals 2 (elite), 7, 5, 8. Discarded: offspring 2 (rank 4)');

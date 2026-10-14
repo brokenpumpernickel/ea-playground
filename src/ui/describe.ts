@@ -176,7 +176,9 @@ function describeWith(event: GaEvent, display: Display): string {
       // a long list would not fit the one-line narration; the stage view names each one
       const discarded = lost.length > 2 ? `${lost.length} offspring (ranks ${lost[0]!.rank}–${lost[lost.length - 1]!.rank})` : lost.map((r) => `offspring ${r.offspring} (rank ${r.rank})`).join(', ');
       const tail = lost.length > 0 ? `. Discarded: ${discarded}` : '';
-      return `Next population: individuals ${ids.join(', ')}${tail}`;
+      // a long population would not fit the one-line narration either: its first ten, and how many there are in all
+      const listed = ids.length > 12 ? `${ids.slice(0, 10).join(', ')}, … (${ids.length} in all)` : ids.join(', ');
+      return `Next population: individuals ${listed}${tail}`;
     }
   }
 }

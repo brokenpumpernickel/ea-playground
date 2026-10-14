@@ -26,11 +26,12 @@ const paramsFor = (options: TspOptions, change: (p: GaParams) => GaParams) => {
   const d = defaultsOf(entry, options);
   return { d, params: change(d.params) };
 };
-const open = async (page: Page, options: TspOptions, change: (p: GaParams) => GaParams = (p) => p, seed = 42) => {
+const open = async (page: Page, options: TspOptions, change: (p: GaParams) => GaParams = (p) => p, seed = 42, projector = false) => {
   const { d, params } = paramsFor(options, change);
   await page.goto('about:blank');
   await page.goto(url + encodeConfig(configOf({ problem: entry.create(options), init: d.init }, params, seed, 'tsp', options)));
   await expect(page.getByTestId('problem-button')).toHaveText(/TSP/);
+  if (projector) await page.getByRole('button', { name: 'Projector mode' }).click();
 };
 const engine = (options: TspOptions, change: (p: GaParams) => GaParams, generations: number, seed = 42) => {
   const { d, params } = paramsFor(options, change);
@@ -284,16 +285,17 @@ test('the tabs and the toggles are reachable and work from the keyboard', async 
   expect(tree.split('\n').filter((l) => /^\s*- (button|textbox|combobox|slider|checkbox|switch|spinbutton|radio|menuitemradio|menuitem)(\s+\[[^\]]*\])*:?\s*$/.test(l))).toEqual([]);
 });
 
+for (const projector of [false, true]) {
 for (const [width, height] of [
   [1920, 1080],
   [1366, 768],
 ] as const) {
-  test.describe(`at ${width}×${height}`, () => {
+  test.describe(`at ${width}×${height}${projector ? ' in projector mode' : ''}`, () => {
     for (const [label, options] of SIZES) {
       for (const o of ['ox', 'cx'] as Op[]) {
         test(`${o.toUpperCase()}, ${label}: with the map open, at every micro-step of two generations, every marker and label is inside the picture and nothing leaves the panel`, async ({ page }) => {
           await page.setViewportSize({ width, height });
-          await open(page, options, both(op(o), mut()));
+          await open(page, options, both(op(o), mut()), 42, projector);
           await openMap(page);
           await page.getByTestId('toggle-optimal').click();
           await page.locator('[data-testid^="select-"]').nth(1).click();
@@ -339,4 +341,5 @@ for (const [width, height] of [
       }
     }
   });
+}
 }

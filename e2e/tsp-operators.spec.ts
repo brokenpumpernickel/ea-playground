@@ -22,11 +22,12 @@ const paramsFor = (options: TspOptions, change: (p: GaParams) => GaParams): { d:
   const d = defaultsOf(entry, options);
   return { d, params: change(d.params) };
 };
-const open = async (page: Page, options: TspOptions, change: (p: GaParams) => GaParams, seed = 42) => {
+const open = async (page: Page, options: TspOptions, change: (p: GaParams) => GaParams, seed = 42, projector = false) => {
   const { d, params } = paramsFor(options, change);
   await page.goto('about:blank');
   await page.goto(url + encodeConfig(configOf({ problem: entry.create(options), init: d.init }, params, seed, 'tsp', options)));
   await expect(page.getByTestId('problem-button')).toHaveText(/TSP/);
+  if (projector) await page.getByRole('button', { name: 'Projector mode' }).click();
 };
 const engine = (options: TspOptions, change: (p: GaParams) => GaParams, generations: number, seed = 42) => {
   const { d, params } = paramsFor(options, change);
@@ -218,11 +219,13 @@ for (const [width, height] of [
 ] as const) {
   test.describe(`at ${width}×${height}`, () => {
     for (const [label, options] of SIZES) {
+     for (const projector of [false, true]) {
       for (const op of ['ox', 'pmx', 'cx'] as Op[]) {
-        test(`${op.toUpperCase()}, ${label}: at every micro-step of two generations, in every stage, the cards stay inside the panel, strips are one row, and the narration stays in its box`, async ({ page }) => {
+        test(`${op.toUpperCase()}, ${label}${projector ? ' in projector mode' : ''}: at every micro-step of two generations, in every stage, the cards stay inside the panel, strips are one row, and the narration stays in its box`, async ({ page }) => {
+          test.setTimeout(60_000);
           await page.setViewportSize({ width, height });
           const move: Move = op === 'ox' ? 'inversion' : op === 'pmx' ? 'swap' : 'insertion';
-          await open(page, options, both(crossoverOf(op), mutationOf(move)));
+          await open(page, options, both(crossoverOf(op), mutationOf(move)), 42, projector);
           const stages = new Set<string>();
           await walk(page, async ({ stage }) => {
             stages.add(stage);
@@ -267,6 +270,7 @@ for (const [width, height] of [
           expect([...stages].sort(), 'every stage was visited').toEqual(['Crossover', 'Evaluation of offspring', 'Mutation', 'Pairing', 'Replacement', 'Selection']);
         });
       }
+     }
     }
   });
 }

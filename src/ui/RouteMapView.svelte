@@ -71,6 +71,13 @@
         <button class="tog" class:on={showPopulation} type="button" aria-pressed={showPopulation} data-testid="toggle-population" onclick={() => (showPopulation = !showPopulation)}><span aria-hidden="true">{showPopulation ? '✓ ' : ''}</span>Population’s edges</button>
         <button class="tog" class:on={showOptimal} type="button" aria-pressed={showOptimal} data-testid="toggle-optimal" onclick={() => (showOptimal = !showOptimal)}><span aria-hidden="true">{showOptimal ? '✓ ' : ''}</span>Optimal tour</button>
       </span>
+      <span class="lgrp">
+        <label for="map-select" class="rl">Selected tour</label>
+        <select id="map-select" data-testid="map-select" value={session.selectedId === undefined ? '' : String(session.selectedId)} onchange={(e) => session.selectIndividual(e.currentTarget.value === '' ? undefined : Number(e.currentTarget.value))}>
+          <option value="">none</option>
+          {#each session.table.rows as row (row.id)}<option value={String(row.id)}>individual {row.id}{row.elite ? ' (elite)' : ''} · {row.cells[0]}</option>{/each}
+        </select>
+      </span>
       <span class="lgrp key">gap = how much longer than the optimum</span>
     </div>
     <div class="rmrow">

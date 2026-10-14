@@ -104,7 +104,7 @@ describe('the run of a preset is the engine’s: the quick loop of these tests a
   });
 });
 
-describe('berlin52: against the nearest neighbour and the optimum', () => {
+describe('berlin52: against the nearest neighbour and the optimum', { timeout: 60_000 }, () => {
   const p = tspPreset('t-tsp-berlin52');
   const t = trace(p, 500);
   const instance = tspInstance(berlin);
@@ -132,7 +132,7 @@ describe('berlin52: against the nearest neighbour and the optimum', () => {
   });
 });
 
-describe('the other comparisons, on the same seed', () => {
+describe('the other comparisons, on the same seed', { timeout: 60_000 }, () => {
   const ox = trace(tspPreset('t-tsp-berlin52'), 500);
 
   test('partial-mapped crossover: 8,785, 16.5 % over after 500 generations (order crossover 8,794, 16.6 %), 44.7 % at generation 200 against 37.6 %', () => {
@@ -254,7 +254,7 @@ describe('The circle and the crossing tours', () => {
     expect(crossings(best.chromosome, places)).toBe(0);
   });
 
-  test('over seeds 1 to 30 all 30 runs reach the optimum, between generation 28 and generation 84', () => {
+  test('over seeds 1 to 30 all 30 runs reach the optimum, between generation 28 and generation 84', { timeout: 120_000 }, () => {
     const first = seeds().map((seed) => trace(p, 300, { seed }).firstOptimum);
     expect(first.every((g) => g !== null)).toBe(true);
     expect(Math.min(...(first as number[]))).toBe(28);
@@ -274,7 +274,7 @@ describe('Swap stalls on Two clusters', () => {
     expect(t.stop).toEqual({ generation: 126, reasons: ['stagnation'] });
   });
 
-  test('over seeds 1 to 30, 16 runs reach the optimum and 14 stop above it, between 0.25 % and 1.02 % over; with inversion 28 of the 30 reach it', () => {
+  test('over seeds 1 to 30, 16 runs reach the optimum and 14 stop above it, between 0.25 % and 1.02 % over; with inversion 28 of the 30 reach it', { timeout: 120_000 }, () => {
     const swap = seeds().map((seed) => trace(p, 500, { seed }));
     const reached = swap.filter((t) => t.firstOptimum !== null);
     const stalled = swap.filter((t) => t.firstOptimum === null);

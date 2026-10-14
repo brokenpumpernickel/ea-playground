@@ -23,10 +23,11 @@ const configFor = (options: TspOptions, size: number, seed: number, selection?: 
   const params = selection ? { ...d.params, selection } : d.params;
   return { d: { ...d, params }, init: { kind: 'random' as const, size }, config: configOf({ problem: entry.create(options), init: { kind: 'random', size } }, params, seed, 'tsp', options) };
 };
-const open = async (page: Page, options: TspOptions, size = 12, seed = 42, selection?: GaParams['selection']) => {
+const open = async (page: Page, options: TspOptions, size = 12, seed = 42, selection?: GaParams['selection'], projector = false) => {
   await page.goto('about:blank');
   await page.goto(url + encodeConfig(configFor(options, size, seed, selection).config));
   await expect(page.getByTestId('problem-button')).toHaveText(/TSP/);
+  if (projector) await page.getByRole('button', { name: 'Projector mode' }).click();
 };
 /** The engine's population after g generations. */
 const engineAt = (options: TspOptions, size: number, g: number, seed = 42) => {
@@ -157,16 +158,17 @@ test.describe('selecting an individual', () => {
   });
 });
 
+for (const projector of [false, true]) {
 for (const [width, height] of [
   [1920, 1080],
   [1366, 768],
 ] as const) {
-  test.describe(`at ${width}×${height}`, () => {
+  test.describe(`at ${width}×${height}${projector ? ' in projector mode' : ''}`, () => {
     for (const [label, options] of INSTANCES) {
       for (const size of [12, 60]) {
         test(`${label}, ${size} individuals: nothing in the table, its route box or its legend overflows; every cell has one size`, async ({ page }) => {
           await page.setViewportSize({ width, height });
-          await open(page, options, size);
+          await open(page, options, size, 42, undefined, projector);
           await page.keyboard.press('g');
           const pick = page.locator('[data-testid^="select-"]').nth(1);
           const measure = () =>
@@ -214,7 +216,7 @@ for (const [width, height] of [
       for (const [method, selection] of [['tournament', undefined], ['roulette', roulette]] as const) {
         test(`${label}, ${method}: the columns of the table keep their widths and the tours their cells at every micro-step of two generations`, async ({ page }) => {
           await page.setViewportSize({ width, height });
-          await open(page, options, 12, 42, selection);
+          await open(page, options, 12, 42, selection, projector);
           const widths: string[] = [];
           let sawWeights = false;
           let sawLength = false;
@@ -251,4 +253,5 @@ for (const [width, height] of [
       }
     }
   });
+}
 }
