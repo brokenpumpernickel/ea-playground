@@ -1,0 +1,41 @@
+{
+  "v": 1,
+  "problem": "tsp",
+  "name": "The circle and the crossing tours",
+  "lesson": "With cities evenly spaced on a circle the best tour is the circle itself, in order, and it crosses itself nowhere; random tours cross themselves many times and the search takes the crossings out.",
+  "lookFor": "With this seed all 20 tours of the starting population cross themselves (between 12 and 42 crossings each); the best tour of the generation has 12 crossings at generation 0, 8 at generation 10, 4 at 20, 2 at 30 and 1 at 40, and at generation 46 Run until stop pauses within ε of the optimum: the tour is 1 2 3 … 15 and has no crossing. Over seeds 1 to 30 all 30 runs reach the optimum, between generation 28 and generation 84.",
+  "seed": 2,
+  "options": {
+    "instance": "circle",
+    "n": 15,
+    "seed": 1
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 20
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 3
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "ox",
+      "probability": 0.9
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-individual",
+      "probability": 0.4,
+      "operator": "inversion"
+    },
+    "elites": 2,
+    "stop": {
+      "generationLimit": 300,
+      "targetEpsilon": 1e-06
+    }
+  }
+}

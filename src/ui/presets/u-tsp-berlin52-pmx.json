@@ -1,0 +1,41 @@
+{
+  "v": 1,
+  "problem": "tsp",
+  "name": "Partial-mapped crossover instead of order crossover",
+  "lesson": "Two different crossovers, the same progress: partial-mapped crossover does about as well as order crossover on this instance.",
+  "lookFor": "Same instance, seed and starting population as “berlin52: the nearest neighbour and the optimum”. After 500 generations this run is at 8,785, 16.5 % over the optimum (order crossover: 8,794, 16.6 %), though at generation 200 it is behind (44.7 % against 37.6 %). Over seeds 1 to 30 it ends ahead of order crossover in 17 runs and behind in 13 (at generation 200: 15 and 15): there is no difference between the two to see here.",
+  "seed": 15,
+  "options": {
+    "instance": "berlin52",
+    "n": 10,
+    "seed": 1
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 20
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 3
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "pmx",
+      "probability": 0.9
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-individual",
+      "probability": 0.4,
+      "operator": "inversion"
+    },
+    "elites": 2,
+    "stop": {
+      "generationLimit": 500,
+      "targetEpsilon": 0.5
+    }
+  }
+}

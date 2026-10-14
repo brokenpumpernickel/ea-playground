@@ -1,0 +1,42 @@
+{
+  "v": 1,
+  "problem": "tsp",
+  "name": "No mutation: stuck at the first good tour",
+  "lesson": "Crossover only reshuffles the cities already in the population, so without mutation the search soon runs out of new tours and stops improving.",
+  "lookFor": "Same instance, seed and starting population as “berlin52: the nearest neighbour and the optimum”. With mutation off, nothing improves after generation 49: the best tour stays 154.2 % over the optimum, at 19,173. The stagnation window is 50 in this preset, so Run until stop pauses at generation 99. Over seeds 1 to 30 the run without mutation is behind the run with mutation at generations 200, 300 and 500 in all 30; the median gap after 500 generations is 168.6 %, against 15.0 % with it.",
+  "seed": 15,
+  "options": {
+    "instance": "berlin52",
+    "n": 10,
+    "seed": 1
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 20
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 3
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "ox",
+      "probability": 0.9
+    },
+    "mutation": {
+      "enabled": false,
+      "mode": "per-individual",
+      "probability": 0.4,
+      "operator": "inversion"
+    },
+    "elites": 2,
+    "stop": {
+      "generationLimit": 500,
+      "targetEpsilon": 0.5,
+      "stagnationWindow": 50
+    }
+  }
+}

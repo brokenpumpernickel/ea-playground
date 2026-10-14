@@ -1,0 +1,41 @@
+{
+  "v": 1,
+  "problem": "tsp",
+  "name": "Cycle crossover instead of order crossover",
+  "lesson": "Cycle crossover is clearly slower than order crossover on this instance.",
+  "lookFor": "Same instance, seed and starting population as “berlin52: the nearest neighbour and the optimum”. At generation 200 the best tour is 77.9 % over the optimum (order crossover: 37.6 %) and at 500 it is 24.5 % over (16.6 %); it never gets under the nearest-neighbour tour. Over seeds 1 to 30 the cycle-crossover run is behind the order-crossover run at generation 200 in all 30 runs, and at generation 500 in 29.",
+  "seed": 15,
+  "options": {
+    "instance": "berlin52",
+    "n": 10,
+    "seed": 1
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 20
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 3
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "cx",
+      "probability": 0.9
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-individual",
+      "probability": 0.4,
+      "operator": "inversion"
+    },
+    "elites": 2,
+    "stop": {
+      "generationLimit": 500,
+      "targetEpsilon": 0.5
+    }
+  }
+}

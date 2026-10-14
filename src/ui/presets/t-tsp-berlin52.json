@@ -1,0 +1,41 @@
+{
+  "v": 1,
+  "problem": "tsp",
+  "name": "berlin52: against the nearest neighbour and the optimum",
+  "lesson": "A plain genetic algorithm on 52 cities stays far from the optimum, 7,542, and the greedy nearest-neighbour tour (8,980, 19.1 % over the optimum) is not easy to beat.",
+  "lookFor": "With this seed Run until stop pauses at generation 500, the limit, at 8,794: 16.6 % over the optimum and 2.1 % under the nearest-neighbour tour, which the best tour first beats at generation 423 (it was 37.6 % over at generation 200 and 25.8 % at 300). Over seeds 1 to 30 the median gap after 500 generations is 15.0 %, 22 of the 30 runs end under the nearest-neighbour tour (none does after 300 generations) and none reaches the optimum. Turn on Optimal tour in the route map to see where the best tour differs from it.",
+  "seed": 15,
+  "options": {
+    "instance": "berlin52",
+    "n": 10,
+    "seed": 1
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 20
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 3
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "ox",
+      "probability": 0.9
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-individual",
+      "probability": 0.4,
+      "operator": "inversion"
+    },
+    "elites": 2,
+    "stop": {
+      "generationLimit": 500,
+      "targetEpsilon": 0.5
+    }
+  }
+}

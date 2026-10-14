@@ -1,0 +1,42 @@
+{
+  "v": 1,
+  "problem": "tsp",
+  "name": "Swap stalls on Two clusters",
+  "lesson": "With swap mutation the search often settles just above the optimum on Two clusters, and a stagnation stop ends the run there.",
+  "lookFor": "With this seed the best tour, 0.25 % over the optimum, is found at generation 26, nothing improves for 100 generations, and Run until stop pauses at generation 126 (the stagnation window is 100). Over seeds 1 to 30 with these settings 16 runs reach the optimum and 14 stop above it, between 0.25 % and 1.02 % over; with inversion instead of swap 28 of the 30 reach it.",
+  "seed": 3,
+  "options": {
+    "instance": "clusters",
+    "n": 10,
+    "seed": 1
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 20
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 3
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "ox",
+      "probability": 0.9
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-individual",
+      "probability": 0.4,
+      "operator": "swap"
+    },
+    "elites": 2,
+    "stop": {
+      "generationLimit": 500,
+      "targetEpsilon": 1e-06,
+      "stagnationWindow": 100
+    }
+  }
+}
