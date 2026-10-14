@@ -208,6 +208,10 @@ _Avoid_: Error, regret
 The tour made by starting at city 1 and always going to the nearest unvisited city, ties to the lower number. A greedy baseline a run can be read against.
 _Avoid_: Greedy tour (the word is used for the heuristic in general)
 
+**Route map**:
+The second view of the stage panel of a TSP run: the cities as numbered dots with the population's edges (thicker where more individuals use them), the best tour of the generation, the selected individual's tour and, on request, the optimal tour; while crossover or mutation is stepped, the child's edges by origin or the edges a mutation took out and put in.
+_Avoid_: Tour plot, graph view
+
 ### Selection and variation
 
 **Mating pool**:

@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { formatGenes, gaAlgorithm, landscapeDefaults, metricsOfProblem, trapProblem, type GaParams, type KnapsackOptions, type LandscapeOptions, type TrapOptions } from '../src/engine';
+import { formatGenes, formatTour, gaAlgorithm, landscapeDefaults, metricsOfProblem, trapProblem, tspDefaults, tspProblem, type GaParams, type KnapsackOptions, type LandscapeOptions, type TrapOptions, type TspOptions } from '../src/engine';
 import { createRun } from '../src/run';
 import { entryOf } from '../src/ui/problems';
 import { configOf, encodeConfig } from '../src/ui/run-config';
 import { statsLines } from '../src/ui/spread-model';
+import { tourInfoOf, tourStatsLines } from '../src/ui/tour-cells';
 
 // Run against the deployed site: PUBLISHED_URL=https://brokenpumpernickel.github.io/ea-playground/ npx playwright test e2e/published.spec.ts
 const published = process.env.PUBLISHED_URL;
@@ -91,5 +92,42 @@ for (const options of [
     await expect(page.getByTestId('heat-marks')).toBeVisible();
     await expect(page.getByTestId('heatmap')).toBeVisible();
     await expect(page.getByTestId('surface')).toBeVisible();
+  });
+}
+
+const tsp = entryOf('tsp')!;
+for (const [label, options, size] of [
+  ['berlin52 (a TSPLIB instance, EUC_2D)', { instance: 'berlin52', n: 10, seed: 1 }, 20],
+  ['ulysses16 (GEO)', { instance: 'ulysses16', n: 10, seed: 1 }, 12],
+  ['a circle of 9 cities with a hand-edited population', { instance: 'circle', n: 9, seed: 1 }, 0],
+  ['a random instance of 12 cities', { instance: 'random', n: 12, seed: 5 }, 16],
+] as [string, TspOptions, number][]) {
+  test(`the published site opens a TSP link for ${label} as the same run`, async ({ page }) => {
+    const defaults = tspDefaults(options);
+    const params: GaParams = { ...defaults.params, crossover: { ...defaults.params.crossover, operator: 'pmx' }, mutation: { ...defaults.params.mutation, operator: 'insertion' }, elites: 1 };
+    const init = size === 0 ? { kind: 'explicit' as const, chromosomes: ['1 2 3 4 5 6 7 8 9', '9 8 7 6 5 4 3 2 1', '3 1 2 4 5 6 9 7 8', '1 3 5 7 9 2 4 6 8'] } : { kind: 'random' as const, size };
+    const setup = { problem: tspProblem(options), init };
+    await page.goto(published! + encodeConfig(configOf(setup, params, 31, 'tsp', options)));
+    await expect(page.getByTestId('link-notice')).toHaveCount(0);
+    await expect(page.getByTestId('problem-button')).toHaveText(/TSP/);
+    const run = createRun(gaAlgorithm, { setup, params, seed: 31 });
+    const info = tourInfoOf(setup.problem);
+    const summary = async () => (await page.getByTestId('summary').innerText()).replace(/\s*\n\s*/g, '');
+    const rows = () => page.getByRole('table', { name: /^(Population|Parents) · generation \d+$/ }).locator('tbody tr [data-bits]').evaluateAll((els) => els.map((el) => el.getAttribute('data-bits')));
+    const same = async (g: number) => {
+      expect(await summary()).toBe(tourStatsLines(info, metricsOfProblem(run.snapshot(g).state, setup.problem)).join(''));
+      expect(await rows()).toEqual(run.snapshot(g).state.population.map((i) => formatTour(i.chromosome)));
+    };
+    await same(0);
+    for (let g = 1; g <= 4; g++) {
+      await page.keyboard.press('g');
+      run.forwardCycle();
+    }
+    await expect(page.locator('#pop-heading')).toHaveText('Population · generation 4');
+    await same(4);
+    await page.getByTestId('show-map').click();
+    await expect(page.getByTestId('route-map')).toBeVisible();
+    await expect(page.getByTestId('route-sentence')).toContainText(`${options.instance === 'berlin52' ? 'berlin52' : ''}`);
+    await expect(page.locator('svg[data-plot="fitness"] text[data-label="nearest"]')).toBeVisible();
   });
 }
