@@ -15,7 +15,7 @@ Verify the spec's acceptance criteria in a real browser and get the instructor's
 
 ## Comments
 
-Status note: everything below the instructor's own step-through is done and recorded; **the instructor's sign-off is still to come.**
+Status note: everything below the instructor's own step-through is done and recorded; **the instructor's sign-off is still to come.** The published site was checked (below).
 
 ## Answer
 
@@ -38,7 +38,7 @@ State at the time of writing: 2,215 unit tests and 872 end-to-end tests pass (39
 
 ### The published site
 
-(Filled in after the push, below.)
+After the push of commit `3181c01` (the deployment "Publish to GitHub Pages" for it finished with success), `e2e/published.spec.ts` was run against https://brokenpumpernickel.github.io/ea-playground/ : **13 of 13 pass**, among them four TSP links, each opened in a fresh page as the same run as the engine's (summary lines and every row of the table at generations 0 and 4), then the Route map opened with its sentence and the nearest-neighbour line on the plot: berlin52 (a TSPLIB instance, EUC_2D, 20 individuals), ulysses16 (GEO), a circle of 9 cities with a hand-edited population, and a random instance of 12 cities, each with PMX crossover, insertion mutation and one elite. (One earlier deployment, of the presets commit, failed its unit-test step on a five-second timeout of a 30-seed statistics test under load; the next commit gave those tests their timeout and every deployment since has succeeded.)
 
 ### The rest of this ticket
 
