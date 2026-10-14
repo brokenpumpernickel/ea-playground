@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { CrossoverEvent, MutationEvent } from '../engine';
+  import { cityNumberSize, labelPlacement, wholeView } from './map-zoom';
   import { routeMapModel, type RouteMapInput } from './route-map-model';
   import type { Session } from './session.svelte';
 
@@ -9,7 +10,7 @@
    * tour; while crossover or mutation is stepped, the child's edges by origin or the edges a mutation took out and put in.
    * Every line is a `<line>` carrying its two cities, its layer and its count, so a test reads what is drawn.
    */
-  let { session, showPopulation = $bindable(true), showOptimal = $bindable(false) }: { session: Session; showPopulation?: boolean; showOptimal?: boolean } = $props();
+  let { session, showPopulation = $bindable(true), showOptimal = $bindable(false), showNumbers = $bindable(true) }: { session: Session; showPopulation?: boolean; showOptimal?: boolean; showNumbers?: boolean } = $props();
 
   const size = { width: 740, height: 292 };
   const info = $derived(session.tour);
@@ -47,14 +48,8 @@
   );
 
   const layers = ['population', 'optimal', 'unchanged', 'child', 'added', 'removed', 'best', 'selected'] as const;
-  const labelSize = $derived(info ? (info.cities <= 16 ? 13 : info.cities <= 30 ? 11 : info.cities <= 52 ? 9 : 0) : 0);
-  /** A label sits up and to the right of its city, or down and to the left near an edge of the picture, so it never leaves it. */
-  const labelAt = (x: number, y: number, text: string) => {
-    const w = text.length * labelSize * 0.62 + 2;
-    const right = x + 9 + w <= size.width - 4;
-    const up = y - 9 - labelSize >= 2;
-    return { x: right ? x + 9 : x - 9, y: up ? y - 7 : y + 7 + labelSize, anchor: right ? 'start' : 'end' };
-  };
+  const view0 = wholeView(size);
+  const labelSize = $derived(info ? cityNumberSize(info.cities, view0.zoom, showNumbers) : 0);
   const geo = $derived(info?.instance.rule === 'GEO');
   const mid = (a: number, b: number) => {
     const p = model!.nodes[a]!;
@@ -69,6 +64,7 @@
     <div class="lbar">
       <span class="lgrp">
         <button class="tog" class:on={showPopulation} type="button" aria-pressed={showPopulation} data-testid="toggle-population" onclick={() => (showPopulation = !showPopulation)}><span aria-hidden="true">{showPopulation ? '✓ ' : ''}</span>Population’s edges</button>
+        <button class="tog" class:on={showNumbers} type="button" aria-pressed={showNumbers} data-testid="toggle-numbers" onclick={() => (showNumbers = !showNumbers)}><span aria-hidden="true">{showNumbers ? '✓ ' : ''}</span>City numbers</button>
         <button class="tog" class:on={showOptimal} type="button" aria-pressed={showOptimal} data-testid="toggle-optimal" onclick={() => (showOptimal = !showOptimal)}><span aria-hidden="true">{showOptimal ? '✓ ' : ''}</span>Optimal tour</button>
       </span>
       <span class="lgrp">
@@ -99,7 +95,7 @@
           {#each model.nodes as node (node.city)}
             <circle class="city" class:ringed={node.ringed} cx={node.x} cy={node.y} r={node.ringed ? 9 : 6} data-city={node.city + 1} data-ringed={node.ringed ? 'true' : undefined} />
             {#if labelSize > 0}
-              {@const at = labelAt(node.x, node.y, String(node.city + 1))}
+              {@const at = labelPlacement(node.x, node.y, String(node.city + 1), labelSize, size)}
               <text class="cl" x={at.x} y={at.y} text-anchor={at.anchor} font-size={labelSize} aria-hidden="true" data-label={node.city + 1}>{node.city + 1}</text>
             {/if}
           {/each}

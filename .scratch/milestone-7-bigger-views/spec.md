@@ -69,10 +69,10 @@ The route map and the landscape's two figures are small. They sit in a panel of 
 7. Accessibility and projector pass.
 8. Rendered review and sign-off; the push to `main` redeploys.
 
-## To decide during implementation (record the choice here when made)
+## Decided (after the mock, ticket 01: "all recommended")
 
-- Where the three overlays sit and how large they are (the mock proposes: toolbar on top, figures card top right, fitness graph bottom left).
-- Which key enters the focus view (proposed `E`; `G`, `F` and Space are taken).
-- Whether the fitness graph overlay can be hidden (proposed: a small "×" that hides it and a "Graph" toggle to bring it back).
+- **Overlays:** the toolbar on the top left of the figure, the figures card on the top right (about 330 px wide), the simplified fitness graph on the bottom left (about 440 × 150 px, lines, the "now" mark and the reference lines with their words, no tick numbers). The map is fitted to the area the overlays leave free, so that no part of the tour lies under one of them.
+- **Key:** `E` enters and leaves the focus view; Esc leaves it.
+- **Graph:** a "× hide" on the graph hides it and a "Graph" toggle in the toolbar brings it back.
 
 ## Comments

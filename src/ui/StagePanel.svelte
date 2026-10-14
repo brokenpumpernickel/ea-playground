@@ -67,6 +67,7 @@
   let showMap = $state(false);
   let showPopulationEdges = $state(true);
   let showOptimalTour = $state(false);
+  let showCityNumbers = $state(true);
   let seenTourEpoch: number | undefined;
   $effect(() => {
     if (seenTourEpoch === undefined) seenTourEpoch = session.epoch;
@@ -76,6 +77,7 @@
         showMap = false;
         showPopulationEdges = true;
         showOptimalTour = false;
+        showCityNumbers = true;
       }
     }
   });
@@ -130,7 +132,7 @@
   {/if}
   <div id="stagebody" style={blocks || land || tour ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
     {#if mapOpen}
-      <RouteMapView {session} bind:showPopulation={showPopulationEdges} bind:showOptimal={showOptimalTour} />
+      <RouteMapView {session} bind:showPopulation={showPopulationEdges} bind:showOptimal={showOptimalTour} bind:showNumbers={showCityNumbers} />
     {:else if landscapeOpen}
       <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} bind:trail />
     {:else if schemaOpen && blocks}
