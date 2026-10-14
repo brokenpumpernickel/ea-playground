@@ -4,7 +4,7 @@ import { defaultParams, defaultSeed, defaultSetup } from './config';
 import type { BagInfo } from './bag-context';
 import { blockInfoOf, type BlockInfo } from './block-context';
 import { landscapeInfoOf, type LandscapeInfo } from './landscape-context';
-import { tourInfoOf, type TourInfo } from './tour-cells';
+import { tourInfoOf, tourPlotExtras, type TourInfo } from './tour-cells';
 import { blockStatesModel, type BlockStatesModel } from './block-states-model';
 import { schemaHistory, type SchemaPoint, type SchemaSymbol } from './schema-model';
 import { changes, draftOf } from './drawer-model';
@@ -150,7 +150,8 @@ export function createSession(options: SessionOptions) {
     /** Every recorded generation's metrics and the plot axes, with the cursor's generation marked. */
     get plots(): PlotModel {
       void version;
-      return plotModel(run, shownMetrics().generation, run.setup.problem.knownOptimumFitness, run.setup.problem.mayBeInfeasible === true, (run.setup.problem as Partial<TrapProblem>).attractorFitness);
+      const p = run.setup.problem;
+      return plotModel(run, shownMetrics().generation, p.knownOptimumFitness, p.mayBeInfeasible === true, (p as Partial<TrapProblem>).attractorFitness, p.permutation ? tourPlotExtras(tourInfoOf(p as TspProblem)) : undefined);
     },
     get seed(): number {
       void version;

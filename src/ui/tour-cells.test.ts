@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { tspInstance, tspProblem, type TspOptions } from '../engine';
-import { briefParts, briefTour, routeDetail, routeOf, stripCell, thumbnail, tourHeader, tourInfoOf, tourLabel, tourParts, tourSentence, wholeTourUpTo } from './tour-cells';
+import { agreementFigures, agreementLine, bestEdgePairs, briefParts, briefTour, routeDetail, routeOf, stripCell, thumbnail, tourHeader, tourInfoOf, tourLabel, tourParts, tourSentence, tourStatsLines, wholeTourUpTo } from './tour-cells';
 
 const opts = (instance: string, n = 10, seed = 1): TspOptions => ({ instance, n, seed });
 const range = (n: number) => Array.from({ length: n }, (_, k) => k + 1);
@@ -174,5 +174,44 @@ describe('what the brief form shows', () => {
       const parts = briefParts(range(n));
       expect(`${parts.head.join(' ')}${parts.whole ? '' : ` … ${parts.hidden} more … ${parts.tail.join(' ')}`}`).toBe(briefTour(range(n)));
     }
+  });
+});
+
+describe('the figures printed under the plots of a TSP run', () => {
+  const problem = tspProblem(opts('berlin52'));
+  const info = tourInfoOf(problem);
+
+  test('the stats lines speak in lengths, with the gap of the best so far in per cent', () => {
+    const m = { generation: 3, best: -14004, bestSoFar: -13144, average: -16819.25, worst: -20378, evaluations: 48 };
+    expect(tourStatsLines(info, m)).toEqual(['generation 3 · best now 14,004 · best so far 13,144 (gap 74.3%)', 'average 16,819 · worst 20,378 · evaluations 48']);
+  });
+
+  test('a run at the optimum says gap 0.0%', () => {
+    const m = { generation: 0, best: -7542, bestSoFar: -7542, average: -7542, worst: -7542, evaluations: 12 };
+    expect(tourStatsLines(info, m)[0]).toBe('generation 0 · best now 7,542 · best so far 7,542 (gap 0.0%)');
+  });
+
+  test('real distances keep their decimal in the lines', () => {
+    const own = tourInfoOf(tspProblem(opts('circle', 8)));
+    const m = { generation: 1, best: -12.34, bestSoFar: -12.34, average: -15.5, worst: -20, evaluations: 4 };
+    expect(tourStatsLines(own, m)[1]).toBe('average 15.5 · worst 20.0 · evaluations 4');
+  });
+
+  test('edge agreement is counted: edges in every individual, edges in at least half, the mean share', () => {
+    expect(agreementFigures([1, 1, 0.5, 0.25])).toEqual({ inEvery: 2, atLeastHalf: 3, mean: 0.6875 });
+    expect(agreementFigures([1])).toEqual({ inEvery: 1, atLeastHalf: 1, mean: 1 });
+    expect(agreementFigures([0.2, 0.2])).toEqual({ inEvery: 0, atLeastHalf: 0, mean: 0.2 });
+    expect(agreementFigures([0.995, 1]).inEvery).toBe(1); // 199 of 200 is not every individual
+  });
+
+  test('and said in a line', () => {
+    expect(agreementLine([1, 1, 0.5, 0.25])).toBe('2 of 4 edges are in every individual · 3 in at least half · mean agreement 0.69');
+    expect(agreementLine([1, 1, 1])).toBe('3 of 3 edges are in every individual · 3 in at least half · mean agreement 1.00');
+    expect(agreementLine([0.5, 0.25, 0.25, 0.25, 0.25])).toBe('0 of 5 edges are in every individual · 1 in at least half · mean agreement 0.30');
+  });
+
+  test('the edges of a best tour are the pairs of neighbours, closing on the first city, from 1', () => {
+    expect(bestEdgePairs([2, 0, 3, 1])).toEqual([[3, 1], [1, 4], [4, 2], [2, 3]]);
+    expect(bestEdgePairs([0, 1])).toEqual([[1, 2], [2, 1]]);
   });
 });

@@ -153,7 +153,7 @@ test.describe('selecting an individual', () => {
       routes.push((await page.getByTestId('route-detail').getAttribute('data-route'))!);
     }
     expect(routes).toEqual(['1 2 3 4 5 6', '1 2 3 4 5 6', '1 2 3 4 5 6']);
-    await expect(page.getByTestId('distinct')).toHaveText('1 of 3 distinct');
+    await expect(page.getByTestId('distinct')).toHaveText('1 of 3 distinct routes');
   });
 });
 

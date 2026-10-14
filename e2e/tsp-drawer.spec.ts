@@ -147,7 +147,7 @@ test('a hand-edited population is typed as tours and read in words', async ({ pa
   await page.getByTestId('apply-reset').click();
   await page.getByRole('button', { name: 'Restart and apply' }).click();
   await page.keyboard.press('Escape');
-  await expect(page.getByTestId('distinct')).toHaveText('2 of 3 distinct'); // the second line is the first tour read backwards from city 4
+  await expect(page.getByTestId('distinct')).toHaveText('2 of 3 distinct routes'); // the second line is the first tour read backwards from city 4
 });
 
 test('a share link opens every instance as the same run, and opens at the instance it names', async ({ page }) => {

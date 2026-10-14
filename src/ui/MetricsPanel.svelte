@@ -4,6 +4,7 @@
   import ChosenStrip from './ChosenStrip.svelte';
   import { chosenShares } from './chosen-model';
   import DiversityPlot from './DiversityPlot.svelte';
+  import EdgeStrip from './EdgeStrip.svelte';
   import FitnessPlot from './FitnessPlot.svelte';
   import FunctionPlot from './FunctionPlot.svelte';
   import { landscapeModel } from './landscape-model';
@@ -12,6 +13,7 @@
   import { targetOf } from './problems';
   import { num } from './format';
   import SpreadPanel from './SpreadPanel.svelte';
+  import { tourStatsLines } from './tour-cells';
   import { spreadPanel, statsLines } from './spread-model';
   import type { Session } from './session.svelte';
 
@@ -25,7 +27,10 @@
   const blockStates = $derived(entry.genePanel === 'blocks' ? session.blockStates : undefined);
   const chosen = $derived(entry.genePanel === 'chosen' ? chosenShares(m) : undefined);
   const spread = $derived(entry.genePanel === 'spread' ? spreadPanel(plots) : undefined);
+  const edges = $derived(entry.genePanel === 'agreement' ? m.tour : undefined);
+  const tour = $derived(session.tour);
   const stats = $derived(spread ? statsLines(m) : undefined);
+  const tourStats = $derived(edges && tour ? tourStatsLines(tour, m) : undefined);
   const landscape = $derived(session.problem.landscape);
   const curve = $derived(landscape ? landscapeModel(landscape, session.table.rows) : undefined);
 </script>
@@ -33,7 +38,7 @@
 <section class="panel plot" style="left:24px;top:758px;width:820px;height:244px" aria-labelledby="fitness-heading">
   <div class="ph">
     <h2 id="fitness-heading">Fitness</h2>
-    <span class="r legend"><b>●</b> average &nbsp;<b>■</b> best of gen. &nbsp;<b>▲</b> best so far &nbsp;<b class="band">▒</b> min–max{#if session.landscape?.minimised} &nbsp;fitness = −f{/if}{#if plots.feasibleLine} &nbsp;<b>◇</b> best <u>feasible</u> so far{/if}</span>
+    <span class="r legend"><b>●</b> average &nbsp;<b>■</b> best of gen. &nbsp;<b>▲</b> best so far &nbsp;<b class="band">▒</b> min–max{#if session.landscape?.minimised} &nbsp;fitness = −f{/if}{#if tour} &nbsp;fitness = −length{/if}{#if plots.feasibleLine} &nbsp;<b>◇</b> best <u>feasible</u> so far{/if}</span>
   </div>
   <FitnessPlot model={plots} />
 </section>
@@ -60,11 +65,11 @@
 <section class="panel plot" style="left:1416px;top:758px;width:480px;height:244px" aria-labelledby="allele-heading">
   <div class="ph">
     <h2 id="allele-heading">{rates ? 'Match rate per position' : chosen ? 'Chosen per item' : blockStates ? 'Block states' : spread ? 'Spread' : entry.genePanel === 'agreement' ? 'Edge agreement' : 'Share of 1s per gene'}</h2>
-    <span class="r legend" data-testid="distinct">{m.distinct} of {size} distinct</span>
+    <span class="r legend" data-testid="distinct">{m.distinct} of {size} distinct{edges ? ' routes' : ''}</span>
   </div>
-  {#if rates}<MatchRateStrip {rates} />{:else if chosen}<ChosenStrip shares={chosen} />{:else if blockStates}<BlockStatesStrip model={blockStates} />{:else if spread}<SpreadPanel panel={spread} />{:else}<AlleleStrip shares={m.alleleFrequencies} />{/if}
-  <p class="summary" class:landscape={stats !== undefined} data-testid="summary">
-    {#if stats}{stats[0]}<br />{stats[1]}{:else}
+  {#if rates}<MatchRateStrip {rates} />{:else if chosen}<ChosenStrip shares={chosen} />{:else if blockStates}<BlockStatesStrip model={blockStates} />{:else if spread}<SpreadPanel panel={spread} />{:else if edges}<EdgeStrip shares={edges.agreement} route={edges.bestRoute} {size} />{:else}<AlleleStrip shares={m.alleleFrequencies} />{/if}
+  <p class="summary" class:landscape={stats !== undefined} class:tourstats={tourStats !== undefined} data-testid="summary">
+    {#if tourStats}{tourStats[0]}<br />{tourStats[1]}{:else if stats}{stats[0]}<br />{stats[1]}{:else}
     generation {m.generation} · best now {m.best} · best so far {m.bestSoFar}<br />
     average {num(Math.round(m.average * 10) / 10)} · worst {m.worst} · evaluations {m.evaluations}{#if m.feasible}{' · '}feasible {m.feasible.count} of {size}{/if}{/if}
   </p>

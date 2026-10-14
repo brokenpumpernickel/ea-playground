@@ -1027,3 +1027,17 @@ table.tsp td:nth-child(2) { padding-left:4px; padding-right:4px; overflow:visibl
 .rmstats tr.sep th, .rmstats tr.sep td { border-top:1px solid var(--axis); padding-top:8px; }
 .rmkey .k { font-weight:800; }
 .rmkey .k-a { color:var(--s1); } .rmkey .k-b { color:var(--s3); } .rmkey .k-new, .rmkey .k-sel { color:var(--flip); } .rmkey .k-rm { color:var(--flip-ink); }
+
+/* the labels of the reference lines of a tour's fitness plot sit on a halo, so a line behind them does not cut the letters */
+svg[data-plot="fitness"] text.refl { paint-order:stroke; stroke:var(--surface); stroke-width:4px; stroke-linejoin:round; }
+
+/* the TSP's edge agreement, in the place of the allele strip */
+.edgebars { display:flex; align-items:flex-end; gap:2px; height:80px; padding:4px 16px 0; box-sizing:border-box; }
+.edgebars .eg { flex:1 1 0; min-width:0; max-width:34px; text-align:center; }
+.edgebars .bar { border:1.5px solid var(--ink2); background:var(--seq4); border-radius:3px 3px 0 0; box-sizing:border-box; }
+.edgebars.labelled { gap:3px; }
+.edgebars .eg b { display:block; font-size:12px; line-height:14px; font-weight:600; }
+.spkey, .sphist { margin:2px 16px 0; font-size:13px; line-height:1.2; color:var(--ink2); }
+.sphist { font-size:14px; color:var(--ink); }
+.plot .summary.tourstats { font-size:14px; line-height:1.2; margin-top:3px; }
+.projector .spkey { font-size:14px; } .projector .sphist { font-size:15px; } .projector .plot .summary.tourstats { font-size:15px; }

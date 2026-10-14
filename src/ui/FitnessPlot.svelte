@@ -1,17 +1,23 @@
 <script lang="ts">
   import { num } from './format';
-  import type { PlotModel, PlotPoint } from './plot-models';
+  import { fitnessPlotBox, referenceLabels, type PlotModel, type PlotPoint } from './plot-models';
 
   let { model }: { model: PlotModel } = $props();
 
   const W = 800;
   const H = 188;
-  const L = 66;
+  // a tour plot has a wider margin for labels like −26,250 and its axis starts a little lower (see fitnessPlotBox)
+  const box = $derived(fitnessPlotBox(model));
+  const L = $derived(box.left);
   const R = 780;
   const T = 28;
   const B = 138;
+  const D = $derived(box.dataTop);
   const X = (generation: number) => L + ((R - L) * generation) / model.xMax;
-  const Y = (value: number) => B - ((B - T) * (value - model.yMin)) / (model.yMax - model.yMin);
+  const Y = (value: number) => B - ((B - D) * (value - model.yMin)) / (model.yMax - model.yMin);
+  /** A fitness as the axis and the labels write it. */
+  const fmt = (value: number) => (model.format ? model.format(value) : num(value));
+  const labels = $derived(model.nearest !== undefined && model.optimum !== undefined ? referenceLabels(Y(model.optimum), Y(model.nearest)) : undefined);
 
   const line = (points: readonly PlotPoint[], pick: (p: PlotPoint) => number) => points.map((p, k) => `${k ? 'L' : 'M'}${X(p.generation)},${Y(pick(p))}`).join(' ');
   const band = (points: readonly PlotPoint[]) =>
@@ -35,14 +41,15 @@
     const at = model.points[Math.min(model.now, model.points.length - 1)]!;
     const feasible = model.feasibleLine ? `, best feasible so far ${at.feasibleBestSoFar === null || at.feasibleBestSoFar === undefined ? 'none yet' : num(at.feasibleBestSoFar)}` : '';
     const zeros = model.attractor !== undefined ? ` All zeros scores ${num(model.attractor)}.` : '';
-    return `Fitness by generation, scale ${num(model.yMin)} to ${num(model.yMax)}. Generation ${at.generation}: average ${num(at.average)}, best of generation ${num(at.best)}, best so far ${num(at.bestSoFar)}${feasible}.${zeros}`;
+    const lines = model.nearest !== undefined ? ` Optimum ${fmt(model.optimum!)}, nearest neighbour ${fmt(model.nearest)}.` : '';
+    return `Fitness by generation, scale ${fmt(model.yMin)} to ${fmt(model.yMax)}. Generation ${at.generation}: average ${fmt(at.average)}, best of generation ${fmt(at.best)}, best so far ${fmt(at.bestSoFar)}${feasible}.${zeros}${lines}`;
   });
 </script>
 
 <svg viewBox="0 0 {W} {H}" width="100%" role="img" aria-label={summary} data-plot="fitness" data-now={model.now}>
   {#each model.yTicks as v (v)}
     <line class="gr" x1={L} x2={R} y1={Y(v)} y2={Y(v)} />
-    <text x={L - 8} y={Y(v) + 6} text-anchor="end">{num(v)}</text>
+    <text x={L - 8} y={Y(v) + 6} text-anchor="end">{fmt(v)}</text>
   {/each}
   {#each model.xTicks as g (g)}
     <text x={X(g)} y={B + 22} text-anchor="middle">{num(g)}</text>
@@ -55,7 +62,10 @@
   {/if}
   {#if model.optimum !== undefined}
     <line x1={L} x2={R} y1={Y(model.optimum)} y2={Y(model.optimum)} stroke="var(--ink2)" stroke-width="1.5" stroke-dasharray="2 5" data-optimum={model.optimum} />
-    <text x={R} y={model.optimum >= model.yMax ? Y(model.optimum) + 20 : Y(model.optimum) - 6} text-anchor="end" style="font-size:16px">optimum {num(model.optimum)}</text>
+    {#if !labels}<text x={R} y={model.optimum >= model.yMax ? Y(model.optimum) + 20 : Y(model.optimum) - 6} text-anchor="end" style="font-size:16px" data-label="optimum">optimum {fmt(model.optimum)}</text>{/if}
+  {/if}
+  {#if model.nearest !== undefined}
+    <line x1={L} x2={R} y1={Y(model.nearest)} y2={Y(model.nearest)} stroke="var(--ink2)" stroke-width="1.5" stroke-dasharray="9 5" data-nearest={model.nearest} />
   {/if}
 
   <path d={band(upToNow)} fill="var(--s1)" opacity=".14" data-series="band" />
@@ -69,11 +79,11 @@
       {@const y = Y(s.pick(p))}
       {@const o = p.future ? 0.3 : 1}
       {#if s.marker === 'square'}
-        <rect x={x - 5} y={y - 5} width="10" height="10" fill={s.color} stroke="var(--surface)" stroke-width="2" opacity={o} data-series={s.key} data-gen={p.generation} data-value={s.pick(p)} data-future={p.future}><title>generation {p.generation}: {s.label} {num(s.pick(p))}</title></rect>
+        <rect x={x - 5} y={y - 5} width="10" height="10" fill={s.color} stroke="var(--surface)" stroke-width="2" opacity={o} data-series={s.key} data-gen={p.generation} data-value={s.pick(p)} data-future={p.future}><title>generation {p.generation}: {s.label} {fmt(s.pick(p))}</title></rect>
       {:else if s.marker === 'triangle'}
-        <path d="M{x},{y - 7} L{x + 7},{y + 5} L{x - 7},{y + 5} Z" fill={s.color} stroke="var(--surface)" stroke-width="2" opacity={o} data-series={s.key} data-gen={p.generation} data-value={s.pick(p)} data-future={p.future}><title>generation {p.generation}: {s.label} {num(s.pick(p))}</title></path>
+        <path d="M{x},{y - 7} L{x + 7},{y + 5} L{x - 7},{y + 5} Z" fill={s.color} stroke="var(--surface)" stroke-width="2" opacity={o} data-series={s.key} data-gen={p.generation} data-value={s.pick(p)} data-future={p.future}><title>generation {p.generation}: {s.label} {fmt(s.pick(p))}</title></path>
       {:else}
-        <circle cx={x} cy={y} r="5" fill={s.color} stroke="var(--surface)" stroke-width="2" opacity={o} data-series={s.key} data-gen={p.generation} data-value={s.pick(p)} data-future={p.future}><title>generation {p.generation}: {s.label} {num(s.pick(p))}</title></circle>
+        <circle cx={x} cy={y} r="5" fill={s.color} stroke="var(--surface)" stroke-width="2" opacity={o} data-series={s.key} data-gen={p.generation} data-value={s.pick(p)} data-future={p.future}><title>generation {p.generation}: {s.label} {fmt(s.pick(p))}</title></circle>
       {/if}
     {/each}
   {/each}
@@ -90,4 +100,9 @@
 
   <line x1={X(model.now)} x2={X(model.now)} y1={T} y2={B} stroke="var(--ink)" stroke-width="2" data-now-line />
   <text class="ink" x={X(model.now) + (model.now === 0 ? 8 : 0)} y={T - 8} text-anchor={model.now === 0 ? 'start' : 'middle'} style="font-weight:700;font-size:16px">now</text>
+  <!-- the labels of a tour's two reference lines come last, on a halo, so that the cursor's line does not cut them -->
+  {#if labels && model.optimum !== undefined && model.nearest !== undefined}
+    <text class="refl" x={R} y={labels.optimum} text-anchor="end" style="font-size:16px" data-label="optimum">optimum {fmt(model.optimum)}</text>
+    <text class="refl" x={R} y={labels.nearest} text-anchor="end" style="font-size:16px" data-label="nearest">nearest neighbour {fmt(model.nearest)}</text>
+  {/if}
 </svg>

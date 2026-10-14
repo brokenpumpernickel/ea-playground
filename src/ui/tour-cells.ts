@@ -1,4 +1,5 @@
 import { canonicalRoute, tspPlaces, type TspInstance, type TspProblem } from '../engine';
+import type { TourPlotExtras } from './plot-models';
 
 /** Up to this many cities a table cell shows the whole tour; a longer tour is shortened and drawn as a thumbnail beside it. */
 export const wholeTourUpTo = 16;
@@ -144,4 +145,48 @@ export function stripCell(cities: number): 30 | 22 | 20 | 16 | 14 {
 export function briefParts(cities: readonly number[]): TourParts {
   if (cities.length <= 9) return { whole: true, head: cities, hidden: 0, tail: [] };
   return { whole: false, head: cities.slice(0, 5), hidden: cities.length - 7, tail: cities.slice(-2) };
+}
+
+/** The figures of a generation the stats lines use (a subset of the engine's metrics): fitness is minus the length. */
+export interface TourStatsInput {
+  readonly generation: number;
+  readonly best: number;
+  readonly bestSoFar: number;
+  readonly average: number;
+  readonly worst: number;
+  readonly evaluations: number;
+}
+
+/** The two lines under the plots of a TSP run, in lengths: best now, best so far with its gap to the optimum, the average, the worst, the evaluations. */
+export function tourStatsLines(info: TourInfo, m: TourStatsInput): [string, string] {
+  const length = (fitness: number) => info.lengthText(0 - fitness);
+  return [
+    `generation ${m.generation} · best now ${length(m.best)} · best so far ${length(m.bestSoFar)} (gap ${info.gapText(0 - m.bestSoFar)})`,
+    `average ${length(m.average)} · worst ${length(m.worst)} · evaluations ${m.evaluations}`,
+  ];
+}
+
+/** How many edges of the best tour every individual has, how many at least half of them have, and the mean share. */
+export function agreementFigures(shares: readonly number[]): { readonly inEvery: number; readonly atLeastHalf: number; readonly mean: number } {
+  return {
+    inEvery: shares.filter((s) => s >= 1).length,
+    atLeastHalf: shares.filter((s) => s >= 0.5).length,
+    mean: shares.reduce((sum, s) => sum + s, 0) / shares.length,
+  };
+}
+
+/** The line printed under the edge-agreement bars. */
+export function agreementLine(shares: readonly number[]): string {
+  const f = agreementFigures(shares);
+  return `${f.inEvery} of ${shares.length} edges are in every individual · ${f.atLeastHalf} in at least half · mean agreement ${f.mean.toFixed(2)}`;
+}
+
+/** The edges of a tour as pairs of cities from 1, in the order of the tour, the last closing on the first. */
+export function bestEdgePairs(tour: readonly number[]): [number, number][] {
+  return tour.map((city, k): [number, number] => [city + 1, tour[(k + 1) % tour.length]! + 1]);
+}
+
+/** What the TSP adds to the fitness plot: the nearest-neighbour tour's fitness, and a fitness written as a length with a real minus. */
+export function tourPlotExtras(info: TourInfo): TourPlotExtras {
+  return { nearest: 0 - info.instance.nearestNeighbour.length, format: (value) => `${value < 0 ? '−' : ''}${info.lengthText(Math.abs(value))}` };
 }

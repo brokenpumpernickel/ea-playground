@@ -46,6 +46,43 @@ export interface PlotModel {
   readonly feasibleLine?: boolean;
   /** True when the diversity plot has a second line, the Hamming diversity (binary-coded landscape). */
   readonly hammingLine?: boolean;
+  /** The TSP: the fitness of the nearest-neighbour tour, a second reference line beside the optimum's (it is never above it). */
+  readonly nearest?: number;
+  /** The TSP: how a fitness is written on the axis and in the labels (grouped digits, a real minus). */
+  readonly format?: (value: number) => string;
+  /** True when the axis labels are wide (the TSP's), and the margin on the left grows to hold them. */
+  readonly wideAxis?: boolean;
+}
+
+/** What the TSP adds to the fitness plot: where the nearest-neighbour tour lies and how a fitness is written. */
+export interface TourPlotExtras {
+  readonly nearest: number;
+  readonly format: (value: number) => string;
+}
+
+/**
+ * The box the fitness plot draws in, in the plot's own units: the left margin holds the widest tick label, `top` is where the
+ * cursor's line starts and `dataTop` where the top of the axis lies. A tour plot's axis ends at 0 and its optimum line can lie
+ * just under it, so its axis starts 18 below `top`, which leaves the optimum's label room above its line.
+ */
+export function fitnessPlotBox(model: Pick<PlotModel, 'wideAxis' | 'yTicks' | 'format'>): { left: number; right: number; top: number; dataTop: number; bottom: number } {
+  const widest = model.wideAxis && model.format && model.yTicks ? Math.max(...model.yTicks.map((v) => model.format!(v).length)) : 0;
+  return { left: model.wideAxis ? Math.max(66, 20 + widest * 11.5) : 66, right: 780, top: 28, dataTop: model.wideAxis ? 46 : 28, bottom: 138 };
+}
+
+/**
+ * The baselines of the labels of the optimum's line and the nearest-neighbour line (16 px type): the optimum's above its line,
+ * the nearest neighbour's below its line. The nearest-neighbour tour is never shorter than the optimum, so its line is never
+ * above the optimum's and the two labels, one outside each line, cannot meet however close the lines are. With no room above
+ * the top of the picture the first goes below its line, with no room below the bottom the second goes above its line.
+ */
+export function referenceLabels(optimumY: number, nearestY: number): { optimum: number; nearest: number } {
+  const { top, bottom } = fitnessPlotBox({} as never);
+  let optimum = optimumY - 6;
+  if (optimum - 16 < top - 4) optimum = optimumY + 20;
+  let nearest = nearestY + 20;
+  if (nearest + 4 > bottom + 2) nearest = nearestY - 6;
+  return { optimum, nearest };
 }
 
 const niceSteps = [1, 2, 4, 8, 10];
@@ -63,7 +100,7 @@ export function niceCeiling(value: number): number {
 
 const generationAxes = [15, 30, 50, 100, 200, 500, 1000, 2000];
 
-export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: number, optimum: number | undefined, feasibleLine = false, attractor?: number): PlotModel {
+export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: number, optimum: number | undefined, feasibleLine = false, attractor?: number, tour?: TourPlotExtras): PlotModel {
   const points = Array.from({ length: run.lastCycle + 1 }, (_, g): PlotPoint => {
     const m = metricsOfProblem(run.snapshot(g).state, run.setup.problem);
     return {
@@ -83,9 +120,10 @@ export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: n
     };
   });
   const top = Math.max(optimum ?? 0, ...points.map((p) => p.max));
-  const bottom = Math.min(optimum ?? 0, ...points.map((p) => p.min));
-  // a fitness that can be negative gets a floor at the next nice value below it, and the top is the nice ceiling above, or 0
-  const yMin = bottom < 0 ? -niceCeiling(-bottom) : 0;
+  const bottom = Math.min(optimum ?? 0, tour?.nearest ?? 0, ...points.map((p) => p.min));
+  // a fitness that can be negative gets a floor at the next nice value below it, and the top is the nice ceiling above, or 0;
+  // under a nearest-neighbour line there is a quarter more, so that its label has room below the line
+  const yMin = bottom < 0 ? -niceCeiling(-bottom * (tour ? 1.25 : 1)) : 0;
   const yMax = top > 0 || yMin === 0 ? niceCeiling(top) : 0;
   const xMax = generationAxes.find((limit) => limit >= run.lastCycle) ?? Math.ceil(run.lastCycle / 1000) * 1000;
   return {
@@ -100,5 +138,6 @@ export function plotModel(run: Run<GaSetup, GaParams, RunState, GaEvent>, now: n
     ...(attractor !== undefined ? { attractor } : {}),
     ...(feasibleLine ? { feasibleLine } : {}),
     ...(points.some((p) => p.hamming !== undefined) ? { hammingLine: true } : {}),
+    ...(tour ? { nearest: tour.nearest, format: tour.format, wideAxis: true } : {}),
   };
 }
