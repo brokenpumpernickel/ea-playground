@@ -43,7 +43,7 @@ describe('the TSP draft', () => {
     for (const o of [{ instance: 'berlin52' }, { instance: 'circle', n: 7 }, { instance: 'random', n: 11, seed: 3 }]) {
       const c = currentOf(o);
       const { truncation, ...params } = toParams(draftFor(c));
-      expect(truncation).toEqual({ enabled: false, lambda: 12 });
+      expect(truncation).toEqual({ enabled: false, lambda: 20 });
       expect(params).toEqual(c.params);
       expect(toSetup(draftFor(c), c.setup.problem)).toEqual({ problem: c.setup.problem, init: c.setup.init });
     }

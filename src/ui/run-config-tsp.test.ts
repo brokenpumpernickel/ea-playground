@@ -54,7 +54,7 @@ describe('a TSP configuration in a link', () => {
 
   test('switched-off crossover and mutation, elites, truncation and the stops round trip', () => {
     const config = make(optionsOf({ instance: 'att48' }), (d) => ({
-      params: { ...d.params, crossover: { ...d.params.crossover, enabled: false }, mutation: { ...d.params.mutation, enabled: false }, elites: 2, truncation: { enabled: true, lambda: 14 }, stop: { generationLimit: 80, targetEpsilon: 3, stagnationWindow: 12 } },
+      params: { ...d.params, crossover: { ...d.params.crossover, enabled: false }, mutation: { ...d.params.mutation, enabled: false }, elites: 2, truncation: { enabled: true, lambda: 20 }, stop: { generationLimit: 80, targetEpsilon: 3, stagnationWindow: 12 } },
     }));
     expect(decodeConfig(encodeConfig(config))).toEqual({ ok: true, config });
   });

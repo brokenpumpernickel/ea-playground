@@ -343,8 +343,43 @@ describe('how a fresh run starts', () => {
       expect(d.populationSize).toBeGreaterThan(1);
       expect(d.params.crossover).toMatchObject({ enabled: true, operator: 'ox' });
       expect(d.params.mutation).toMatchObject({ enabled: true, mode: 'per-individual', operator: 'inversion' });
-      expect(d.params.elites).toBe(1);
+      expect(d.params.elites).toBeGreaterThan(0);
       expect(d.params.stop.targetEpsilon).toBe(tspDefaultEpsilon(tspProblem(o)));
+    }
+  });
+});
+
+describe('the defaults, as measured and approved (milestone 6, ticket 13)', () => {
+  const everyInstance: TspOptions[] = [...tsplib.map((id) => opts(id)), opts('clusters'), opts('circle', 5), opts('circle', 15), opts('random', 5, 1), opts('random', 15, 2)];
+
+  test('a population of 20, tournament selection of size 3, order crossover at 0.9, inversion at 0.4 per individual and 2 elites, for every instance', () => {
+    for (const o of everyInstance) {
+      const d = tspDefaults(o);
+      expect(d.populationSize, o.instance).toBe(20);
+      expect(d.params.selection, o.instance).toEqual({ method: 'tournament', size: 3 });
+      expect(d.params.crossover, o.instance).toEqual({ enabled: true, operator: 'ox', probability: 0.9 });
+      expect(d.params.mutation, o.instance).toEqual({ enabled: true, mode: 'per-individual', probability: 0.4, operator: 'inversion' });
+      expect(d.params.elites, o.instance).toBe(2);
+    }
+  });
+
+  test('the generation limit is 300 up to 22 cities and 500 for the larger instances', () => {
+    for (const o of everyInstance) {
+      const n = tspProblem(o).chromosomeLength;
+      expect(tspDefaults(o).params.stop.generationLimit, `${o.instance} (${n} cities)`).toBe(n <= 22 ? 300 : 500);
+    }
+    expect(tspDefaults(opts('ulysses22')).params.stop.generationLimit).toBe(300);
+    expect(tspDefaults(opts('att48')).params.stop.generationLimit).toBe(500);
+    expect(tspDefaults(opts('eil51')).params.stop.generationLimit).toBe(500);
+  });
+
+  test('ε is the one for the instance and there is no stagnation window', () => {
+    for (const o of everyInstance) {
+      const stop = tspDefaults(o).params.stop;
+      expect(stop.targetEpsilon, o.instance).toBe(tspDefaultEpsilon(tspProblem(o)));
+      expect(stop.stagnationWindow, o.instance).toBeUndefined();
+      expect('stagnationWindow' in stop).toBe(false);
+      expect(stop.targetFitness).toBeUndefined();
     }
   });
 });

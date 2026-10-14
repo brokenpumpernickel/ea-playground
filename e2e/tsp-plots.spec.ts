@@ -191,7 +191,7 @@ for (const [width, height] of [
         await page.setViewportSize({ width, height });
         await open(page, options);
         const seen = new Set<string>();
-        for (let k = 0; k < 2 * 52; k++) {
+        for (let k = 0; k < 2 * 80; k++) {
           await page.keyboard.press('ArrowRight');
           const found = await page.evaluate(() => {
             const out: string[] = [];

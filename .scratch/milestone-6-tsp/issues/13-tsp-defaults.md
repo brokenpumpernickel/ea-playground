@@ -1,6 +1,6 @@
 # 13 TSP defaults by measurement
 
-Status: claimed (measured; waiting for the instructor's approval of the proposal)
+Status: resolved
 Type: measurement, review (needs instructor approval)
 Blocked by: 07
 Spec: ../spec.md
@@ -15,7 +15,7 @@ Measure, over at least 20 seeds (more where it matters), candidate defaults for 
 
 ## Comments
 
-Status note: measurements done (below); **the defaults in the registry are still the provisional ones (population 12, tournament 2, elites 1, limit 200, stagnation 50) until the instructor approves a proposal.**
+Status note: measurements done (below); the instructor approved the proposal as written and the defaults are set (see the Answer).
 
 ## Measurements
 
@@ -111,4 +111,8 @@ What a student sees with it (30 seeds): circle, Two clusters, random 12, burma14
 
 ## Answer
 
-(To be written when the instructor has approved the proposal and the defaults are set and pinned by a test.)
+The instructor approved the proposal as written. `tspDefaults` (`src/engine/tsp.ts`) now gives, for every instance: a random population of **20**, tournament selection of size **3**, order crossover at 0.9, inversion at 0.4 per individual, **2** elites, ε as before (half a unit for whole-number distances, 0.000001 for the own instances), **no stagnation window**, and a generation limit of **300 for up to 22 cities and 500 for the larger instances** (att48, eil51, berlin52). The registry (`problems.ts`) takes them from there, so the drawer, the menu and links show them.
+
+Pinned by tests: `tsp.test.ts` ("the defaults, as measured and approved"): the operators and numbers above for the six TSPLIB instances, Two clusters, circles of 5 and 15 cities and random ones of 5 and 15, the limit of 300 against 500 at the boundary (ulysses22 against att48, eil51), ε per instance and the absence of a stagnation window and of a target fitness; `problems-tsp.test.ts`: the registry's defaults for every catalogue instance equal them. Tests that had counted on the provisional numbers were updated (a generation now makes 18 offspring in 9 pairs, truncation's default λ is the population size, the explicit stop-limit boundary), and the e2e walks of two generations were lengthened to cover the longer generation; the two switched-off walks now also assert that they saw pairs and offspring (they had passed while seeing none once the generation got longer).
+
+The numbers behind the choice are above; the scripts were not kept.

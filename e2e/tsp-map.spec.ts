@@ -50,7 +50,7 @@ const openMap = async (page: Page) => {
   await expect(page.getByTestId('route-map-view')).toBeVisible();
 };
 
-const walk = async (page: Page, visit: (at: { stage: string; micro: number; cycle: number }) => Promise<void>, presses = 2 * 52) => {
+const walk = async (page: Page, visit: (at: { stage: string; micro: number; cycle: number }) => Promise<void>, presses = 2 * 80) => {
   for (let k = 0; k < presses; k++) {
     await page.keyboard.press('ArrowRight');
     const heading = await page.locator('#stage-heading').innerText();

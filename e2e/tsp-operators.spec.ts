@@ -40,7 +40,7 @@ const mutationOf = (kind: Move, pm = 0.6) => (p: GaParams): GaParams => ({ ...p,
 const both = (...fs: ((p: GaParams) => GaParams)[]) => (p: GaParams) => fs.reduce((q, f) => f(q), p);
 
 /** Steps micro-step by micro-step through two generations, calling `visit` after each with where the cursor is. */
-const walk = async (page: Page, visit: (at: { stage: string; micro: number; cycle: number }) => Promise<void>, presses = 2 * 52) => {
+const walk = async (page: Page, visit: (at: { stage: string; micro: number; cycle: number }) => Promise<void>, presses = 2 * 80) => {
   for (let k = 0; k < presses; k++) {
     await page.keyboard.press('ArrowRight');
     const heading = await page.locator('#stage-heading').innerText();
@@ -135,8 +135,10 @@ test.describe('the crossover cards say what the events say', () => {
     const change = (p: GaParams): GaParams => ({ ...p, crossover: { ...p.crossover, enabled: false } });
     await open(page, options, change);
     const { problem, run } = engine(options, change, 1);
+    let visited = 0;
     await walk(page, async ({ stage, micro, cycle }) => {
       if (stage !== 'Crossover' || micro === 0 || cycle !== 1) return;
+      visited++;
       const event = run.events(1).filter((e): e is CrossoverEvent => e.stage === 'crossover')[micro - 1]!;
       const card = page.locator(`[data-pair="${micro}"]`);
       await expect(card).toContainText('BYPASS');
@@ -144,7 +146,8 @@ test.describe('the crossover cards say what the events say', () => {
       await expect(card.getByTestId('child-note-' + event.children[0]!.offspring)).toHaveText('a copy of A');
       const narration = await page.getByTestId('narration').innerText();
       expect(narration).toContain(`Pair ${micro}: crossover is off → bypassed: children are copies, ${problem.lengthText(problem.lengthOf(event.children[0]!.chromosome))}`);
-    }, 30);
+    }, 50);
+    expect(visited, 'pairs were seen').toBeGreaterThan(5);
   });
 });
 
@@ -195,14 +198,17 @@ test.describe('the mutation cards say what the events say', () => {
     const change = (p: GaParams): GaParams => ({ ...p, mutation: { ...p.mutation, enabled: false } });
     await open(page, options, change);
     const { problem, run } = engine(options, change, 1);
+    let visited = 0;
     await walk(page, async ({ stage, micro, cycle }) => {
       if (stage !== 'Mutation' || micro === 0 || cycle !== 1) return;
+      visited++;
       const event = run.events(1).filter((e): e is MutationEvent => e.stage === 'mutation')[micro - 1]!;
       const card = page.locator(`[data-offspring="${event.offspring}"][data-state="revealed"]`);
       await expect(card).toContainText('BYPASS');
       await expect(card).toContainText('mutation is off');
       await expect(card.getByTestId('tour-length')).toHaveText(`unchanged · length ${problem.lengthText(problem.lengthOf(event.before))}`);
-    }, 45);
+    }, 75);
+    expect(visited, 'offspring were seen').toBeGreaterThan(10);
   });
 });
 

@@ -67,14 +67,18 @@ describe('how a TSP run starts', () => {
       const o = opts(c.id);
       expect(validateTsp(o)).toEqual([]);
       const d = defaultsOf(entry, o);
-      expect(d.init).toEqual({ kind: 'random', size: 12 });
-      expect(d.params.crossover).toMatchObject({ enabled: true, operator: 'ox' });
-      expect(d.params.mutation).toMatchObject({ enabled: true, mode: 'per-individual', operator: 'inversion' });
+      expect(d.init).toEqual({ kind: 'random', size: 20 });
+      expect(d.params.selection).toEqual({ method: 'tournament', size: 3 });
+      expect(d.params.crossover).toEqual({ enabled: true, operator: 'ox', probability: 0.9 });
+      expect(d.params.mutation).toEqual({ enabled: true, mode: 'per-individual', probability: 0.4, operator: 'inversion' });
+      expect(d.params.elites).toBe(2);
+      expect(d.params.stop.generationLimit).toBe(tspProblem(o).chromosomeLength <= 22 ? 300 : 500);
+      expect(d.params.stop.stagnationWindow).toBeUndefined();
       expect(d.params.stop.targetEpsilon).toBe(tspDefaultEpsilon(tspProblem(o)));
       expect(d.params.stop.targetFitness).toBeUndefined();
       expect(d.seed).toBeGreaterThanOrEqual(0);
     }
-    expect(entry.defaults.init).toEqual({ kind: 'random', size: 12 });
+    expect(entry.defaults.init).toEqual({ kind: 'random', size: 20 });
   });
 
   test('ε is half a unit for the whole-number instances and 0.000001 for the own ones', () => {

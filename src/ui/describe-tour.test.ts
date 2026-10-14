@@ -27,7 +27,7 @@ const small: TspOptions = { instance: 'circle', n: 8, seed: 1 };
 describe('the narration of a TSP run', () => {
   test('a crossover line gives the operator, the slice positions from 1 and the lengths of the children, never the tours', () => {
     const ox = lines(berlin, 'crossover', (p) => ({ ...p, crossover: { ...p.crossover, operator: 'ox', probability: 1 } }));
-    expect(ox).toHaveLength(6);
+    expect(ox).toHaveLength(9);
     for (const { e, text } of ox) {
       if (e.stage !== 'crossover') throw new Error('stage');
       const i = info(berlin);
@@ -59,7 +59,7 @@ describe('the narration of a TSP run', () => {
 
   test('a mutation line gives the draw, the move in words and the length before and after', () => {
     const all = lines(berlin, 'mutation', (p) => ({ ...p, mutation: { ...p.mutation, probability: 1, operator: 'inversion' } }));
-    expect(all).toHaveLength(11);
+    expect(all).toHaveLength(18);
     for (const { e, text } of all) {
       if (e.stage !== 'mutation') throw new Error('stage');
       expect(text).toMatch(new RegExp(`^Offspring ${e.offspring}: u = [\\d.]+ < pm 1 → reverse the slice from position ${e.move!.first + 1} to ${e.move!.second + 1}: length [\\d,]+ → [\\d,]+ \\([+−±][\\d,]+\\)$`));
@@ -75,7 +75,7 @@ describe('the narration of a TSP run', () => {
 
   test('an evaluation line has the length, the gap and the fitness, and no tour', () => {
     const evaluation = lines(berlin, 'evaluation');
-    expect(evaluation).toHaveLength(11);
+    expect(evaluation).toHaveLength(18);
     for (const { text } of evaluation) {
       expect(text).toMatch(/^Offspring \d+: length [\d,]+, [\d.]+% over the optimum 7,542 → fitness -[\d]+ \(individual \d+\)$/);
     }

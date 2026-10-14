@@ -109,7 +109,7 @@ test('changing the instance through the drawer restarts under the new instance a
   const options: TspOptions = { ...base, instance: 'berlin52' };
   const e = engineRun(options, 0);
   expect((await summary(page)).length).toBeGreaterThan(0);
-  expect(e.population).toHaveLength(12);
+  expect(e.population).toHaveLength(20);
   expect(e.population[0]!.chromosome).toHaveLength(52);
 });
 

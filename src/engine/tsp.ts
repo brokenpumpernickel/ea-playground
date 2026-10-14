@@ -353,20 +353,24 @@ export function tspDefaultEpsilon(problem: Pick<TspProblem, 'instance'>): number
 }
 
 /**
- * How a fresh run starts for these options, as plain data. Provisional: ticket 13 of milestone 6 replaces these numbers with
- * measured ones. A permutation takes order crossover and one mutation move per mutated individual.
+ * How a fresh run starts for these options, as plain data: the defaults measured over 30 seeds on every instance and approved
+ * (milestone 6, ticket 13). A population of 20 with tournaments of 3 and 2 elites reaches the optimum of the small instances in
+ * most runs and shows the large ones (att48, eil51, berlin52) closing a gap that stays far from the optimum; order crossover and
+ * one inversion per mutated individual were the best operators. The generation limit is 300 up to 22 cities and 500 beyond
+ * (the large instances are still improving at 300); there is no stagnation window by default, since a run's best tour improves in
+ * rare jumps after long stalls and any window shorter than the limit stops some runs that would improve.
  */
 export function tspDefaults(options: TspOptions): { readonly options: TspOptions; readonly populationSize: number; readonly params: GaParams } {
-  const epsilon = tspDefaultEpsilon(tspProblem(options));
+  const problem = tspProblem(options);
   return {
     options,
-    populationSize: 12,
+    populationSize: 20,
     params: {
-      selection: { method: 'tournament', size: 2 },
+      selection: { method: 'tournament', size: 3 },
       crossover: { enabled: true, operator: 'ox', probability: 0.9 },
       mutation: { enabled: true, mode: 'per-individual', probability: 0.4, operator: 'inversion' },
-      elites: 1,
-      stop: { generationLimit: 200, targetEpsilon: epsilon, stagnationWindow: 50 },
+      elites: 2,
+      stop: { generationLimit: problem.chromosomeLength <= 22 ? 300 : 500, targetEpsilon: tspDefaultEpsilon(problem) },
     },
   };
 }
