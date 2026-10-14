@@ -1,0 +1,205 @@
+import { test, type Page } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+import type { GaParams, LandscapeOptions, TspOptions } from '../src/engine';
+import { defaultsOf, entryOf } from '../src/ui/problems';
+import { configOf, encodeConfig } from '../src/ui/run-config';
+
+// THROWAWAY (milestone 7, ticket 01): takes the real app, with its real data, and rearranges the page into the focus view the
+// instructor asked for, to look at the layout. Nothing here is app code.
+const url = pathToFileURL(resolve('dist/index.html')).href;
+const dir = resolve('.scratch/milestone-7-bigger-views/mock/screenshots');
+
+const openTsp = async (page: Page, options: TspOptions, generations: number) => {
+  const entry = entryOf('tsp')!;
+  const d = defaultsOf(entry, options);
+  await page.goto(url + encodeConfig(configOf({ problem: entry.create(options), init: d.init }, d.params, 42, 'tsp', options)));
+  await page.getByRole('button', { name: 'Projector mode' }).click();
+  for (let g = 0; g < generations; g++) await page.keyboard.press('g');
+  await page.getByTestId('show-map').click();
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+};
+
+const styles = `
+  #m7 { position:absolute; left:24px; top:172px; width:1872px; height:830px; overflow:hidden; }
+  #m7 .ov { position:absolute; background:color-mix(in srgb, var(--surface) 93%, transparent); border:1.5px solid var(--axis); border-radius:12px; box-shadow:var(--elev); padding:8px 12px; }
+  #m7 .ov h3 { margin:0 0 4px; font-size:18px; }
+  #m7 .bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  #m7 .bar .tog, #m7 .bar .tab { font-size:16px; padding:2px 12px; }
+  #m7 .sep { width:1px; height:24px; background:var(--axis); }
+  #m7 .note { position:absolute; right:14px; bottom:96px; font-size:15px; color:var(--ink2); background:color-mix(in srgb, var(--surface) 90%, transparent); padding:2px 8px; border-radius:8px; }
+  #m7 svg.big { display:block; border:0; border-radius:0; background:var(--surface); }
+  #m7 .card table { border-collapse:collapse; }
+  #m7 .mini svg { width:100%; height:auto; display:block; padding:0; }
+  #m7 .mini svg [data-gen] { display:none; }
+  #m7 .mini svg path[data-series="band"], #m7 .mini svg path[data-series="band-future"] { display:none; }
+  #m7 .narr { position:absolute; left:12px; right:12px; bottom:10px; }
+`;
+
+/** Replace the panels by one panel with the toolbar, the figures card, the small graph and the narration over `inner`. */
+async function focus(page: Page, kind: 'map' | 'landscape', opts: { zoom?: number; centre?: [number, number]; name: string }) {
+  await page.evaluate(
+    ({ kind, zoom, centre, css }) => {
+      const canvas = document.querySelector('.canvas') as HTMLElement;
+      const st = document.createElement('style');
+      st.textContent = css;
+      document.head.appendChild(st);
+      const panel = document.createElement('section');
+      panel.className = 'panel';
+      panel.id = 'm7';
+      const W = 1872;
+      const H = 830;
+      const clone = <T extends Element>(el: T) => el.cloneNode(true) as T;
+      const narr = clone(document.querySelector('#narr')!) as HTMLElement;
+      narr.classList.add('narr');
+      narr.removeAttribute('style');
+      const fit = clone(document.querySelector('svg[data-plot="fitness"]')!) as SVGElement;
+      // the simplified graph: lines and the reference lines only, no tick numbers except the axis ends
+      for (const t of fit.querySelectorAll('text')) {
+        if (!t.hasAttribute('data-label') && t.textContent !== 'now') t.remove();
+      }
+      const mini = document.createElement('div');
+      mini.className = 'ov mini';
+      mini.style.cssText = 'left:14px;bottom:78px;width:440px;padding:6px 10px 2px;';
+      mini.innerHTML = '<h3>Fitness <span style="font-weight:400;font-size:15px;color:var(--ink2)">best · best so far · average <span style="margin-left:10px">× hide</span></span></h3>';
+      mini.appendChild(fit);
+
+      const bar = document.createElement('div');
+      bar.className = 'ov bar';
+      bar.style.cssText = 'left:14px;top:12px;';
+      const btn = (text: string, cls = 'tog', on = false) => `<button class="${cls}${on ? ' on' : ''}" type="button">${text}</button>`;
+      if (kind === 'map') {
+        const real = document.querySelector('.rmview .lbar')!;
+        const toggles = [...real.querySelectorAll('.tog')].map((b) => btn(b.textContent!.trim(), 'tog', b.classList.contains('on'))).join('');
+        const select = clone(real.querySelector('select')!) as HTMLElement;
+        bar.innerHTML = btn('⤡ Back to the panels (E)', 'tab on') + '<span class="sep"></span>' + toggles + btn('✓ City numbers', 'tog', true) + '<span class="sep"></span><label style="font-size:16px">Selected tour</label>';
+        bar.appendChild(select);
+        bar.insertAdjacentHTML('beforeend', '<span class="sep"></span>' + btn('+') + btn('−') + btn('Reset view') + btn('Graph', 'tog', true));
+      } else {
+        bar.innerHTML = btn('⤡ Back to the panels (E)', 'tab on') + '<span class="sep"></span>' + btn('Zoom to population') + btn('Reset view') + '<span class="sep"></span>' + btn('Trails: off', 'tog') + '<span class="sep"></span>' + btn('+') + btn('−') + btn('Graph', 'tog', true);
+      }
+
+      const card = document.createElement('div');
+      card.className = 'ov card';
+      card.style.cssText = 'right:14px;top:12px;width:330px;';
+      if (kind === 'map') {
+        const stats = clone(document.querySelector('.rmstats')!) as HTMLElement;
+        card.appendChild(stats);
+        const key = clone(document.querySelector('[data-testid="route-key"]')!) as HTMLElement;
+        key.style.cssText = 'margin:6px 0 0;font-size:13px;';
+        card.appendChild(key);
+      } else {
+        const summary = (document.querySelector('[data-testid="summary"]') as HTMLElement).innerText.split('\n');
+        card.innerHTML = `<h3>${(document.querySelector('#pop-heading') as HTMLElement).innerText}</h3><p style="margin:0;font-size:17px;line-height:1.35">${summary.join('<br>')}</p>`;
+      }
+
+      if (kind === 'map') {
+        const src = document.querySelector('svg[data-testid="route-map"]')!;
+        const svg = clone(src) as SVGSVGElement;
+        svg.classList.add('big');
+        svg.setAttribute('width', String(W));
+        svg.setAttribute('height', String(H));
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        const circles = [...svg.querySelectorAll<SVGCircleElement>('circle.city')];
+        const pos = circles.map((c) => [Number(c.getAttribute('cx')), Number(c.getAttribute('cy'))] as const);
+        const x0 = Math.min(...pos.map((p) => p[0]));
+        const x1 = Math.max(...pos.map((p) => p[0]));
+        const y0 = Math.min(...pos.map((p) => p[1]));
+        const y1 = Math.max(...pos.map((p) => p[1]));
+        const m = 90;
+        const s = Math.min((W - 2 * m) / (x1 - x0), (H - 2 * m - 80) / (y1 - y0));
+        const z = zoom ?? 1;
+        const cx = centre ? x0 + centre[0] * (x1 - x0) : (x0 + x1) / 2;
+        const cy = centre ? y0 + centre[1] * (y1 - y0) : (y0 + y1) / 2;
+        const at = pos.map((p) => [W / 2 + (p[0] - cx) * s * z, (H - 80) / 2 + 40 + (p[1] - cy) * s * z] as const);
+        circles.forEach((c, k) => {
+          c.setAttribute('cx', String(at[k]![0]));
+          c.setAttribute('cy', String(at[k]![1]));
+          c.setAttribute('r', c.classList.contains('ringed') ? '11' : '8');
+        });
+        for (const line of svg.querySelectorAll('line[data-edge]')) {
+          const [a, b] = line.getAttribute('data-edge')!.split('-').map((v) => Number(v) - 1) as [number, number];
+          line.setAttribute('x1', String(at[a]![0]));
+          line.setAttribute('y1', String(at[a]![1]));
+          line.setAttribute('x2', String(at[b]![0]));
+          line.setAttribute('y2', String(at[b]![1]));
+        }
+        for (const t of svg.querySelectorAll<SVGTextElement>('text.cl')) {
+          const k = Number(t.getAttribute('data-label')) - 1;
+          t.setAttribute('x', String(at[k]![0] + 12));
+          t.setAttribute('y', String(at[k]![1] - 10));
+          t.setAttribute('text-anchor', 'start');
+          t.setAttribute('font-size', z > 1 ? '17' : circles.length > 30 ? '13' : '17');
+        }
+        const axes = svg.querySelector('text.axes') as SVGTextElement;
+        axes.setAttribute('x', String(W - 14));
+        axes.setAttribute('y', String(H - 90));
+        axes.setAttribute('font-size', '15');
+        panel.appendChild(svg);
+        if (z > 1) panel.insertAdjacentHTML('beforeend', `<div class="note">zoomed ${z}× · wheel to zoom, drag to move, double-click to reset</div>`);
+      } else {
+        const lview = document.querySelector('.lview')!;
+        const figs = [...lview.querySelectorAll('figure')];
+        const wrap = document.createElement('div');
+        wrap.style.cssText = `position:absolute;left:0;top:70px;width:${W}px;height:${H - 150}px;display:flex;gap:16px;justify-content:center;align-items:flex-start;padding:0 12px;`;
+        for (const fig of figs) {
+          const cell = document.createElement('div');
+          cell.style.cssText = `flex:1 1 0;height:100%;overflow:hidden;position:relative;`;
+          const inner = fig as HTMLElement;
+          const w = inner.getBoundingClientRect().width;
+          const k = Math.min((W / 2 - 30) / w, (H - 170) / inner.getBoundingClientRect().height) * 0.98;
+          inner.style.cssText = `transform:scale(${k});transform-origin:top center;position:absolute;left:50%;margin-left:${-w / 2}px;top:0;`;
+          cell.appendChild(inner);
+          wrap.appendChild(cell);
+        }
+        panel.appendChild(wrap);
+      }
+
+      panel.append(bar, card, mini, narr);
+      for (const el of document.querySelectorAll('section.panel, #legend')) (el as HTMLElement).style.display = 'none';
+      panel.style.display = 'block';
+      canvas.appendChild(panel);
+    },
+    { kind, zoom: opts.zoom, centre: opts.centre, css: styles },
+  );
+  mkdirSync(dir, { recursive: true });
+  await page.screenshot({ path: `${dir}/${opts.name}.png` });
+}
+
+test('map, ulysses16', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await openTsp(page, { instance: 'ulysses16', n: 10, seed: 1 }, 62);
+  await page.getByTestId('map-select').selectOption({ index: 3 });
+  await focus(page, 'map', { name: 'a-map-ulysses16' });
+});
+
+test('map, berlin52', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await openTsp(page, { instance: 'berlin52', n: 10, seed: 1 }, 120);
+  await focus(page, 'map', { name: 'b-map-berlin52' });
+});
+
+test('map, berlin52 zoomed', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await openTsp(page, { instance: 'berlin52', n: 10, seed: 1 }, 120);
+  await focus(page, 'map', { name: 'c-map-berlin52-zoomed-4x', zoom: 4, centre: [0.42, 0.55] });
+});
+
+test('landscape', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  const entry = entryOf('landscape')!;
+  const options: LandscapeOptions = { function: 'himmelblau', representation: 'real', bitsPerVariable: 10 };
+  const d = defaultsOf(entry, options);
+  await page.goto(url + encodeConfig(configOf({ problem: entry.create(options), init: d.init }, d.params as GaParams, 42, 'landscape', options)));
+  await page.getByRole('button', { name: 'Projector mode' }).click();
+  for (let g = 0; g < 12; g++) await page.keyboard.press('g');
+  await page.getByTestId('show-landscape').click();
+  await page.getByTestId('trail-3').click();
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await focus(page, 'landscape', { name: 'd-landscape-himmelblau' });
+});

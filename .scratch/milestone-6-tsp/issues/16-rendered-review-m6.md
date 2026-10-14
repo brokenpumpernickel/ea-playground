@@ -1,6 +1,6 @@
 # 16 Rendered review and sign-off
 
-Status: open
+Status: resolved
 Type: review (needs instructor)
 Blocked by: 15
 Spec: ../spec.md
@@ -15,7 +15,7 @@ Verify the spec's acceptance criteria in a real browser and get the instructor's
 
 ## Comments
 
-Status note: everything below the instructor's own step-through is done and recorded; **the instructor's sign-off is still to come.** The published site was checked (below).
+Status note: everything is done and recorded. **The instructor signed milestone 6 off after the step-through**, with follow-up requests that became milestone 7 (`../../milestone-7-bigger-views/`): a toggle for the city numbers, zooming the map with the scroll wheel, and a view that gives the route map (and the landscape's plots) the whole centre of the screen, with a small fitness graph over it.
 
 ## Answer
 
@@ -34,7 +34,7 @@ State at the time of writing: 2,215 unit tests and 872 end-to-end tests pass (39
 5. **Views agree with the engine.** `tsp-map.spec.ts`: every drawn edge, its count and width, the best, selected and optimal tours, the stage marks at every micro-step of two generations for OX, PMX and CX, the figures beside the map, the same individual in the table and on the map, GEO, EUC_2D and ATT cities where their coordinates say; `tsp-plots.spec.ts`: plotted and printed values equal the metrics at every recorded generation, the edge-agreement bars, counts and heights; `tsp-table.spec.ts`: every row's tour, length and gap; `tsp-operators.spec.ts`: every pair and offspring of two generations for all six operators on 5, 16 and 52 cities.
 6. **Links and presets.** `run-config-tsp.test.ts`: every instance kind, every operator pair, switched-off operators, elites, truncation, the stops and a hand-edited population (with a rotation, a reversal and commas) round-trip as the same run (populations, events, metrics), and every bad-option case is said in words and applies nothing; `string-link.spec.ts` and `tsp-presets.spec.ts`: the link of each of the 37 presets of all six problems opens the same run in a fresh page; `presets-tsp.test.ts` and the statistics files: each TSP text's every number is asserted on its seed and over seeds 1–30.
 7. **Accessibility.** `tsp-a11y.spec.ts` (54) and the audit list in ticket 15: the colour-coded meanings with their non-colour carriers, a full generation by keyboard alone with the map and a selection from it, no unnamed control with the menu, drawer, map and selection open, reduced motion, projector mode and not, both sizes, ten cases (5 to 52 cities, 12 and 60 individuals, every instance kind, tours all the same and every other one reversed), the top bar with the longest preset and instance names, the ribbon, every stage pill and a three-digit generation counter. All cities on a line and duplicate cities at one place cannot be made through the app; the picture models are tested on them (`route-map-model.test.ts`, `tour-cells.test.ts`).
-8. **Hosting and review.** The classroom scenario above runs at 1920×1080 in projector mode and at 1366×768; the screenshots are in `.scratch/milestone-6-tsp/screenshots/` (30 for the stages, the marks, the drawer and the menu, and the classroom ones when written with `SHOTS=1`). The published site: see below. The instructor's step-through: **pending**.
+8. **Hosting and review.** The classroom scenario above runs at 1920×1080 in projector mode and at 1366×768; the screenshots are in `.scratch/milestone-6-tsp/screenshots/` (30 for the stages, the marks, the drawer and the menu, and the classroom ones when written with `SHOTS=1`). The published site: see below. The instructor's step-through: done; signed off, with the follow-ups above.
 
 ### The published site
 
@@ -43,4 +43,4 @@ After the push of commit `3181c01` (the deployment "Publish to GitHub Pages" for
 ### The rest of this ticket
 
 - The spec's "To decide" list is brought up to date (the defaults, the presets, the table's fixed columns, the brief form, the child the map shows, selecting from the map) and the glossary has the **route map**.
-- The instructor is asked to step through a full generation in projector mode with the route map open, on the published site, with the extreme cases too (every tour the same: a hand-edited population in the drawer), and to report problems, which are filed as tickets or fixed with a test that would have caught them.
+- The instructor stepped through a full generation in projector mode with the route map open and reported no defect; the requests (not defects) are milestone 7.
