@@ -47,14 +47,17 @@ export const zoomBy = (view: MapView, size: Size, factor: number): MapView => zo
 /** A drag of (dx, dy) window pixels: the picture goes with the pointer. */
 export const panBy = (view: MapView, size: Size, dx: number, dy: number): MapView => clampView({ zoom: view.zoom, cx: view.cx - dx / view.zoom, cy: view.cy - dy / view.zoom }, size);
 
+/** The size of a city number on screen, in px. It is the size the map has always drawn them at: the page's 18 px for the text of every plot. */
+export const cityNumberPx = 18;
+
 /**
- * The size of the city numbers: those of the first version for the whole map (13, 11 and 9 px by the number of cities, none
- * above 52, where they would only smear), and full size once zoomed in to twice or more, where the cities are far enough apart.
+ * The size of the city numbers: none when switched off; 18 px whenever they are shown, as in the first version. Above 52 cities
+ * a whole map would only smear them, so they are left out until the picture is zoomed in to twice or more, where the cities
+ * are far enough apart.
  */
 export function cityNumberSize(cities: number, zoom: number, show: boolean): number {
   if (!show) return 0;
-  if (zoom >= 2) return 13;
-  return cities <= 16 ? 13 : cities <= 30 ? 11 : cities <= 52 ? 9 : 0;
+  return cities <= 52 || zoom >= 2 ? cityNumberPx : 0;
 }
 
 /** A number sits up and to the right of its city, or down and to the left near an edge of the picture, so it never leaves it. */

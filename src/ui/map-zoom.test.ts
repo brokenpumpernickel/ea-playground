@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cityNumberSize, clampView, labelPlacement, maxZoom, minZoom, panBy, resetView, toScreen, visibleCity, wholeView, zoomAbout, zoomBy, zoomNote, type MapView } from './map-zoom';
+import { cityNumberPx, cityNumberSize, clampView, labelPlacement, maxZoom, minZoom, panBy, resetView, toScreen, visibleCity, wholeView, zoomAbout, zoomBy, zoomNote, type MapView } from './map-zoom';
 
 const size = { width: 740, height: 292 };
 const near = (a: readonly [number, number], b: readonly [number, number]) => {
@@ -120,22 +120,16 @@ describe('what is on screen keeps its size', () => {
 });
 
 describe('the city numbers', () => {
-  it('keep the sizes of milestone 6 in the whole map: 13, 11 and 9 px by the number of cities, none above 52', () => {
-    expect(cityNumberSize(5, 1, true)).toBe(13);
-    expect(cityNumberSize(16, 1, true)).toBe(13);
-    expect(cityNumberSize(17, 1, true)).toBe(11);
-    expect(cityNumberSize(30, 1, true)).toBe(11);
-    expect(cityNumberSize(31, 1, true)).toBe(9);
-    expect(cityNumberSize(52, 1, true)).toBe(9);
-    expect(cityNumberSize(53, 1, true)).toBe(0);
+  it('are drawn at 18 px, the size the map always had them, for every map of up to 52 cities, whole or zoomed', () => {
+    for (const n of [5, 16, 17, 30, 31, 52]) for (const z of [1, 1.5, 2, 13, 40]) expect(cityNumberSize(n, z, true)).toBe(18);
+    expect(cityNumberPx).toBe(18);
   });
 
-  it('are shown at full size (13 px) once zoomed in far enough, even for 52 cities and for more than 52', () => {
-    expect(cityNumberSize(52, 1.5, true)).toBe(9);
-    expect(cityNumberSize(52, 2, true)).toBe(13);
-    expect(cityNumberSize(52, 40, true)).toBe(13);
-    expect(cityNumberSize(60, 2, true)).toBe(13);
+  it('are left out of a whole map of more than 52 cities and drawn once it is zoomed in to 2× or more', () => {
+    expect(cityNumberSize(53, 1, true)).toBe(0);
     expect(cityNumberSize(60, 1.99, true)).toBe(0);
+    expect(cityNumberSize(60, 2, true)).toBe(18);
+    expect(cityNumberSize(60, 40, true)).toBe(18);
   });
 
   it('are not drawn at all when switched off, at every zoom', () => {
@@ -144,7 +138,7 @@ describe('the city numbers', () => {
 
   it('never leave the picture: a label of any number at any visible city lies inside the picture', () => {
     for (const text of ['1', '9', '10', '52', '100']) {
-      for (const fontSize of [9, 11, 13]) {
+      for (const fontSize of [12, 18, 24]) {
         for (let x = 6; x <= size.width - 6; x += 7) {
           for (let y = 6; y <= size.height - 6; y += 7) {
             const at = labelPlacement(x, y, text, fontSize, size);

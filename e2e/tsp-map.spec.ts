@@ -257,7 +257,7 @@ test('a restart keeps the route map with its toggles; a problem without a tour s
   await page.getByTestId('toggle-optimal').click();
   await page.getByTestId('toggle-population').click();
   await page.keyboard.press('g');
-  await page.getByRole('button', { name: 'Reset' }).click();
+  await page.getByRole('button', { name: 'Reset', exact: true }).click();
   await expect(page.getByTestId('route-map-view')).toBeVisible();
   await expect(page.getByTestId('toggle-optimal')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByTestId('toggle-population')).toHaveAttribute('aria-pressed', 'false');

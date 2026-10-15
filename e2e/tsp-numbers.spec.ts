@@ -23,15 +23,16 @@ const ulysses: TspOptions = { instance: 'ulysses16', n: 10, seed: 1 };
 const berlin: TspOptions = { instance: 'berlin52', n: 10, seed: 1 };
 
 for (const [label, options, count, size] of [
-  ['16 cities', ulysses, 16, '13'],
-  ['52 cities', berlin, 52, '9'],
+  ['16 cities', ulysses, 16, '18'],
+  ['52 cities', berlin, 52, '18'],
 ] as const) {
-  test(`the city numbers are on by default for ${label}, one beside every dot, at the size of milestone 6`, async ({ page }) => {
+  test(`the city numbers are on by default for ${label}, one beside every dot, at 18 px, the size they have always had`, async ({ page }) => {
     await open(page, options);
     await expect(page.getByTestId('toggle-numbers')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('toggle-numbers')).toHaveText('✓ City numbers');
     await expect(numbers(page)).toHaveCount(count);
-    await expect(numbers(page).first()).toHaveAttribute('font-size', size);
+    await expect(numbers(page).first()).toHaveAttribute('data-size', size);
+    expect(await numbers(page).first().evaluate((e) => getComputedStyle(e).fontSize)).toBe(`${size}px`);
     expect(await numbers(page).evaluateAll((els) => els.map((e) => e.textContent))).toEqual(Array.from({ length: count }, (_, k) => String(k + 1)));
   });
 
@@ -69,7 +70,7 @@ test('switched off, the numbers stay off through steps, a stage, the other tab a
   await page.getByTestId('show-map').click();
   await expect(page.getByTestId('toggle-numbers')).toHaveAttribute('aria-pressed', 'false');
   await expect(numbers(page)).toHaveCount(0);
-  await page.getByRole('button', { name: 'Reset' }).click();
+  await page.getByRole('button', { name: 'Reset', exact: true }).click();
   await expect(page.locator('#pop-heading')).toHaveText('Population · generation 0');
   await expect(page.getByTestId('route-map-view')).toBeVisible();
   await expect(page.getByTestId('toggle-numbers')).toHaveAttribute('aria-pressed', 'false');

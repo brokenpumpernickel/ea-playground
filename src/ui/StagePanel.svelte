@@ -10,6 +10,7 @@
   import { evaluationModel, replacementModel } from './outcome-models';
   import PairingView from './PairingView.svelte';
   import RouteMapView from './RouteMapView.svelte';
+  import type { MapView } from './map-zoom';
   import ReplacementView from './ReplacementView.svelte';
   import RouletteView from './RouletteView.svelte';
   import { pairingModel, selectionModel, tournamentModel } from './selection-models';
@@ -68,6 +69,16 @@
   let showPopulationEdges = $state(true);
   let showOptimalTour = $state(false);
   let showCityNumbers = $state(true);
+  /** The map's zoom and pan: kept across steps, tabs and restarts of the same instance, started over by another one. */
+  let mapZoom = $state<MapView | undefined>(undefined);
+  const instanceKey = $derived(tour ? `${tour.instance.name}|${tour.cities}|${tour.places.map((p) => p.join(',')).join(';')}` : '');
+  let seenInstance = '';
+  $effect(() => {
+    if (instanceKey !== seenInstance) {
+      seenInstance = instanceKey;
+      mapZoom = undefined;
+    }
+  });
   let seenTourEpoch: number | undefined;
   $effect(() => {
     if (seenTourEpoch === undefined) seenTourEpoch = session.epoch;
@@ -132,7 +143,7 @@
   {/if}
   <div id="stagebody" style={blocks || land || tour ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
     {#if mapOpen}
-      <RouteMapView {session} bind:showPopulation={showPopulationEdges} bind:showOptimal={showOptimalTour} bind:showNumbers={showCityNumbers} />
+      <RouteMapView {session} bind:showPopulation={showPopulationEdges} bind:showOptimal={showOptimalTour} bind:showNumbers={showCityNumbers} bind:zoom={mapZoom} />
     {:else if landscapeOpen}
       <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} bind:trail />
     {:else if schemaOpen && blocks}

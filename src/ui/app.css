@@ -999,7 +999,11 @@ table.tsp td:nth-child(2) { padding-left:4px; padding-right:4px; overflow:visibl
 /* the TSP's route map: the second view of the stage panel */
 .rmview { display:flex; flex-direction:column; gap:4px; height:100%; }
 .rmrow { display:flex; gap:20px; align-items:flex-start; }
-.rmmap { border:2px solid var(--axis); border-radius:8px; background:var(--surface); display:block; flex:none; }
+.rmframe { flex:none; border-radius:10px; }
+.rmframe:focus-visible { outline:3px solid var(--acc); outline-offset:3px; }
+.rmmap { border:2px solid var(--axis); border-radius:8px; background:var(--surface); display:block; flex:none; touch-action:none; user-select:none; -webkit-user-select:none; }
+.rmmap.zoomed { cursor:grab; }
+.rmmap.zoomed:active { cursor:grabbing; }
 .rmmap line { stroke-linecap:round; fill:none; }
 .rmmap .re-population line { stroke:var(--ink2); opacity:.38; }
 .rmmap .re-population.dim line { opacity:.14; }
@@ -1018,7 +1022,9 @@ table.tsp td:nth-child(2) { padding-left:4px; padding-right:4px; overflow:visibl
 .rmmap .city { fill:var(--surface); stroke:var(--ink); stroke-width:2; }
 .rmmap .city.ringed { stroke-width:3.5; fill:var(--acc-tint); }
 .rmmap .cl { fill:var(--ink); font-weight:600; paint-order:stroke; stroke:var(--surface); stroke-width:3px; stroke-linejoin:round; }
-.rmmap .axes { fill:var(--ink2); font-size:12px; }
+.rmmap .axes { fill:var(--ink2); font-size:12px; paint-order:stroke; stroke:var(--surface); stroke-width:3px; stroke-linejoin:round; }
+.rmside { width:290px; flex:none; }
+.rmgap { margin:6px 0 0; }
 .rmstats { width:290px; flex:none; border-collapse:collapse; }
 .rmstats caption { text-align:left; font-weight:800; font-size:19px; padding:0 0 4px; }
 .rmstats th, .rmstats td { font-size:17px; padding:3px 8px 3px 0; height:auto; border:0; text-transform:none; letter-spacing:0; color:var(--ink); font-weight:500; text-align:left; white-space:nowrap; }
