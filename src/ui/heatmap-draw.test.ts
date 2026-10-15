@@ -13,6 +13,12 @@ describe('the heatmap’s layout and pixel mapping', () => {
     expect(layout.T).toBeGreaterThan(0);
   });
 
+  test('there is a row above the plot for the colour scale title (12 px type, baseline at 16), clear of the top label of the scale (12 px type, baseline 4 below the top of the plot)', () => {
+    // the title's baseline is 16 and its descenders reach about 3 below it; the top label's baseline is 4 below the top of the plot and its capitals rise about 9 above it
+    expect(layout.T + 4 - 9).toBeGreaterThanOrEqual(16 + 3 + 2);
+    for (const [w, h] of [[520, 270], [725, 410], [892, 620]] as const) expect(heatLayout(w, h).T).toBe(layout.T);
+  });
+
   test('the corners of the region are the corners of the plot, y growing upward in the plane and downward on the canvas', () => {
     const lowLeft = pixelOf(layout, region, -5, -5);
     const highRight = pixelOf(layout, region, 5, 5);

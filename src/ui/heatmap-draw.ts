@@ -10,7 +10,7 @@ export interface HeatLayout {
   readonly B: number;
 }
 
-export const heatLayout = (width: number, height: number): HeatLayout => ({ L: 48, T: 12, R: width - 78, B: height - 38 });
+export const heatLayout = (width: number, height: number): HeatLayout => ({ L: 48, T: 30, R: width - 78, B: height - 38 });
 
 /** The number of pixels across and down the plot (the first pixel is the region's near edge, the last its far edge). */
 const plotSize = ({ L, T, R, B }: HeatLayout) => ({ pw: Math.round(R - L), ph: Math.round(B - T) });
@@ -174,7 +174,9 @@ export function drawHeatmap(canvas: HTMLCanvasElement, info: LandscapeInfo, regi
     const v = min + ((max - min) * k) / 4;
     ctx.fillText(formatReal([v], Math.abs(max - min) < 5 ? 2 : 0), sx + 22, B - (ph * k) / 4 + 4);
   }
+  // the scale's title has a row of its own above the plot, at the canvas's right edge, clear of the top label of the scale
   ctx.font = 'bold 12px sans-serif';
-  ctx.fillText(info.minimised ? 'fitness = −f' : 'fitness', sx - 4, T - 2);
+  ctx.textAlign = 'right';
+  ctx.fillText(info.minimised ? 'fitness = −f' : 'fitness', canvas.width - 6, 16);
   return layout;
 }
