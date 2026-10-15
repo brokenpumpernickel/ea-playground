@@ -212,6 +212,10 @@ _Avoid_: Greedy tour (the word is used for the heuristic in general)
 The second view of the stage panel of a TSP run: the cities as numbered dots with the population's edges (thicker where more individuals use them), the best tour of the generation, the selected individual's tour and, on request, the optimal tour; while crossover or mutation is stepped, the child's edges by origin or the edges a mutation took out and put in.
 _Avoid_: Tour plot, graph view
 
+**Focus view**:
+A figure (the route map, or the landscape's heatmap and surface) given the whole centre of the screen in place of the stage panel, the population table, the legend line and the plots, with the toolbar, the figures of the generation and a small fitness graph laid over its corners. The run keeps running and stepping inside it; the panels it replaces are only out of sight. A view setting, like the others: kept across steps and restarts, started over by another problem, not part of a link.
+_Avoid_: Full screen, overlay, zoom mode (zooming is separate and works with or without it)
+
 ### Selection and variation
 
 **Mating pool**:

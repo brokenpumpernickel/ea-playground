@@ -131,3 +131,43 @@ for (const [label, options, size] of [
     await expect(page.locator('svg[data-plot="fitness"] text[data-label="nearest"]')).toBeVisible();
   });
 }
+
+test('the published site gives the route map the whole centre (E), zooms it with the wheel and leaves with Esc', async ({ page }) => {
+  const options: TspOptions = { instance: 'berlin52', n: 10, seed: 1 };
+  const defaults = tspDefaults(options);
+  const setup = { problem: tspProblem(options), init: { kind: 'random' as const, size: 20 } };
+  await page.goto(published! + encodeConfig(configOf(setup, defaults.params, 31, 'tsp', options)));
+  await page.getByTestId('show-map').click();
+  await page.keyboard.press('e');
+  await expect(page.getByTestId('stage-panel')).toHaveAttribute('data-focus', 'true');
+  await expect(page.locator('svg[data-plot="fitness-mini"]')).toBeVisible();
+  await expect(page.getByTestId('focus-card')).toContainText('Generation 0');
+  const box = (await page.getByTestId('route-map').boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -400);
+  expect(Number(await page.getByTestId('route-map').getAttribute('data-zoom'))).toBeGreaterThan(2);
+  await page.keyboard.press('g');
+  await expect(page.locator('svg[data-plot="fitness-mini"]')).toHaveAttribute('data-now', '1');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('stage-panel')).not.toHaveAttribute('data-focus', 'true');
+});
+
+test('the published site gives the landscape the whole centre and zooms the heatmap and the surface', async ({ page }) => {
+  const options: LandscapeOptions = { function: 'himmelblau', representation: 'real', bitsPerVariable: 10 };
+  const defaults = landscapeDefaults(options);
+  const setup = { problem: landscape.create(options), init: { kind: 'random' as const, size: 12 } };
+  await page.goto(published! + encodeConfig(configOf(setup, defaults.params, 31, 'landscape', options)));
+  await page.getByTestId('show-landscape').click();
+  await page.keyboard.press('e');
+  await expect(page.getByTestId('stage-panel')).toHaveAttribute('data-focus', 'true');
+  const heat = (await page.getByTestId('heatmap').boundingBox())!;
+  await page.mouse.move(heat.x + heat.width / 2, heat.y + heat.height / 2);
+  await page.mouse.wheel(0, -300);
+  expect(Number(await page.getByTestId('heatmap').getAttribute('data-zoom'))).toBeGreaterThan(1);
+  const surface = (await page.getByTestId('surface').boundingBox())!;
+  await page.mouse.move(surface.x + surface.width / 2, surface.y + surface.height / 2);
+  await page.mouse.wheel(0, -300);
+  expect(Number(await page.getByTestId('surface').getAttribute('data-zoom'))).toBeGreaterThan(1);
+  await page.getByTestId('reset-view').click();
+  await expect(page.getByTestId('heatmap')).toHaveAttribute('data-region', '-5,5,-5,5');
+});
