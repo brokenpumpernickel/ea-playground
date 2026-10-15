@@ -264,7 +264,7 @@ export function routeMapModel(input: RouteMapInput): RouteMapModel {
     bestSoFar: figure(lengthOfFitness(input.bestSoFar)),
     average: figure(average),
     optimum: { length: info.lengthText(info.optimum), note: info.instance.optimumSource === 'published' ? 'published' : 'exact' } as MapFigure,
-    nearestNeighbour: figure(nearest),
+    nearestNeighbour: { ...figure(nearest), note: `from city ${info.instance.nearestNeighbour.start + 1}` },
   };
 
   // the text alternative: a sentence and a table of the tours that are marked

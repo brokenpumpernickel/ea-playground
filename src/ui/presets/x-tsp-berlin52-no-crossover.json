@@ -3,7 +3,7 @@
   "problem": "tsp",
   "name": "No crossover: mutation alone",
   "lesson": "Without crossover the offspring are copies of their parents before they mutate; mutation alone is a respectable search here, and crossover helps in most runs but not in all.",
-  "lookFor": "Same instance, seed and starting population as “berlin52: the nearest neighbour and the optimum”. At generation 200 the best tour is 50.4 % over the optimum (with order crossover: 37.6 %) and at 500 it is 19.4 % over (16.6 %), at 9,005 just above the nearest-neighbour tour. Over seeds 1 to 30 the run with order crossover is ahead after 200 generations in 25 runs and after 500 generations in 20.",
+  "lookFor": "Same instance, seed and starting population as “berlin52: the nearest neighbour and the optimum”. At generation 200 the best tour is 50.4 % over the optimum (with order crossover: 37.6 %) and at 500 it is 19.4 % over (16.6 %), at 9,005, 10.1 % above the best nearest-neighbour tour (8,181). Over seeds 1 to 30 the run with order crossover is ahead after 200 generations in 25 runs and after 500 generations in 20.",
   "seed": 15,
   "options": {
     "instance": "berlin52",

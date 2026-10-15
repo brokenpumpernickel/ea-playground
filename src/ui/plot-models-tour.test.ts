@@ -28,7 +28,7 @@ describe('the fitness plot of a tour run', () => {
     const o: TspOptions = { instance: 'berlin52', n: 10, seed: 1 };
     const { problem, extras } = extrasOf(o);
     const model = plotModel(run(o, 3), 3, problem.knownOptimumFitness, false, undefined, extras);
-    expect(model.nearest).toBe(-8980);
+    expect(model.nearest).toBe(-8181);
     expect(model.optimum).toBe(-7542);
     expect(model.format!(-26250)).toBe('−26,250');
     expect(model.format!(0)).toBe('0');

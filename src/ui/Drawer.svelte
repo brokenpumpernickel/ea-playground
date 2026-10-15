@@ -127,7 +127,7 @@
     const where = instance.source ? `${instance.source}. ` : '';
     const optimum = instance.optimumSource === 'published' ? 'published; the stored optimal tour has exactly this length' : 'exact, found by Held–Karp or by the circle\'s perimeter';
     const weak = instance.coordinates.length >= 40 ? ' A plain GA ends far from the optimum on an instance this size within a classroom number of generations; the gap to it is shown.' : '';
-    return `${instance.comment}. ${instance.coordinates.length} cities; distance rule ${instance.ruleText}. ${where}Optimum ${lengthText(instance.optimum, d)} (${optimum}); the nearest-neighbour tour from city 1 gives ${lengthText(instance.nearestNeighbour.length, d)}.${weak}`;
+    return `${instance.comment}. ${instance.coordinates.length} cities; distance rule ${instance.ruleText}. ${where}Optimum ${lengthText(instance.optimum, d)} (${optimum}); the best nearest-neighbour tour (tried from every city as the start; it begins at city ${instance.nearestNeighbour.start + 1}) gives ${lengthText(instance.nearestNeighbour.length, d)}.${weak}`;
   });
   const chooseInstance = (value: string) => {
     draft = withInstance($state.snapshot(draft) as Draft, { instance: value });

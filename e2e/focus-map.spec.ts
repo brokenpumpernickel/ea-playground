@@ -147,7 +147,8 @@ test('the figures card has the figures of the generation, equal to the engine at
     expect(await text(page, 'stat-best-so-far')).toBe(f.so);
     expect(await text(page, 'stat-average')).toBe(f.avg);
     expect(await text(page, 'stat-optimum')).toBe('7,542');
-    expect(await text(page, 'stat-nearest')).toBe('8,980');
+    expect(await text(page, 'stat-nearest')).toBe('8,181');
+    await expect(page.getByTestId('focus-card')).toContainText('Nearest neighbour = the shortest of the nearest-neighbour tours tried from every city as the start (here from city 40)');
   }
   await expect(page.getByTestId('route-key')).toBeVisible();
   expect(await page.getByTestId('route-key').evaluate((e) => !!e.closest('[data-testid="focus-card"]'))).toBe(true);
@@ -190,7 +191,7 @@ test('the simplified fitness graph equals the metrics at every generation, and s
     expect(await graph.getAttribute('aria-label')).toBe(await page.locator('svg[data-plot="fitness"]').getAttribute('aria-label'));
   }
   await expect(graph.locator('text[data-label="optimum"]')).toHaveText('optimum −7,542');
-  await expect(graph.locator('text[data-label="nearest"]')).toHaveText('nearest neighbour −8,980');
+  await expect(graph.locator('text[data-label="nearest"]')).toHaveText('nearest neighbour −8,181');
   // the three markers differ in shape, so colour is not the only carrier
   const shapes = await graph.locator('[data-mini]').evaluateAll((els) => els.map((e) => e.tagName.toLowerCase()));
   expect(new Set(shapes).size).toBe(3);

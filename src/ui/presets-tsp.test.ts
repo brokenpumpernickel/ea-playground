@@ -75,7 +75,7 @@ describe('the TSP preset files', () => {
 describe('the texts say exactly what these tests assert', () => {
   // each number a text quotes is one a test below (or in the statistics files) checks; this keeps the text and the checks together
   const quoted: [string, string[]][] = [
-    ['t-tsp-berlin52', ['generation 500', '8,794', '16.6 %', '2.1 %', 'generation 423', '37.6 %', '25.8 %', '15.0 %', '22 of the 30', '8,980', '19.1 %', '7,542']],
+    ['t-tsp-berlin52', ['generation 500', '8,794', '16.6 %', '7.5 %', 'never gets under', '37.6 %', '25.8 %', '15.0 %', 'one of the 30', '8,063', '1.4 %', '8,181', '8.5 %', '7,542']],
     ['pmx', ['8,785', '16.5 %', '8,794', '16.6 %', '44.7 %', '37.6 %', '17 runs', '13', '15 and 15']],
     ['-cx', ['77.9 %', '37.6 %', '24.5 %', '16.6 %', 'all 30', 'in 29']],
     ['swap', ['up to four edges', 'at most two', '74.7 %', '37.6 %', '44.6 %', '16.6 %', '29 runs', 'all 30']],
@@ -109,24 +109,23 @@ describe('berlin52: against the nearest neighbour and the optimum', { timeout: 6
   const t = trace(p, 500);
   const instance = tspInstance(berlin);
 
-  test('the nearest-neighbour tour is 8,980, 19.1 % over the optimum 7,542', () => {
+  test('the best nearest-neighbour tour is 8,181 (from city 40), 8.5 % over the optimum 7,542', () => {
     expect(instance.optimum).toBe(7542);
-    expect(instance.nearestNeighbour.length).toBe(8980);
-    expect(pct((8980 - 7542) / 7542)).toBe(19.1);
+    expect(instance.nearestNeighbour.length).toBe(8181);
+    expect(instance.nearestNeighbour.start + 1).toBe(40);
+    expect(pct((8181 - 7542) / 7542)).toBe(8.5);
   });
 
-  test('with this seed the run ends at 8,794 after 500 generations, the limit, 16.6 % over the optimum and 2.1 % under the nearest-neighbour tour', () => {
+  test('with this seed the run ends at 8,794 after 500 generations, the limit, 16.6 % over the optimum and 7.5 % above the best nearest-neighbour tour, which it never gets under', () => {
     expect(t.stop).toEqual({ generation: 500, reasons: ['generation-limit'] });
     expect(0 - t.sofar[500]!).toBe(8794);
     expect(pct(t.gap(500))).toBe(16.6);
-    expect(pct((8980 - 8794) / 8980)).toBe(2.1);
+    expect(pct((8794 - 8181) / 8181)).toBe(7.5);
+    expect(t.sofar.findIndex((f) => 0 - f < 8181)).toBe(-1);
     expect(t.firstOptimum).toBeNull();
   });
 
-  test('it first gets under the nearest-neighbour tour at generation 423, and was 37.6 % over at generation 200 and 25.8 % at 300', () => {
-    const first = t.sofar.findIndex((f) => 0 - f < 8980);
-    expect(first).toBe(423);
-    expect(0 - t.sofar[422]!).toBeGreaterThanOrEqual(8980);
+  test('it was 37.6 % over the optimum at generation 200 and 25.8 % at 300', () => {
     expect(pct(t.gap(200))).toBe(37.6);
     expect(pct(t.gap(300))).toBe(25.8);
   });
@@ -143,11 +142,11 @@ describe('the other comparisons, on the same seed', { timeout: 60_000 }, () => {
     expect(pct(ox.gap(200))).toBe(37.6);
   });
 
-  test('cycle crossover: 77.9 % over at generation 200 and 24.5 % at 500, and never under the nearest-neighbour tour', () => {
+  test('cycle crossover: 77.9 % over at generation 200 and 24.5 % at 500, and never under the best nearest-neighbour tour', () => {
     const t = trace(tspPreset('-cx'), 500);
     expect(pct(t.gap(200))).toBe(77.9);
     expect(pct(t.gap(500))).toBe(24.5);
-    expect(Math.min(...t.sofar.map((f) => 0 - f))).toBeGreaterThan(8980);
+    expect(Math.min(...t.sofar.map((f) => 0 - f))).toBeGreaterThan(8181);
   });
 
   test('swap: 74.7 % over at generation 200 and 44.6 % at 500; a swap changes up to four edges, an inversion at most two', () => {
@@ -169,13 +168,14 @@ describe('the other comparisons, on the same seed', { timeout: 60_000 }, () => {
     expect(Math.max(...inversions)).toBeLessThanOrEqual(2);
   });
 
-  test('no crossover: the offspring are copies of their parents before they mutate; 50.4 % over at generation 200, 19.4 % at 500, at 9,005, just above the nearest-neighbour tour', () => {
+  test('no crossover: the offspring are copies of their parents before they mutate; 50.4 % over at generation 200, 19.4 % at 500, at 9,005, 10.1 % above the best nearest-neighbour tour', () => {
     const p = tspPreset('no-crossover');
     const t = trace(p, 500);
     expect(pct(t.gap(200))).toBe(50.4);
     expect(pct(t.gap(500))).toBe(19.4);
     expect(0 - t.sofar[500]!).toBe(9005);
-    expect(9005).toBeGreaterThan(8980);
+    expect(9005).toBeGreaterThan(8181);
+    expect(pct((9005 - 8181) / 8181)).toBe(10.1);
     const run = play(p, 3);
     for (let g = 1; g <= 3; g++) for (const e of run.events(g)) if (e.stage === 'crossover') expect((e as CrossoverEvent).decision).toBe('bypassed');
   });

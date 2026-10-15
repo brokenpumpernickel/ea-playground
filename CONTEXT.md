@@ -205,7 +205,7 @@ How much longer a tour is than the best possible, as a share of the best possibl
 _Avoid_: Error, regret
 
 **Nearest-neighbour tour**:
-The tour made by starting at city 1 and always going to the nearest unvisited city, ties to the lower number. A greedy baseline a run can be read against.
+The tour made by starting at one city and always going to the nearest unvisited city, ties to the lower number. A greedy baseline a run can be read against. The baseline the app shows is the **best nearest-neighbour tour**: the nearest-neighbour tour is made from every city as the start and the shortest is kept (the lowest start among equals), so the baseline does not depend on where it happens to begin; it is usually much shorter than the tour from city 1 (berlin52: 8,181 from city 40, against 8,980 from city 1).
 _Avoid_: Greedy tour (the word is used for the heuristic in general)
 
 **Route map**:

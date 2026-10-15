@@ -263,7 +263,7 @@ describe('the figures beside the map and the text alternative', () => {
     expect(m.stats.average).toEqual({ length: info.lengthText(average), gap: `+${info.gapText(average)}` });
     expect(m.stats.optimum).toEqual({ length: info.lengthText(info.optimum), note: 'exact' });
     const nn = info.instance.nearestNeighbour.length;
-    expect(m.stats.nearestNeighbour).toEqual({ length: info.lengthText(nn), gap: `+${info.gapText(nn)}` });
+    expect(m.stats.nearestNeighbour).toEqual({ length: info.lengthText(nn), gap: `+${info.gapText(nn)}`, note: `from city ${info.instance.nearestNeighbour.start + 1}` });
   });
 
   test('best so far is the larger fitness of the run, as a length; a published optimum says so', () => {

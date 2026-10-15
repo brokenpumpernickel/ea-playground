@@ -202,7 +202,7 @@
       <tr><th scope="row">nearest neighbour</th><td class="num" data-testid="stat-nearest">{model!.stats.nearestNeighbour.length}</td><td class="num gap">{model!.stats.nearestNeighbour.gap}</td></tr>
     </tbody>
   </table>
-  <p class="lkey rmgap">gap = how much longer than the optimum</p>
+  <p class="lkey rmgap">gap = how much longer than the optimum. Nearest neighbour = the shortest of the nearest-neighbour tours tried from every city as the start (here {model!.stats.nearestNeighbour.note}).</p>
 {/snippet}
 
 {#snippet keyLine()}

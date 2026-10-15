@@ -84,7 +84,7 @@ describe('the simplified fitness graph', () => {
     const g = miniFitness(m);
     expect(g.lines.map((l) => l.key)).toEqual(['optimum', 'nearest']);
     expect(g.lines[0]!.text).toBe('optimum −7,542');
-    expect(g.lines[1]!.text).toBe('nearest neighbour −8,980');
+    expect(g.lines[1]!.text).toBe('nearest neighbour −8,181');
     for (const l of g.lines) {
       expect(l.y).toBeGreaterThanOrEqual(g.plot.top - 1e-9);
       expect(l.y).toBeLessThanOrEqual(g.plot.bottom + 1e-9);
@@ -103,7 +103,7 @@ describe('the simplified fitness graph', () => {
     expect(g.xLabels).toEqual({ left: '0', right: String(m.xMax) });
     expect(g.sentence).toBe(fitnessSummary(m));
     expect(g.sentence).toContain('Generation 7:');
-    expect(g.sentence).toContain('Optimum −7,542, nearest neighbour −8,980.');
+    expect(g.sentence).toContain('Optimum −7,542, nearest neighbour −8,181.');
   });
 
   test('a run still at generation 0, and a model without reference lines, draw without NaN', () => {
@@ -118,6 +118,6 @@ describe('the simplified fitness graph', () => {
 
 describe('the sentence of the fitness plot', () => {
   test('reads as it has always read, for any model', () => {
-    expect(fitnessSummary(model(3))).toMatch(/^Fitness by generation, scale −[\d,]+ to 0\. Generation 3: average −[\d,]+(\.\d+)?, best of generation −[\d,]+(\.\d+)?, best so far −[\d,]+(\.\d+)?\. Optimum −7,542, nearest neighbour −8,980\.$/);
+    expect(fitnessSummary(model(3))).toMatch(/^Fitness by generation, scale −[\d,]+ to 0\. Generation 3: average −[\d,]+(\.\d+)?, best of generation −[\d,]+(\.\d+)?, best so far −[\d,]+(\.\d+)?\. Optimum −7,542, nearest neighbour −8,181\.$/);
   });
 });

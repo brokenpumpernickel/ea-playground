@@ -120,13 +120,13 @@ test.describe('the reference lines of the fitness plot', () => {
     await generate(page, 2);
     const svg = page.locator('svg[data-plot="fitness"]');
     await expect(svg.locator('line[data-optimum]')).toHaveAttribute('data-optimum', '-7542');
-    await expect(svg.locator('line[data-nearest]')).toHaveAttribute('data-nearest', '-8980');
+    await expect(svg.locator('line[data-nearest]')).toHaveAttribute('data-nearest', '-8181');
     await expect(svg.locator('text[data-label="optimum"]')).toHaveText('optimum −7,542');
-    await expect(svg.locator('text[data-label="nearest"]')).toHaveText('nearest neighbour −8,980');
+    await expect(svg.locator('text[data-label="nearest"]')).toHaveText('nearest neighbour −8,181');
     const ticks = (await svg.locator('text').evaluateAll((els) => els.map((e) => e.textContent ?? ''))).filter((t) => /^[−0-9,]+$/.test(t) && t.includes('0'));
     expect(ticks).toContain('0');
     expect(ticks.some((t) => /^−\d{1,3},\d{3}$/.test(t)), `tick labels ${ticks.join(' ')}`).toBe(true);
-    expect(await svg.getAttribute('aria-label')).toContain('Optimum −7,542, nearest neighbour −8,980.');
+    expect(await svg.getAttribute('aria-label')).toContain('Optimum −7,542, nearest neighbour −8,181.');
   });
 
   for (const [width, height] of [

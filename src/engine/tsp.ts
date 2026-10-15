@@ -120,10 +120,10 @@ export function heldKarp(distance: (i: number, j: number) => number, n: number):
   return { length, tour: [0, ...tour.reverse()] };
 }
 
-/** From city 0 always to the nearest city not yet visited, ties to the lower number. */
-export function nearestNeighbourTour(distance: (i: number, j: number) => number, n: number): number[] {
-  const visited = new Set<number>([0]);
-  const tour = [0];
+/** From the starting city (city 1, index 0, unless told otherwise) always to the nearest city not yet visited, ties to the lower number. */
+export function nearestNeighbourTour(distance: (i: number, j: number) => number, n: number, start = 0): number[] {
+  const visited = new Set<number>([start]);
+  const tour = [start];
   while (tour.length < n) {
     const from = tour[tour.length - 1]!;
     let next = -1;
@@ -140,6 +140,21 @@ export function nearestNeighbourTour(distance: (i: number, j: number) => number,
     visited.add(next);
   }
   return tour;
+}
+
+/**
+ * The nearest-neighbour tour from every city as the start, the shortest of them kept (the first start, the lowest city, among
+ * equals): a greedy baseline that does not depend on where it happens to begin. Costs n² distances for each of the n starts.
+ */
+export function bestNearestNeighbour(distance: (i: number, j: number) => number, n: number): { tour: number[]; start: number; length: number } {
+  let best: { tour: number[]; start: number; length: number } | undefined;
+  for (let start = 0; start < n; start++) {
+    const tour = nearestNeighbourTour(distance, n, start);
+    let length = 0;
+    for (let k = 0; k < n; k++) length += distance(tour[k]!, tour[(k + 1) % n]!);
+    if (!best || length < best.length - 1e-9) best = { tour, start, length };
+  }
+  return best!;
 }
 
 /** What identifies an instance and, for the circle and the random one, its size and its seed. */
@@ -201,7 +216,8 @@ export interface TspInstance {
   readonly optimumSource: 'published' | 'computed';
   /** A shortest tour: TSPLIB's optimal tour, or the one Held–Karp or the circle's order gives. */
   readonly optimalTour: readonly number[];
-  readonly nearestNeighbour: { readonly tour: readonly number[]; readonly length: number };
+  /** The best nearest-neighbour tour: the nearest-neighbour tour from every city as the start, the shortest kept; `start` is its first city, from 0. */
+  readonly nearestNeighbour: { readonly tour: readonly number[]; readonly length: number; readonly start: number };
 }
 
 const showNumber = (x: unknown): string => (typeof x === 'number' && Number.isFinite(x) ? String(x) : 'not a number');
@@ -273,7 +289,7 @@ function build(options: TspOptions): TspInstance {
     optimalTour = options.instance === 'circle' ? coordinates.map((_, k) => k) : heldKarp(distance, n).tour;
     optimum = tourLength(rule, coordinates, optimalTour);
   }
-  const nn = nearestNeighbourTour(distance, n);
+  const nn = bestNearestNeighbour(distance, n);
   return {
     id: options.instance,
     name: entry.name,
@@ -286,7 +302,7 @@ function build(options: TspOptions): TspInstance {
     optimum,
     optimumSource,
     optimalTour,
-    nearestNeighbour: { tour: nn, length: tourLength(rule, coordinates, nn) },
+    nearestNeighbour: { tour: nn.tour, length: tourLength(rule, coordinates, nn.tour), start: nn.start },
   };
 }
 

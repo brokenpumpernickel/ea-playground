@@ -128,6 +128,7 @@ export {
 } from './landscape';
 export {
   heldKarp,
+  bestNearestNeighbour,
   nearestNeighbourTour,
   tourLength,
   tspCatalogue,

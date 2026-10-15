@@ -4,6 +4,7 @@ import { initialize } from './initialize';
 import { isPermutationProblem } from './problem';
 import {
   heldKarp,
+  bestNearestNeighbour,
   nearestNeighbourTour,
   tourLength,
   tspCatalogue,
@@ -172,26 +173,85 @@ describe('Held–Karp', () => {
 });
 
 describe('the nearest-neighbour tour', () => {
-  test('hand-worked: from city 1 always to the nearest city not yet visited', () => {
+  test('hand-worked: from the starting city always to the nearest city not yet visited', () => {
     const x = [0, 5, 1, 6, 2]; // cities on a line
     const distance = (i: number, j: number) => Math.abs(x[i]! - x[j]!);
     // 0 → 2 (1 away) → 4 (1 away) → 1 (3 away; 3 is 4 away) → 3
     expect(nearestNeighbourTour(distance, 5)).toEqual([0, 2, 4, 1, 3]);
+    // from city 3 (x = 6): 3 → 1 (1) → 4 (3; 2 is 4 away) → 2 (1) → 0 (1)
+    expect(nearestNeighbourTour(distance, 5, 3)).toEqual([3, 1, 4, 2, 0]);
   });
 
   test('ties go to the lower city number', () => {
     const x = [0, 1, -1];
     expect(nearestNeighbourTour((i, j) => Math.abs(x[i]! - x[j]!), 3)).toEqual([0, 1, 2]);
   });
+});
 
-  test('every instance has one, a permutation starting at city 1, never shorter than the optimum', () => {
+describe('the best nearest-neighbour tour: every city tried as the start, the shortest kept', () => {
+  // cities on a line at x = 0, 1, −1.5, 4: from city 1 the greedy tour strands the far city and is 13 long (the optimum is 11)
+  const x = [0, 1, -1.5, 4];
+  const distance = (i: number, j: number) => Math.abs(x[i]! - x[j]!);
+  const closed = (tour: readonly number[]) => tour.reduce((sum, c, k) => sum + distance(c, tour[(k + 1) % tour.length]!), 0);
+
+  test('hand-worked: from city 1 it is 13 long; from city 2, 3 and 4 it is 11, and the first of them, city 2, is the start', () => {
+    expect(closed(nearestNeighbourTour(distance, 4, 0))).toBe(13);
+    expect(nearestNeighbourTour(distance, 4, 1)).toEqual([1, 0, 2, 3]); // 1 → 0 (1) → −1.5 (1.5) → 4 (5.5) → back (3)
+    expect(closed(nearestNeighbourTour(distance, 4, 1))).toBe(11);
+    expect(closed(nearestNeighbourTour(distance, 4, 2))).toBe(11);
+    expect(closed(nearestNeighbourTour(distance, 4, 3))).toBe(11);
+    expect(bestNearestNeighbour(distance, 4)).toEqual({ tour: [1, 0, 2, 3], start: 1, length: 11 });
+  });
+
+  test('when city 1 is already the best start it is chosen, even if others tie with it', () => {
+    const line = [0, 1, 2, 3];
+    expect(bestNearestNeighbour((i, j) => Math.abs(line[i]! - line[j]!), 4).start).toBe(0);
+  });
+
+  test('every instance has one: a permutation starting at its start city, never shorter than the optimum and never longer than the tour from city 1, and the shortest over all starts', () => {
     for (const id of [...tsplib, 'circle', 'clusters', 'random']) {
       const instance = tspInstance(opts(id));
-      expect(isPermutation(instance.nearestNeighbour.tour, instance.coordinates.length), id).toBe(true);
-      expect(instance.nearestNeighbour.tour[0]).toBe(0);
-      expect(instance.nearestNeighbour.length, id).toBeGreaterThanOrEqual(instance.optimum - 1e-9);
+      const n = instance.coordinates.length;
+      const d = (i: number, j: number) => tspDistance(instance.rule, instance.coordinates[i]!, instance.coordinates[j]!);
+      const length = (tour: readonly number[]) => tour.reduce((sum, c, k) => sum + d(c, tour[(k + 1) % n]!), 0);
+      const best = instance.nearestNeighbour;
+      expect(isPermutation(best.tour, n), id).toBe(true);
+      expect(best.tour[0], id).toBe(best.start);
+      expect(best.length, id).toBeCloseTo(length(best.tour), 9);
+      expect(best.length, id).toBeGreaterThanOrEqual(instance.optimum - 1e-9);
+      let shortest = Infinity;
+      let first = -1;
+      for (let s = 0; s < n; s++) {
+        const l = length(nearestNeighbourTour(d, n, s));
+        if (l < shortest - 1e-9) {
+          shortest = l;
+          first = s;
+        }
+      }
+      expect(best.length, id).toBeCloseTo(shortest, 9);
+      expect(best.start, `${id}: the first of the best starts`).toBe(first);
+      expect(best.length, id).toBeLessThanOrEqual(length(nearestNeighbourTour(d, n, 0)) + 1e-9);
     }
-    expect(tspInstance(opts('berlin52')).nearestNeighbour.length).toBe(8980);
+  });
+
+  test('the published instances, pinned: the best start, and how much shorter it is than the tour from city 1', () => {
+    const pinned: [string, number, number, number][] = [
+      // id, the length from city 1, the best length, the best start (from 1)
+      ['berlin52', 8980, 8181, 40],
+      ['eil51', 511, 482, 8],
+      ['ulysses16', 9988, 7943, 3],
+      ['ulysses22', 10586, 8180, 3],
+      ['att48', 12861, 12012, 10],
+      ['burma14', 4048, 3841, 2],
+    ];
+    for (const [id, fromOne, best, start] of pinned) {
+      const instance = tspInstance(opts(id));
+      const d = (i: number, j: number) => tspDistance(instance.rule, instance.coordinates[i]!, instance.coordinates[j]!);
+      const n = instance.coordinates.length;
+      expect(tourLength(instance.rule, instance.coordinates, nearestNeighbourTour(d, n)), id).toBe(fromOne);
+      expect(instance.nearestNeighbour.length, id).toBe(best);
+      expect(instance.nearestNeighbour.start + 1, id).toBe(start);
+    }
   });
 });
 
@@ -294,7 +354,7 @@ describe('the problem', () => {
     const optimal = berlin.evaluate(tspInstance(opts('berlin52')).optimalTour!);
     expect(berlin.columns.map((c) => c.show(optimal))).toEqual(['7,542', '0.0%', '−7,542']);
     const worse = berlin.evaluate(tspInstance(opts('berlin52')).nearestNeighbour.tour);
-    expect(berlin.columns.map((c) => c.show(worse))).toEqual(['8,980', '19.1%', '−8,980']);
+    expect(berlin.columns.map((c) => c.show(worse))).toEqual(['8,181', '8.5%', '−8,181']);
     const circle = tspProblem(opts('circle', 8));
     const crossing = circle.evaluate([0, 2, 1, 3, 4, 5, 6, 7]);
     const shown = circle.columns.map((c) => c.show(crossing));
@@ -306,12 +366,12 @@ describe('the problem', () => {
     const p = tspProblem(opts('berlin52'));
     expect(p.gapOf(7542)).toBe(0);
     expect(p.gapOf(8980)).toBeCloseTo(1438 / 7542, 12);
-    expect(p.lengthOf(tspInstance(opts('berlin52')).nearestNeighbour.tour)).toBe(8980);
+    expect(p.lengthOf(tspInstance(opts('berlin52')).nearestNeighbour.tour)).toBe(8181);
   });
 
   test('says in a sentence what a score means', () => {
     const p = tspProblem(opts('berlin52'));
-    expect(p.scoreText!(p.evaluate(tspInstance(opts('berlin52')).nearestNeighbour.tour))).toBe('length 8,980, 19.1% over the optimum 7,542');
+    expect(p.scoreText!(p.evaluate(tspInstance(opts('berlin52')).nearestNeighbour.tour))).toBe('length 8,181, 8.5% over the optimum 7,542');
     expect(p.scoreText!(p.evaluate(tspInstance(opts('berlin52')).optimalTour))).toBe('length 7,542, the optimum');
     expect(p.evaluationExplanation).toContain('fitness = −length');
   });
