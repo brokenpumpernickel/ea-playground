@@ -34,13 +34,14 @@ describe('the camera', () => {
     expect(turned.az).toBeGreaterThan(2 * Math.PI);
   });
 
-  test('dragging turns by the distance dragged: to the right turns right, up tilts up, and it is clamped like the buttons', () => {
+  test('dragging turns by the distance dragged: to the right turns right, down looks more from above and up more from the side, and it is clamped like the buttons', () => {
     const d = dragBy(defaultView, 50, 0);
     expect(d.az).toBeGreaterThan(defaultView.az);
     expect(d.el).toBe(defaultView.el);
-    expect(dragBy(defaultView, 0, -40).el).toBeGreaterThan(defaultView.el); // dragging up tilts the surface up toward the viewer
-    expect(dragBy(defaultView, 0, 10_000).el).toBe(viewLimits.minElevation);
-    expect(dragBy(defaultView, 0, -10_000).el).toBe(viewLimits.maxElevation);
+    expect(dragBy(defaultView, 0, 40).el).toBeGreaterThan(defaultView.el); // dragging down raises the camera: the surface is seen more from above
+    expect(dragBy(defaultView, 0, -40).el).toBeLessThan(defaultView.el); // dragging up lowers it: more from the side
+    expect(dragBy(defaultView, 0, -10_000).el).toBe(viewLimits.minElevation);
+    expect(dragBy(defaultView, 0, 10_000).el).toBe(viewLimits.maxElevation);
     expect(dragBy(defaultView, 0, 0)).toEqual(defaultView);
   });
 });

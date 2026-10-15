@@ -91,9 +91,24 @@ test('dragging turns it by the distance dragged', async ({ page }) => {
   const got = await camera(page);
   expect(got.az).toBeCloseTo(want.az, 6);
   expect(got.el).toBeCloseTo(want.el, 6);
+  // the directions, independently of the formula: right turns it right, up lowers the camera (more from the side)
+  expect(got.az).toBeGreaterThan(defaultView.az);
+  expect(got.el).toBeLessThan(defaultView.el);
+  // and a drag down raises it again, past where it started
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 60, { steps: 4 });
+  await page.mouse.up();
+  expect((await camera(page)).el).toBeGreaterThan(got.el);
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y - 60, { steps: 4 });
+  await page.mouse.up();
+  const again = await camera(page);
+  expect(again.el).toBeCloseTo(got.el, 6);
   // moving the mouse with no button down does nothing
   await page.mouse.move(x + 100, y + 50);
-  expect(await camera(page)).toEqual(got);
+  expect(await camera(page)).toEqual(again);
 });
 
 for (const fn of landscapeFunctions) {

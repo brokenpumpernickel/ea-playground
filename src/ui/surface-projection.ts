@@ -47,8 +47,8 @@ export function rotate(view: SurfaceView, action: Rotation): SurfaceView {
   }
 }
 
-/** The view after dragging the pointer by (dx, dy) pixels: right turns right, up tilts the surface up toward the viewer. */
-export const dragBy = (view: SurfaceView, dx: number, dy: number): SurfaceView => ({ ...view, az: view.az + dx * 0.01, el: clampElevation(view.el - dy * 0.008) });
+/** The view after dragging the pointer by (dx, dy) pixels: right turns right, down raises the camera (the surface is seen more from above), up lowers it. */
+export const dragBy = (view: SurfaceView, dx: number, dy: number): SurfaceView => ({ ...view, az: view.az + dx * 0.01, el: clampElevation(view.el + dy * 0.008) });
 
 export interface Vertex {
   readonly x: number;
