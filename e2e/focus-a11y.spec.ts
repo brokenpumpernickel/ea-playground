@@ -62,14 +62,20 @@ const base = { panel: '[data-testid="stage-panel"]', body: '#stagebody', toolbar
 /** Everything of the focus view is inside its place, nothing overlaps, nothing scrolls, the narration is whole. */
 const checkGeometry = async (page: Page, at: string, figures: Record<string, string>) => {
   const b = await boxes(page, { ...base, ...figures });
+  const landscape = !!b.heat;
   for (const name of ['toolbar', 'card', 'graph'] as const) {
     if (!b[name]) continue;
     expect(within(b[name]!, b.body!), `${at}: ${name} inside the body ${JSON.stringify(b[name])}`).toBe(true);
-    for (const f of Object.keys(figures)) if (b[f]) expect(apart(b[name]!, b[f]!), `${at}: ${name} and ${f}`).toBe(true);
   }
-  expect(apart(b.toolbar!, b.card!), `${at}: toolbar and card`).toBe(true);
+  if (landscape) {
+    // the toolbar is above the figures; the graph lies on the heatmap and the card on the surface
+    for (const f of Object.keys(figures)) expect(apart(b.toolbar!, b[f]!), `${at}: toolbar and ${f}`).toBe(true);
+    if (b.graph) expect(within(b.graph, b.heat!), `${at}: the graph on the heatmap`).toBe(true);
+    if (b.card) expect(within(b.card, b.surface!), `${at}: the card on the surface`).toBe(true);
+  }
+  if (b.card) expect(apart(b.toolbar!, b.card), `${at}: toolbar and card`).toBe(true);
   if (b.graph) expect(apart(b.toolbar!, b.graph), `${at}: toolbar and graph`).toBe(true);
-  if (b.graph) expect(apart(b.card!, b.graph), `${at}: card and graph`).toBe(true);
+  if (b.graph && b.card) expect(apart(b.card, b.graph), `${at}: card and graph`).toBe(true);
   expect(b.toolbar!.height, `${at}: the toolbar is one row`).toBeLessThanOrEqual(60);
   expect(apart(b.body!, b.narr!), `${at}: the body and the narration`).toBe(true);
   expect(within(b.narr!, b.panel!), `${at}: the narration inside the panel`).toBe(true);
@@ -179,10 +185,10 @@ test.describe('the colour audit of the new overlays', () => {
     await page.getByTestId('zoom-in').click();
     await expect(page.getByTestId('zoom-out')).toBeEnabled();
     await openLand(page, { function: 'himmelblau', representation: 'real', bitsPerVariable: 10 });
-    for (const id of ['zoom-toggle', 'toggle-graph', 'trail-0', 'trail-3']) {
+    for (const id of ['zoom-toggle', 'toggle-graph', 'toggle-card', 'trail-0', 'trail-3']) {
       const button = page.getByTestId(id);
       const on = (await button.getAttribute('aria-pressed')) === 'true';
-      if (id === 'toggle-graph') expect((await button.innerText()).startsWith('✓')).toBe(on);
+      if (id === 'toggle-graph' || id === 'toggle-card') expect((await button.innerText()).startsWith('✓')).toBe(on);
       await button.click();
       expect(await button.getAttribute('aria-pressed'), id).not.toBeNull();
     }

@@ -77,6 +77,7 @@
   let showOptimalTour = $state(false);
   let showCityNumbers = $state(true);
   let showFocusGraph = $state(true);
+  let showFocusCard = $state(true);
   /** The map's zoom and pan: kept across steps, tabs and restarts of the same instance, started over by another one. */
   let mapZoom = $state<MapView | undefined>(undefined);
   const instanceKey = $derived(tour ? `${tour.instance.name}|${tour.cities}|${tour.places.map((p) => p.join(',')).join(';')}` : '');
@@ -164,7 +165,7 @@
     {#if mapOpen}
       <RouteMapView {session} bind:showPopulation={showPopulationEdges} bind:showOptimal={showOptimalTour} bind:showNumbers={showCityNumbers} bind:showGraph={showFocusGraph} bind:zoom={mapZoom} />
     {:else if landscapeOpen}
-      <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} bind:trail bind:heatView bind:showGraph={showFocusGraph} />
+      <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} bind:trail bind:heatView bind:showGraph={showFocusGraph} bind:showCard={showFocusCard} />
     {:else if schemaOpen && blocks}
       <SchemaTracker info={blocks} text={schemaText} oninput={(t) => (typedSchema = t)} history={schemaPoints} now={view.position.cycle} />
     {:else if stage === 'selection' && tournament}

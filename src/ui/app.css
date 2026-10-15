@@ -1088,8 +1088,12 @@ svg[data-plot="fitness"] text.refl { paint-order:stroke; stroke:var(--surface); 
 /* the focus view of the landscape: the heatmap and the surface side by side, the overlays over the corners */
 .lfocus { position:relative; display:block; height:100%; }
 .lfocus .lplots { position:absolute; left:12px; top:72px; gap:24px; }
-.lfocus .lfoot { position:absolute; left:470px; top:524px; width:1016px; }
-.lfocus .lfoot .lsent { font-size:14px; }
+.lcanvas { position:relative; }
+.lover { position:absolute; }
+.lover-graph { left:58px; bottom:50px; }
+.lover-card { right:12px; top:12px; width:330px; }
+.lcard-head { display:flex; justify-content:flex-end; margin:-2px 0 2px; }
+.lcard-head .tog { font-size:13px; padding:0 8px; min-width:0; }
 .lfocus .rmo-bar { max-width:1474px; }
 .rmo-card .lcard-line, .rmo-card .lcard-fn { margin:0 0 4px; font-size:15px; line-height:1.3; }
 .rmo-card .lkey { margin:6px 0 0; font-size:13px; line-height:1.25; }

@@ -26,7 +26,8 @@
     trail = $bindable(0),
     heatView = $bindable(undefined),
     showGraph = $bindable(true),
-  }: { session: Session; zoom?: boolean; surface?: SurfaceView; trail?: 0 | 1 | 3 | 5; heatView?: MapView | undefined; showGraph?: boolean } = $props();
+    showCard = $bindable(true),
+  }: { session: Session; zoom?: boolean; surface?: SurfaceView; trail?: 0 | 1 | 3 | 5; heatView?: MapView | undefined; showGraph?: boolean; showCard?: boolean } = $props();
   const trails: { value: 0 | 1 | 3 | 5; text: string }[] = [
     { value: 0, text: 'off' },
     { value: 1, text: '1 gen' },
@@ -35,8 +36,8 @@
   ];
   const focus = getContext<FocusView | undefined>(focusContextKey);
   const focused = $derived(focus?.active === true);
-  /** The size of each of the two canvases: about twice the area in the focus view, which leaves the figures clear of the overlays. */
-  const figure = $derived(focused ? { width: 725, height: 410 } : { width: canvasSize.width, height: canvasSize.height });
+  /** The size of each of the two canvases: in the focus view they fill the height of the body below the toolbar and half its width each; the graph lies on the heatmap and the information box on the surface. */
+  const figure = $derived(focused ? { width: 892, height: 620 } : { width: canvasSize.width, height: canvasSize.height });
   const marks = $derived(session.landscapeMarks(trail));
   const select = (id: number | undefined) => session.selectIndividual(id === session.selectedId ? undefined : id);
   const buttons: { action: Rotation; label: string; text: string }[] = [
@@ -102,6 +103,7 @@
     {#if focused}
       <span class="lgrp">
         <button class="tog" class:on={showGraph} type="button" aria-pressed={showGraph} data-testid="toggle-graph" onclick={() => (showGraph = !showGraph)}><span aria-hidden="true">{showGraph ? '✓ ' : ''}</span>Graph</button>
+        <button class="tog" class:on={showCard} type="button" aria-pressed={showCard} data-testid="toggle-card" onclick={() => (showCard = !showCard)}><span aria-hidden="true">{showCard ? '✓ ' : ''}</span>Info</button>
       </span>
     {/if}
     <span class="lgrp expand">
@@ -114,11 +116,25 @@
   <div class="lplots">
     <figure>
       <figcaption>Heatmap <i>fitness{info!.minimised ? ' = −f' : ' = f'}, higher is better</i></figcaption>
-      <Heatmap info={info!} region={region!} zoomed={zoomedIn} width={figure.width} height={figure.height} {marks} selectedId={session.selectedId} onselect={select} view={heatView} onview={setHeat} />
+      <div class="lcanvas">
+        <Heatmap info={info!} region={region!} zoomed={zoomedIn} width={figure.width} height={figure.height} {marks} selectedId={session.selectedId} onselect={select} view={heatView} onview={setHeat} />
+        {#if focused && showGraph}<div class="rmo rmo-graph lover lover-graph" data-testid="focus-graph"><MiniFitness model={session.plots} onhide={() => (showGraph = false)} /></div>{/if}
+      </div>
     </figure>
     <figure>
       <figcaption>Surface of the same landscape <i>(drag, or use the arrow keys; the wheel zooms)</i></figcaption>
-      <Surface info={info!} bind:view={surface} width={figure.width} height={figure.height} {marks} selectedId={session.selectedId} onselect={select} />
+      <div class="lcanvas">
+        <Surface info={info!} bind:view={surface} width={figure.width} height={figure.height} {marks} selectedId={session.selectedId} onselect={select} />
+        {#if focused && showCard}
+          <div class="rmo rmo-card lover lover-card" data-testid="focus-card">
+            <div class="lcard-head"><button class="tog" type="button" aria-label="Hide the information box" data-testid="hide-card" onclick={() => (showCard = false)}><span aria-hidden="true">×</span> hide</button></div>
+            <p class="lcard-line">{lines[0]}</p>
+            <p class="lcard-line">{lines[1]}</p>
+            <p class="lcard-fn"><b>{info!.name}</b> · {goal}</p>
+            {@render keyLine()}
+          </div>
+        {/if}
+      </div>
     </figure>
   </div>
 {/snippet}
@@ -149,14 +165,7 @@
     <div class="lview lfocus" data-testid="landscape-view">
       {@render figures()}
       <div class="rmo rmo-bar" data-testid="focus-toolbar">{@render toolbar()}</div>
-      <div class="rmo rmo-card" data-testid="focus-card">
-        <p class="lcard-line">{lines[0]}</p>
-        <p class="lcard-line">{lines[1]}</p>
-        <p class="lcard-fn"><b>{info.name}</b> · {goal}</p>
-        {@render keyLine()}
-      </div>
-      {#if showGraph}<div class="rmo rmo-graph" data-testid="focus-graph"><MiniFitness model={session.plots} onhide={() => (showGraph = false)} /></div>{/if}
-      <div class="lfoot">{@render sentences()}</div>
+      <div class="sr-only">{@render sentences()}</div>
       {@render positions()}
     </div>
   {:else}

@@ -76,31 +76,61 @@ const markers = (page: Page, layer: 'heat-marks' | 'surface-marks') =>
     [...svg.querySelectorAll('[data-marker="individual"]')].map((g) => ({ id: Number(g.getAttribute('data-id')), x: Number(g.getAttribute('data-x')), y: Number(g.getAttribute('data-y')) })),
   );
 
-test('the heatmap and the surface side by side, each about twice the area it has in the ordinary view, in the whole panel', async ({ page }) => {
+test('the heatmap and the surface side by side, each filling the height of the body and several times the area it has in the ordinary view; the graph lies on the heatmap and the card on the surface', async ({ page }) => {
   await open(page, himmelblau, false, false);
   const small = await designBoxes(page, sels);
   expect(small.heat!.width).toBeLessThan(540);
   await page.getByTestId('focus-toggle').click();
   const b = await designBoxes(page, sels);
   for (const name of ['heat', 'surface'] as const) {
-    expect(b[name]!.width * b[name]!.height, name).toBeGreaterThan(1.9 * small[name]!.width * small[name]!.height);
+    expect(b[name]!.width * b[name]!.height, name).toBeGreaterThan(3 * small[name]!.width * small[name]!.height);
     expect(within(b[name]!, b.body!), `${name} inside the body`).toBe(true);
+    // full height: from under the toolbar row to near the bottom of the body
+    expect(b[name]!.height, `${name} height`).toBeGreaterThan(b.body!.height - 150);
+    expect(b[name]!.width, `${name} width`).toBeGreaterThan(850);
   }
   expect(b.heat!.left + b.heat!.width).toBeLessThanOrEqual(b.surface!.left + 0.5);
   expect(Math.abs(b.heat!.top - b.surface!.top)).toBeLessThan(4);
-  // none of the overlays lies over a figure, and the overlays are apart
-  for (const name of ['toolbar', 'card', 'graph'] as const) {
-    expect(b[name], name).toBeDefined();
-    expect(within(b[name]!, b.body!), `${name} inside the body`).toBe(true);
-    expect(apart(b[name]!, b.heat!), `${name} and the heatmap`).toBe(true);
-    expect(apart(b[name]!, b.surface!), `${name} and the surface`).toBe(true);
-  }
-  expect(apart(b.toolbar!, b.card!)).toBe(true);
-  expect(apart(b.toolbar!, b.graph!)).toBe(true);
-  expect(apart(b.card!, b.graph!)).toBe(true);
+  // the toolbar is above the figures, the graph lies inside the heatmap and the card inside the surface
+  expect(apart(b.toolbar!, b.heat!)).toBe(true);
+  expect(apart(b.toolbar!, b.surface!)).toBe(true);
+  expect(within(b.graph!, b.heat!), 'the graph on the heatmap').toBe(true);
+  expect(within(b.card!, b.surface!), 'the card on the surface').toBe(true);
+  expect(apart(b.graph!, b.card!)).toBe(true);
+  // the long sentence under the figures is for the screen reader, not on the screen
+  expect(await page.getByTestId('landscape-sentence').evaluate((e) => !!e.closest('.sr-only'))).toBe(true);
   await page.getByTestId('focus-toggle').click();
   const back = await designBoxes(page, sels);
   expect(back.heat!.width).toBeCloseTo(small.heat!.width, 0);
+  await expect(page.getByTestId('landscape-sentence')).toBeVisible();
+});
+
+test('the graph and the information box can each be closed with their own button and brought back with the toolbar, and stay as left through steps and leaving', async ({ page }) => {
+  await open(page);
+  const card = page.getByTestId('focus-card');
+  const graph = page.getByTestId('focus-graph');
+  await expect(card).toBeVisible();
+  await expect(graph).toBeVisible();
+  await expect(page.getByTestId('toggle-card')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Hide the information box' })).toBeVisible();
+  await page.getByRole('button', { name: 'Hide the information box' }).click();
+  await expect(card).toHaveCount(0);
+  await expect(page.getByTestId('toggle-card')).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: 'Hide the fitness graph' }).click();
+  await expect(graph).toHaveCount(0);
+  await page.keyboard.press('g');
+  await expect(card).toHaveCount(0);
+  await expect(graph).toHaveCount(0);
+  await page.getByTestId('toggle-card').click();
+  await expect(card).toContainText('generation 1');
+  await page.getByTestId('toggle-graph').click();
+  await expect(page.locator('svg[data-plot="fitness-mini"]')).toHaveAttribute('data-now', '1');
+  await page.getByTestId('toggle-card').focus();
+  await page.keyboard.press('Space');
+  await expect(card).toHaveCount(0);
+  await page.keyboard.press('e');
+  await page.keyboard.press('e');
+  await expect(card).toHaveCount(0);
 });
 
 test('the figures card has the generation\'s figures and the function, equal to the engine at every generation; the graph equals the metrics', async ({ page }) => {
@@ -366,14 +396,12 @@ for (const projector of [false, true]) {
       await page.locator('#narr').click();
       const check = async (at: string) => {
         const b = await designBoxes(page, sels);
-        for (const name of ['toolbar', 'card', 'graph'] as const) {
-          expect(within(b[name]!, b.body!), `${at}: ${name} inside the body ${JSON.stringify(b[name])}`).toBe(true);
-          expect(apart(b[name]!, b.heat!), `${at}: ${name} and the heatmap`).toBe(true);
-          expect(apart(b[name]!, b.surface!), `${at}: ${name} and the surface`).toBe(true);
-        }
-        expect(apart(b.toolbar!, b.card!), `${at}: toolbar and card`).toBe(true);
-        expect(apart(b.toolbar!, b.graph!), `${at}: toolbar and graph`).toBe(true);
-        expect(apart(b.card!, b.graph!), `${at}: card and graph`).toBe(true);
+        for (const name of ['toolbar', 'card', 'graph'] as const) expect(within(b[name]!, b.body!), `${at}: ${name} inside the body ${JSON.stringify(b[name])}`).toBe(true);
+        expect(apart(b.toolbar!, b.heat!), `${at}: toolbar and the heatmap`).toBe(true);
+        expect(apart(b.toolbar!, b.surface!), `${at}: toolbar and the surface`).toBe(true);
+        expect(within(b.graph!, b.heat!), `${at}: the graph on the heatmap`).toBe(true);
+        expect(within(b.card!, b.surface!), `${at}: the card on the surface`).toBe(true);
+        expect(apart(b.graph!, b.card!), `${at}: graph and card`).toBe(true);
         expect(b.toolbar!.height, `${at}: the toolbar is one row`).toBeLessThanOrEqual(60);
         expect(apart(b.body!, b.narr!), `${at}: the body and the narration`).toBe(true);
         const bad = await page.evaluate(() => {
