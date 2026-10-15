@@ -1,6 +1,6 @@
 # Milestone 7: bigger views (zoom, city numbers, focus mode)
 
-Status: specified from the instructor's requests after the milestone 6 step-through and the grill (Q1 to Q7, all recommended, with one clarification: the focus view takes the whole area of the panels, the plots included, with a simplified fitness graph laid over it). Next: a mock of the layout (ticket 01), reviewed by the instructor, then the other tickets.
+Status: built (tickets 01 to 08); the instructor's step-through is what is left. Specified from the instructor's requests after the milestone 6 step-through and the grill (Q1 to Q7, all recommended, with one clarification: the focus view takes the whole area of the panels, the plots included, with a simplified fitness graph laid over it). Next: a mock of the layout (ticket 01), reviewed by the instructor, then the other tickets.
 
 Vocabulary follows `CONTEXT.md` (the **route map**, the landscape's **heatmap** and **surface**). New terms for the glossary when built: **focus view** (a figure given the whole centre of the screen).
 
