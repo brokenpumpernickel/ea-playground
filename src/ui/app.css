@@ -1084,3 +1084,15 @@ svg[data-plot="fitness"] text.refl { paint-order:stroke; stroke:var(--surface); 
 .mini svg text.mt.ink { fill:var(--ink); font-weight:700; }
 .projector .rmo-card .rmkey, .projector .rmo-card .rmgap, .projector .rmo-card .rmmark { font-size:14px; }
 .projector .mini .mh .ml { font-size:14px; }
+
+/* the focus view of the landscape: the heatmap and the surface side by side, the overlays over the corners */
+.lfocus { position:relative; display:block; height:100%; }
+.lfocus .lplots { position:absolute; left:12px; top:72px; gap:24px; }
+.lfocus .lfoot { position:absolute; left:470px; top:524px; width:1016px; }
+.lfocus .lfoot .lsent { font-size:14px; }
+.lfocus .rmo-bar { max-width:1474px; }
+.rmo-card .lcard-line, .rmo-card .lcard-fn { margin:0 0 4px; font-size:15px; line-height:1.3; }
+.rmo-card .lkey { margin:6px 0 0; font-size:13px; line-height:1.25; }
+.projector .rmo-card .lcard-line, .projector .rmo-card .lcard-fn { font-size:16px; }
+.heatwrap.zoomed canvas.heat { cursor:grab; }
+.heatwrap { touch-action:none; user-select:none; -webkit-user-select:none; }

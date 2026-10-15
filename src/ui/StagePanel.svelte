@@ -54,6 +54,7 @@
   let zoomToPopulation = $state(false);
   let surfaceView = $state<SurfaceView>({ ...defaultView });
   let trail = $state<0 | 1 | 3 | 5>(0);
+  let heatView = $state<MapView | undefined>(undefined);
   let seenLandscapeEpoch: number | undefined;
   $effect(() => {
     if (seenLandscapeEpoch === undefined) seenLandscapeEpoch = session.epoch;
@@ -65,6 +66,7 @@
         zoomToPopulation = false;
         surfaceView = { ...defaultView };
         trail = 0;
+        heatView = undefined;
       }
     }
   });
@@ -162,7 +164,7 @@
     {#if mapOpen}
       <RouteMapView {session} bind:showPopulation={showPopulationEdges} bind:showOptimal={showOptimalTour} bind:showNumbers={showCityNumbers} bind:showGraph={showFocusGraph} bind:zoom={mapZoom} />
     {:else if landscapeOpen}
-      <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} bind:trail />
+      <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} bind:trail bind:heatView bind:showGraph={showFocusGraph} />
     {:else if schemaOpen && blocks}
       <SchemaTracker info={blocks} text={schemaText} oninput={(t) => (typedSchema = t)} history={schemaPoints} now={view.position.cycle} />
     {:else if stage === 'selection' && tournament}

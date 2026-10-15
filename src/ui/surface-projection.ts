@@ -13,12 +13,19 @@ export interface SurfaceView {
   readonly az: number;
   /** Tilt from edge-on (0) to straight down (π/2), in radians. */
   readonly el: number;
+  /** How close the camera is: 1 (or none) is the whole surface in the picture, larger fills it with the middle. */
+  readonly zoom?: number;
 }
 
 /** Where the mock put the camera: turned a little left, looking down at about 50°. */
 export const defaultView: SurfaceView = { az: -0.7, el: 0.9 };
 
 export const viewLimits = { minElevation: 0.08, maxElevation: 1.45, azimuthStep: 0.25, elevationStep: 0.125 } as const;
+
+export const surfaceZoomLimits = { min: 1, max: 4 } as const;
+
+/** The view after zooming the camera by a factor, between 1× and 4×. */
+export const surfaceZoom = (view: SurfaceView, factor: number): SurfaceView => ({ ...view, zoom: Math.min(surfaceZoomLimits.max, Math.max(surfaceZoomLimits.min, (view.zoom ?? 1) * factor)) });
 
 export type Rotation = 'left' | 'right' | 'up' | 'down' | 'reset';
 
@@ -28,20 +35,20 @@ const clampElevation = (el: number) => Math.min(viewLimits.maxElevation, Math.ma
 export function rotate(view: SurfaceView, action: Rotation): SurfaceView {
   switch (action) {
     case 'left':
-      return { az: view.az - viewLimits.azimuthStep, el: view.el };
+      return { ...view, az: view.az - viewLimits.azimuthStep };
     case 'right':
-      return { az: view.az + viewLimits.azimuthStep, el: view.el };
+      return { ...view, az: view.az + viewLimits.azimuthStep };
     case 'up':
-      return { az: view.az, el: clampElevation(view.el + viewLimits.elevationStep) };
+      return { ...view, el: clampElevation(view.el + viewLimits.elevationStep) };
     case 'down':
-      return { az: view.az, el: clampElevation(view.el - viewLimits.elevationStep) };
+      return { ...view, el: clampElevation(view.el - viewLimits.elevationStep) };
     case 'reset':
       return { ...defaultView };
   }
 }
 
 /** The view after dragging the pointer by (dx, dy) pixels: right turns right, up tilts the surface up toward the viewer. */
-export const dragBy = (view: SurfaceView, dx: number, dy: number): SurfaceView => ({ az: view.az + dx * 0.01, el: clampElevation(view.el - dy * 0.008) });
+export const dragBy = (view: SurfaceView, dx: number, dy: number): SurfaceView => ({ ...view, az: view.az + dx * 0.01, el: clampElevation(view.el - dy * 0.008) });
 
 export interface Vertex {
   readonly x: number;
@@ -101,7 +108,7 @@ export function surfaceMesh(info: Pick<LandscapeInfo, 'fitnessAt' | 'fitnessRang
   const sinA = Math.sin(view.az);
   const cosE = Math.cos(view.el);
   const sinE = Math.sin(view.el);
-  const scale = Math.min(width, height) * SCALE;
+  const scale = Math.min(width, height) * SCALE * (view.zoom ?? 1);
   const half = (hi - lo) / 2;
   const middle = (lo + hi) / 2;
   const project = (x: number, y: number, f: number) => {

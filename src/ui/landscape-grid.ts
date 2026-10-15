@@ -145,11 +145,11 @@ const f1 = (v: number) => formatReal([v], 1);
 const trimmed = (v: number) => formatReal([v], 2).replace(/\.?0+$/, '');
 
 /** The sentence that says what the picture shows, for a screen reader and for anyone who cannot tell the colours apart. */
-export function landscapeSentence(info: LandscapeInfo, region: Region, zoomed: boolean): string {
+export function landscapeSentence(info: LandscapeInfo, region: Region, zoomed: boolean, how = 'Zoomed to the population'): string {
   const { lo, hi } = info.bounds;
   const optimum = info.optima.length === 1 ? `the optimum is at (${f3(info.optima[0]!.x)}, ${f3(info.optima[0]!.y)})` : `there are ${info.optima.length === 4 ? 'four' : info.optima.length} optima, at ${info.optima.map((p) => `(${f3(p.x)}, ${f3(p.y)})`).join(', ')}`;
   const rule = info.minimised ? ' f is minimised, so fitness = −f and higher is always better.' : ' Higher is better.';
-  const shown = zoomed ? ` Zoomed to the population: x from ${f1(region.x0)} to ${f1(region.x1)}, y from ${f1(region.y0)} to ${f1(region.y1)}.` : '';
+  const shown = zoomed ? ` ${how}: x from ${f1(region.x0)} to ${f1(region.x1)}, y from ${f1(region.y0)} to ${f1(region.y1)}.` : '';
   return `${info.name}: fitness from ${f2(info.fitnessRange.min)} to ${f2(info.fitnessRange.max)} over x and y from ${trimmed(lo)} to ${trimmed(hi)}; ${optimum}.${rule}${shown}`;
 }
 

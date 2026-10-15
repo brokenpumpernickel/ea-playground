@@ -3,7 +3,7 @@
   import { drawSurface } from './surface-draw';
   import { layoutMarks, type DrawnMarks, type MarksModel } from './landscape-marks';
   import MarkerLayer from './MarkerLayer.svelte';
-  import { defaultView, dragBy, isHidden, rasterise, rotate, surfaceMesh, type Rotation, type SurfaceView } from './surface-projection';
+  import { defaultView, dragBy, isHidden, rasterise, rotate, surfaceMesh, surfaceZoom, type Rotation, type SurfaceView } from './surface-projection';
   import type { LandscapeInfo } from './landscape-context';
 
   /**
@@ -52,7 +52,25 @@
 
   const press = (action: Rotation) => (view = rotate(view, action));
   const keys: Record<string, Rotation> = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
+  const wheel = (frame: HTMLElement) => {
+    const on = (event: WheelEvent) => {
+      event.preventDefault();
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 400 : 1;
+      view = surfaceZoom(view, Math.exp(-event.deltaY * unit * 0.002));
+    };
+    frame.addEventListener('wheel', on, { passive: false });
+    return () => frame.removeEventListener('wheel', on);
+  };
   const keydown = (event: KeyboardEvent) => {
+    if (!event.altKey && !event.ctrlKey && !event.metaKey) {
+      const zoomKey = event.key === '+' || event.key === '=' ? 1.25 : event.key === '-' || event.key === '_' ? 1 / 1.25 : undefined;
+      if (zoomKey !== undefined || event.key === '0') {
+        event.preventDefault();
+        event.stopPropagation();
+        view = zoomKey !== undefined ? surfaceZoom(view, zoomKey) : { ...defaultView };
+        return;
+      }
+    }
     const action = keys[event.key];
     if (!action || event.altKey || event.ctrlKey || event.metaKey) return;
     event.preventDefault();
@@ -90,9 +108,10 @@
     class="surfpick"
     tabindex="0"
     role="group"
-    aria-label="Surface of the same landscape. Rotate with the arrow keys or by dragging; the buttons do the same."
+    aria-label="Surface of the same landscape. Rotate with the arrow keys or by dragging; zoom with the wheel or the plus and minus keys, 0 resets the view; the buttons do the same."
     data-testid="surface-focus"
     onkeydown={keydown}
+    {@attach wheel}
     onpointerdown={down}
     onpointermove={move}
     onpointerup={up}
@@ -106,6 +125,7 @@
       aria-hidden="true"
       data-testid="surface"
       data-function={info.id}
+      data-zoom={view.zoom ?? 1}
       data-az={view.az}
       data-el={view.el}
     ></canvas>
