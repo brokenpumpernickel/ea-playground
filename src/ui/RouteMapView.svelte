@@ -3,6 +3,8 @@
   import type { CrossoverEvent, MutationEvent } from '../engine';
   import { focusContextKey, type FocusView } from './focus-view.svelte';
   import MiniFitness from './MiniFitness.svelte';
+  import MoveHandle from './MoveHandle.svelte';
+  import type { Offset } from './overlay-drag';
   import { cityNumberSize, clampView, labelPlacement, maxZoom, minZoom, panBy, toScreen, visibleCity, wholeView, zoomAbout, zoomBy, zoomNote, type MapView } from './map-zoom';
   import { focusMap, freeBoxFor, routeMapModel, type RouteMapInput, type Size } from './route-map-model';
   import type { Session } from './session.svelte';
@@ -13,7 +15,7 @@
    * tour; while crossover or mutation is stepped, the child's edges by origin or the edges a mutation took out and put in.
    * Every line is a `<line>` carrying its two cities, its layer and its count, so a test reads what is drawn.
    */
-  let { session, showPopulation = $bindable(true), showOptimal = $bindable(false), showNumbers = $bindable(true), showGraph = $bindable(true), zoom = $bindable(undefined) }: { session: Session; showPopulation?: boolean; showOptimal?: boolean; showNumbers?: boolean; showGraph?: boolean; zoom?: MapView | undefined } = $props();
+  let { session, showPopulation = $bindable(true), showOptimal = $bindable(false), showNumbers = $bindable(true), showGraph = $bindable(true), zoom = $bindable(undefined), graphPos = $bindable({ x: 0, y: 0 }), cardPos = $bindable({ x: 0, y: 0 }) }: { session: Session; showPopulation?: boolean; showOptimal?: boolean; showNumbers?: boolean; showGraph?: boolean; zoom?: MapView | undefined; graphPos?: Offset; cardPos?: Offset } = $props();
 
   const focus = getContext<FocusView | undefined>(focusContextKey);
   const focused = $derived(focus?.active === true);
@@ -69,6 +71,9 @@
   const labelSize = $derived(info ? cityNumberSize(info.cities, current.zoom, showNumbers) : 0);
   /** Where each city lies in the window; a zoomed picture moves the places apart and leaves the marks their size. */
   const at = $derived(model ? model.nodes.map((n) => toScreen(current, size, [n.x, n.y])) : []);
+  /** The band under the toolbar that a moved overlay keeps clear, where it lies over the toolbar's width. */
+  const tb = focusMap.overlays.toolbar;
+  const clear = { top: tb.top + tb.height, from: tb.left, to: tb.left + tb.width };
   const dotReach = 9;
   const zoomed = $derived(current.zoom > minZoom + 1e-9);
   const zoomText = $derived(zoomed ? `Zoomed ${Math.round(current.zoom * 10) / 10}×: a part of the map is shown.` : '');
@@ -234,12 +239,13 @@
     <div class="rmview rmfocus" data-testid="route-map-view">
       {@render mapFrame()}
       <div class="rmo rmo-bar" data-testid="focus-toolbar">{@render toolbar()}</div>
-      <div class="rmo rmo-card" data-testid="focus-card">
+      <div class="rmo rmo-card" data-testid="focus-card" style="transform:translate({cardPos.x}px,{cardPos.y}px)">
+        <span class="lcard-move"><MoveHandle label="Move the information box" testid="move-card" bind:offset={cardPos} {clear} /></span>
         {@render figures()}
         {@render keyLine()}
         {#if model.mark}<p class="lsent rmmark" data-testid="route-mark">{model.mark.sentence}</p>{/if}
       </div>
-      {#if showGraph}<div class="rmo rmo-graph" data-testid="focus-graph"><MiniFitness model={session.plots} onhide={() => (showGraph = false)} /></div>{/if}
+      {#if showGraph}<div class="rmo rmo-graph" data-testid="focus-graph" style="transform:translate({graphPos.x}px,{graphPos.y}px)"><MiniFitness model={session.plots} onhide={() => (showGraph = false)} bind:offset={graphPos} {clear} /></div>{/if}
       <p class="sr-only" data-testid="route-sentence">{sentence}</p>
       {@render tourTable()}
     </div>

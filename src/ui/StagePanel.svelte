@@ -13,6 +13,7 @@
   import PairingView from './PairingView.svelte';
   import RouteMapView from './RouteMapView.svelte';
   import type { MapView } from './map-zoom';
+  import type { Offset } from './overlay-drag';
   import ReplacementView from './ReplacementView.svelte';
   import RouletteView from './RouletteView.svelte';
   import { pairingModel, selectionModel, tournamentModel } from './selection-models';
@@ -67,6 +68,8 @@
         surfaceView = { ...defaultView };
         trail = 0;
         heatView = undefined;
+        landGraphPos = { x: 0, y: 0 };
+        landCardPos = { x: 0, y: 0 };
       }
     }
   });
@@ -78,6 +81,11 @@
   let showCityNumbers = $state(true);
   let showFocusGraph = $state(true);
   let showFocusCard = $state(true);
+  // where the class moved the overlays of the focus view to, kept like the other view settings
+  let mapGraphPos = $state<Offset>({ x: 0, y: 0 });
+  let mapCardPos = $state<Offset>({ x: 0, y: 0 });
+  let landGraphPos = $state<Offset>({ x: 0, y: 0 });
+  let landCardPos = $state<Offset>({ x: 0, y: 0 });
   /** The map's zoom and pan: kept across steps, tabs and restarts of the same instance, started over by another one. */
   let mapZoom = $state<MapView | undefined>(undefined);
   const instanceKey = $derived(tour ? `${tour.instance.name}|${tour.cities}|${tour.places.map((p) => p.join(',')).join(';')}` : '');
@@ -99,6 +107,8 @@
         showOptimalTour = false;
         showCityNumbers = true;
         showFocusGraph = true;
+        mapGraphPos = { x: 0, y: 0 };
+        mapCardPos = { x: 0, y: 0 };
       }
     }
   });
@@ -163,9 +173,9 @@
   {/if}
   <div id="stagebody" style={focused ? 'top:12px;bottom:84px' : blocks || land || tour ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
     {#if mapOpen}
-      <RouteMapView {session} bind:showPopulation={showPopulationEdges} bind:showOptimal={showOptimalTour} bind:showNumbers={showCityNumbers} bind:showGraph={showFocusGraph} bind:zoom={mapZoom} />
+      <RouteMapView {session} bind:showPopulation={showPopulationEdges} bind:showOptimal={showOptimalTour} bind:showNumbers={showCityNumbers} bind:showGraph={showFocusGraph} bind:zoom={mapZoom} bind:graphPos={mapGraphPos} bind:cardPos={mapCardPos} />
     {:else if landscapeOpen}
-      <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} bind:trail bind:heatView bind:showGraph={showFocusGraph} bind:showCard={showFocusCard} />
+      <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} bind:trail bind:heatView bind:showGraph={showFocusGraph} bind:showCard={showFocusCard} bind:graphPos={landGraphPos} bind:cardPos={landCardPos} />
     {:else if schemaOpen && blocks}
       <SchemaTracker info={blocks} text={schemaText} oninput={(t) => (typedSchema = t)} history={schemaPoints} now={view.position.cycle} />
     {:else if stage === 'selection' && tournament}

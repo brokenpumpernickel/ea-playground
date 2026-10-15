@@ -1100,3 +1100,14 @@ svg[data-plot="fitness"] text.refl { paint-order:stroke; stroke:var(--surface); 
 .projector .rmo-card .lcard-line, .projector .rmo-card .lcard-fn { font-size:16px; }
 .heatwrap.zoomed canvas.heat { cursor:grab; }
 .heatwrap { touch-action:none; user-select:none; -webkit-user-select:none; }
+
+/* the handle that moves an overlay of the focus view (milestone 7) */
+.tog.move { min-width:0; padding:0 7px; font-size:16px; line-height:1.2; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
+.tog.move:active { cursor:grabbing; }
+.lcard-move { position:absolute; right:8px; top:8px; }
+.rmo-card { position:absolute; }
+.lcard-head { gap:6px; align-items:center; }
+.lcard-head .move { margin-right:auto; }
+.mini .mh .move { font-size:15px; }
+.lcanvas > .heatwrap { display:block; }
+.lcanvas { width:fit-content; }

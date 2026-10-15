@@ -4,6 +4,8 @@
   import Heatmap from './Heatmap.svelte';
   import { heatUnit, subRegion } from './heat-zoom';
   import MiniFitness from './MiniFitness.svelte';
+  import MoveHandle from './MoveHandle.svelte';
+  import type { Offset } from './overlay-drag';
   import { canvasSize } from './landscape-canvas';
   import { maxZoom, minZoom, wholeView, zoomBy, type MapView } from './map-zoom';
   import { statsLines } from './spread-model';
@@ -27,7 +29,9 @@
     heatView = $bindable(undefined),
     showGraph = $bindable(true),
     showCard = $bindable(true),
-  }: { session: Session; zoom?: boolean; surface?: SurfaceView; trail?: 0 | 1 | 3 | 5; heatView?: MapView | undefined; showGraph?: boolean; showCard?: boolean } = $props();
+    graphPos = $bindable({ x: 0, y: 0 }),
+    cardPos = $bindable({ x: 0, y: 0 }),
+  }: { session: Session; zoom?: boolean; surface?: SurfaceView; trail?: 0 | 1 | 3 | 5; heatView?: MapView | undefined; showGraph?: boolean; showCard?: boolean; graphPos?: Offset; cardPos?: Offset } = $props();
   const trails: { value: 0 | 1 | 3 | 5; text: string }[] = [
     { value: 0, text: 'off' },
     { value: 1, text: '1 gen' },
@@ -118,7 +122,7 @@
       <figcaption>Heatmap <i>fitness{info!.minimised ? ' = −f' : ' = f'}, higher is better</i></figcaption>
       <div class="lcanvas">
         <Heatmap info={info!} region={region!} zoomed={zoomedIn} width={figure.width} height={figure.height} {marks} selectedId={session.selectedId} onselect={select} view={heatView} onview={setHeat} />
-        {#if focused && showGraph}<div class="rmo rmo-graph lover lover-graph" data-testid="focus-graph"><MiniFitness model={session.plots} onhide={() => (showGraph = false)} /></div>{/if}
+        {#if focused && showGraph}<div class="rmo rmo-graph lover lover-graph" data-testid="focus-graph" style="transform:translate({graphPos.x}px,{graphPos.y}px)"><MiniFitness model={session.plots} onhide={() => (showGraph = false)} bind:offset={graphPos} /></div>{/if}
       </div>
     </figure>
     <figure>
@@ -126,8 +130,8 @@
       <div class="lcanvas">
         <Surface info={info!} bind:view={surface} width={figure.width} height={figure.height} {marks} selectedId={session.selectedId} onselect={select} />
         {#if focused && showCard}
-          <div class="rmo rmo-card lover lover-card" data-testid="focus-card">
-            <div class="lcard-head"><button class="tog" type="button" aria-label="Hide the information box" data-testid="hide-card" onclick={() => (showCard = false)}><span aria-hidden="true">×</span> hide</button></div>
+          <div class="rmo rmo-card lover lover-card" data-testid="focus-card" style="transform:translate({cardPos.x}px,{cardPos.y}px)">
+            <div class="lcard-head"><MoveHandle label="Move the information box" testid="move-card" bind:offset={cardPos} /><button class="tog" type="button" aria-label="Hide the information box" data-testid="hide-card" onclick={() => (showCard = false)}><span aria-hidden="true">×</span> hide</button></div>
             <p class="lcard-line">{lines[0]}</p>
             <p class="lcard-line">{lines[1]}</p>
             <p class="lcard-fn"><b>{info!.name}</b> · {goal}</p>

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import MoveHandle from './MoveHandle.svelte';
+  import type { Offset } from './overlay-drag';
   import { miniFitness } from './mini-fitness';
   import type { PlotModel } from './plot-models';
 
@@ -7,13 +9,14 @@
    * optimum and nearest-neighbour lines with their words, the "now" line, and a marker of a different shape for each series at
    * "now". Its name is the sentence of the full plot, which stays in the page, hidden, with its table.
    */
-  let { model, onhide }: { model: PlotModel; onhide: () => void } = $props();
+  let { model, onhide, offset = $bindable({ x: 0, y: 0 }), clear = {} }: { model: PlotModel; onhide: () => void; offset?: Offset; clear?: { top?: number; from?: number; to?: number } } = $props();
   const g = $derived(miniFitness(model));
   const colours = { average: 'var(--s1)', bestSoFar: 'var(--s3)', best: 'var(--s2)' } as const;
 </script>
 
 <div class="mini">
   <div class="mh">
+    <MoveHandle label="Move the fitness graph" testid="move-graph" bind:offset {clear} />
     <b>Fitness</b>
     <span class="ml"><b>●</b> average <b>■</b> best <b>▲</b> best so far</span>
     <button class="tog" type="button" aria-label="Hide the fitness graph" data-testid="hide-graph" onclick={onhide}><span aria-hidden="true">×</span> hide</button>
