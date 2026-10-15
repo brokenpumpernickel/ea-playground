@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { getContext, untrack } from 'svelte';
   import type { CrossoverEvent, MutationEvent } from '../engine';
-  import { cityNumberSize, labelPlacement, maxZoom, minZoom, panBy, toScreen, visibleCity, wholeView, zoomAbout, zoomBy, zoomNote, type MapView } from './map-zoom';
+  import { focusContextKey, type FocusView } from './focus-view.svelte';
+  import { cityNumberSize, clampView, labelPlacement, maxZoom, minZoom, panBy, toScreen, visibleCity, wholeView, zoomAbout, zoomBy, zoomNote, type MapView } from './map-zoom';
   import { routeMapModel, type RouteMapInput } from './route-map-model';
   import type { Session } from './session.svelte';
 
@@ -12,7 +14,19 @@
    */
   let { session, showPopulation = $bindable(true), showOptimal = $bindable(false), showNumbers = $bindable(true), zoom = $bindable(undefined) }: { session: Session; showPopulation?: boolean; showOptimal?: boolean; showNumbers?: boolean; zoom?: MapView | undefined } = $props();
 
-  const size = { width: 740, height: 292 };
+  const focus = getContext<FocusView | undefined>(focusContextKey);
+  const focused = $derived(focus?.active === true);
+  /** The picture's own size: the panel's, or, in the focus view, what is left of the whole area beside the figures. */
+  const size = $derived(focused ? { width: 1530, height: 560 } : { width: 740, height: 292 });
+  // the zoomed part of the picture stays the same part of it when the picture changes size
+  let lastSize = untrack(() => size);
+  $effect.pre(() => {
+    const now = size;
+    if (now.width === lastSize.width && now.height === lastSize.height) return;
+    const before = lastSize;
+    lastSize = now;
+    if (zoom) zoom = clampView({ zoom: zoom.zoom, cx: (zoom.cx * now.width) / before.width, cy: (zoom.cy * now.height) / before.height }, now);
+  });
   const info = $derived(session.tour);
   const view = $derived(session.view);
   const metrics = $derived(session.metrics);
@@ -130,6 +144,9 @@
         <button class="tog" type="button" data-testid="zoom-in" aria-label="Zoom in" disabled={current.zoom >= maxZoom} onclick={() => setView(zoomBy(current, size, 1.25))}>+</button>
         <button class="tog" type="button" data-testid="zoom-out" aria-label="Zoom out" disabled={!zoomed} onclick={() => setView(zoomBy(current, size, 1 / 1.25))}>−</button>
         <button class="tog" type="button" data-testid="reset-view" disabled={!zoomed} onclick={() => (zoom = undefined)}>Reset view</button>
+      </span>
+      <span class="lgrp expand">
+        <button class="tog" type="button" data-testid="focus-toggle" aria-keyshortcuts="E" onclick={() => focus?.toggle()}>{focused ? 'Back to the panels' : 'Expand'} <kbd aria-hidden="true">E</kbd></button>
       </span>
     </div>
     <div class="rmrow">

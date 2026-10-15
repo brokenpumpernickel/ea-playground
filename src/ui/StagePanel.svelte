@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { getContext } from 'svelte';
   import { describer, stageTitle } from './describe';
+  import { focusArea, focusContextKey, type FocusView } from './focus-view.svelte';
   import { parseSchema, schemaOfBlock } from './schema-model';
   import SchemaTracker from './SchemaTracker.svelte';
   import { defaultView, type SurfaceView } from './surface-projection';
@@ -19,6 +21,9 @@
   import { crossoverModel, mutationModel } from './variation-models';
 
   let { session }: { session: Session } = $props();
+
+  const focus = getContext<FocusView | undefined>(focusContextKey);
+  const focused = $derived(focus?.active === true);
 
   const order = ['selection', 'pairing', 'crossover', 'mutation', 'evaluation', 'replacement'];
 
@@ -94,6 +99,16 @@
   });
   const mapOpen = $derived(tour !== undefined && showMap);
   const landscapeOpen = $derived(land !== undefined && showLandscape);
+  // a figure is on show, so the focus view can expand it; another problem (one without a figure of its own) starts the focus view over
+  $effect(() => {
+    if (focus) focus.available = mapOpen || landscapeOpen;
+  });
+  let seenProblem: string | undefined;
+  $effect(() => {
+    const id = session.problemEntry.id;
+    if (seenProblem !== undefined && id !== seenProblem) focus?.reset();
+    seenProblem = id;
+  });
   const schemaOpen = $derived(blocks !== undefined && showSchema);
   const schemaText = $derived(typedSchema ?? (blocks ? schemaOfBlock(blocks, 1) : ''));
   const schemaParsed = $derived(blocks ? parseSchema(schemaText, blocks.blockSize * blocks.blocks) : undefined);
@@ -118,30 +133,30 @@
   });
 </script>
 
-<section class="panel" style="left:24px;top:172px;width:1096px;height:574px" aria-labelledby="stage-heading">
-  <div class="ph">
+<section class="panel" data-testid="stage-panel" data-focus={focused ? 'true' : undefined} style={focused ? `left:${focusArea.left}px;top:${focusArea.top}px;width:${focusArea.width}px;height:${focusArea.height}px` : 'left:24px;top:172px;width:1096px;height:574px'} aria-labelledby="stage-heading">
+  <div class="ph" class:sr-only={focused}>
     <h2 id="stage-heading">{schemaOpen ? 'Schema tracker' : landscapeOpen ? 'Landscape' : mapOpen ? (stage === 'crossover' || stage === 'mutation' ? `Route map · ${stage}` : 'Route map') : heading}</h2>
     {#if session.pending.length > 0}<span class="pendingchip" data-testid="pending-chip" title="Changed settings apply when the next generation starts">● pending: {session.pending.join(', ')}</span>{/if}
   </div>
-  {#if land}
+  {#if land && !focused}
     <div class="tabs" role="group" aria-label="View of this panel">
       <button class="tab" class:on={!showLandscape} type="button" aria-pressed={!showLandscape} data-testid="show-stage" onclick={() => (showLandscape = false)}>Stage view</button>
       <button class="tab" class:on={showLandscape} type="button" aria-pressed={showLandscape} data-testid="show-landscape" onclick={() => (showLandscape = true)}>Landscape</button>
     </div>
   {/if}
-  {#if tour}
+  {#if tour && !focused}
     <div class="tabs" role="group" aria-label="View of this panel">
       <button class="tab" class:on={!showMap} type="button" aria-pressed={!showMap} data-testid="show-stage" onclick={() => (showMap = false)}>Stage view</button>
       <button class="tab" class:on={showMap} type="button" aria-pressed={showMap} data-testid="show-map" onclick={() => (showMap = true)}>Route map</button>
     </div>
   {/if}
-  {#if blocks}
+  {#if blocks && !focused}
     <div class="tabs" role="group" aria-label="View of this panel">
       <button class="tab" class:on={!showSchema} type="button" aria-pressed={!showSchema} data-testid="show-stage" onclick={() => (showSchema = false)}>Stage view</button>
       <button class="tab" class:on={showSchema} type="button" aria-pressed={showSchema} data-testid="show-schema" onclick={() => (showSchema = true)}>Schema tracker</button>
     </div>
   {/if}
-  <div id="stagebody" style={blocks || land || tour ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
+  <div id="stagebody" style={focused ? 'top:12px;bottom:84px' : blocks || land || tour ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
     {#if mapOpen}
       <RouteMapView {session} bind:showPopulation={showPopulationEdges} bind:showOptimal={showOptimalTour} bind:showNumbers={showCityNumbers} bind:zoom={mapZoom} />
     {:else if landscapeOpen}

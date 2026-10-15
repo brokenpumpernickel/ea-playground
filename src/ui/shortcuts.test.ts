@@ -23,14 +23,17 @@ describe('the key bindings', () => {
     [' ', {}, 'toggle'],
     ['f', {}, 'function'],
     ['F', {}, 'function'],
+    ['e', {}, 'focus'],
+    ['E', {}, 'focus'],
   ] as const)('%s %j does %s', (k, extra, expected) => {
     expect(shortcutFor(key(k, extra), page)).toBe(expected);
   });
 
   test('every shortcut is labelled for the screen, and the labels are distinct', () => {
     const labels = Object.values(shortcutLabels);
-    expect(labels).toHaveLength(7);
-    expect(new Set(labels).size).toBe(7);
+    expect(labels).toHaveLength(8);
+    expect(new Set(labels).size).toBe(8);
+    expect(shortcutLabels.focus).toBe('E');
   });
 
   test('other keys, and keys with Ctrl, Alt or Meta (browser and system shortcuts), do nothing', () => {
@@ -40,6 +43,8 @@ describe('the key bindings', () => {
     expect(shortcutFor(key('ArrowRight', { altKey: true }), page)).toBeUndefined(); // Alt+→ is browser forward
     expect(shortcutFor(key(' ', { metaKey: true }), page)).toBeUndefined();
     expect(shortcutFor(key('g', { shiftKey: true }), page)).toBeUndefined();
+    expect(shortcutFor(key('e', { shiftKey: true }), page)).toBeUndefined();
+    expect(shortcutFor(key('e', { ctrlKey: true }), page)).toBeUndefined(); // Ctrl+E is the browser's search bar
   });
 });
 
@@ -48,6 +53,7 @@ describe('where the keys do not apply', () => {
     for (const tag of ['INPUT', 'TEXTAREA', 'SELECT']) {
       expect(shortcutFor(key('g'), on(tag))).toBeUndefined();
       expect(shortcutFor(key('f'), on(tag))).toBeUndefined();
+      expect(shortcutFor(key('e'), on(tag))).toBeUndefined();
       expect(shortcutFor(key(' '), on(tag))).toBeUndefined();
       expect(shortcutFor(key('ArrowRight'), on(tag))).toBeUndefined();
     }
@@ -57,6 +63,7 @@ describe('where the keys do not apply', () => {
   test('not inside a dialog, where Tab, Esc and Enter belong to the dialog', () => {
     expect(shortcutFor(key('ArrowRight'), on('BUTTON', { inDialog: true }))).toBeUndefined();
     expect(shortcutFor(key('g'), on('DIV', { inDialog: true }))).toBeUndefined();
+    expect(shortcutFor(key('e'), on('DIV', { inDialog: true }))).toBeUndefined();
   });
 
   test('a slider keeps the arrows (the history bar), and a button keeps Space and Enter', () => {
@@ -67,6 +74,7 @@ describe('where the keys do not apply', () => {
     // but a focused button does not stop the arrows or G
     expect(shortcutFor(key('ArrowRight'), on('BUTTON'))).toBe('microForward');
     expect(shortcutFor(key('g'), on('BUTTON'))).toBe('generation');
+    expect(shortcutFor(key('e'), on('BUTTON'))).toBe('focus');
   });
 
   test('a switch keeps Space', () => {

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { getContext } from 'svelte';
+  import { focusContextKey, type FocusView } from './focus-view.svelte';
   import Heatmap from './Heatmap.svelte';
   import Surface from './Surface.svelte';
   import { defaultView, rotate, type Rotation, type SurfaceView } from './surface-projection';
@@ -11,6 +13,8 @@
    * the axes relabelled, so a tight cluster can be read; it is a view setting, off by default.
    */
   let { session, zoom = $bindable(false), surface = $bindable({ ...defaultView }), trail = $bindable(0) }: { session: Session; zoom?: boolean; surface?: SurfaceView; trail?: 0 | 1 | 3 | 5 } = $props();
+  const focus = getContext<FocusView | undefined>(focusContextKey);
+  const focused = $derived(focus?.active === true);
   const trails: { value: 0 | 1 | 3 | 5; text: string }[] = [
     { value: 0, text: 'off' },
     { value: 1, text: '1 gen' },
@@ -51,6 +55,9 @@
         {#each buttons as b (b.action)}
           <button class="tog" type="button" aria-label={b.label} data-testid="rotate-{b.action}" onclick={() => (surface = rotate(surface, b.action))}><span aria-hidden="true">{b.text}</span></button>
         {/each}
+      </span>
+      <span class="lgrp expand">
+        <button class="tog" type="button" data-testid="focus-toggle" aria-keyshortcuts="E" onclick={() => focus?.toggle()}>{focused ? 'Back to the panels' : 'Expand'} <kbd aria-hidden="true">E</kbd></button>
       </span>
     </div>
     <div class="lplots">

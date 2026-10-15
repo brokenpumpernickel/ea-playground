@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, setContext } from 'svelte';
+  import { FocusView, focusContextKey } from './focus-view.svelte';
   import DiscardNotice from './DiscardNotice.svelte';
   import Drawer from './Drawer.svelte';
   import HistoryStrip from './HistoryStrip.svelte';
@@ -50,6 +51,10 @@
   // and a tour (a permutation of cities) is not a row of one-character genes
   setContext<TourGetter>(tourContextKey, () => session.tour);
 
+  // the route map or the landscape can be given the whole centre of the screen (E, Esc); the stage panel says when a figure is on show
+  const focus = new FocusView();
+  setContext(focusContextKey, focus);
+
   // The screen is designed once, at 1920×1080, and scaled to fit the window.
   let scale = $state(1);
   const fit = () => (scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
@@ -89,6 +94,11 @@
       closeDrawer();
       return;
     }
+    if (event.key === 'Escape' && focus.active && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      event.preventDefault();
+      focus.leave();
+      return;
+    }
     const el = event.target instanceof HTMLElement ? event.target : document.body;
     const action = shortcutFor(event, {
       tag: el.tagName,
@@ -104,6 +114,7 @@
     else if (action === 'stageBack') session.backStage();
     else if (action === 'generation') session.stepGeneration();
     else if (action === 'function') showFunction = !showFunction;
+    else if (action === 'focus') focus.toggle();
     else session.toggle();
   };
 
@@ -136,7 +147,7 @@
 </script>
 
 <div class="viewport">
-  <main class="canvas" class:projector style="transform: translate(-50%, -50%) scale({scale}); transform-origin: center">
+  <main class="canvas" class:projector class:focused={focus.active} style="transform: translate(-50%, -50%) scale({scale}); transform-origin: center">
     <TopBar {session} />
     <Transport {session} {theme} toggleTheme={() => applyTheme(theme === 'light' ? 'dark' : 'light')} {drawerOpen} toggleDrawer={() => (drawerOpen ? closeDrawer() : (drawerOpen = true))} {projector} toggleProjector={() => setProjector(!projector)} />
     <StagePanel {session} />

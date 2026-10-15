@@ -1055,3 +1055,8 @@ svg[data-plot="fitness"] text.refl { paint-order:stroke; stroke:var(--surface); 
 .ccard:has(.tcard) .thead > * { white-space:nowrap; }
 .ccard:has(.tcard) .thead .cuts { font-size:16px; }
 .projector .bit.tour.st { height:var(--tc); font-size:calc(var(--tc) * .56); }
+
+/* the focus view (milestone 7): the route map or the landscape takes the whole centre of the screen */
+.canvas.focused .panel:not([data-testid="stage-panel"]), .canvas.focused #legend { display:none; }
+.lbar .expand { margin-left:auto; }
+.lbar .tog kbd { font-size:12px; font-family:inherit; border:1px solid var(--axis); border-radius:5px; padding:0 4px; margin-left:4px; color:var(--ink2); font-weight:600; }
