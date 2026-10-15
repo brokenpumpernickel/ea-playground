@@ -12,6 +12,55 @@ export interface Size {
   readonly height: number;
 }
 
+export interface Box extends Size {
+  readonly left: number;
+  readonly top: number;
+}
+
+/**
+ * The focus view's picture: the whole body of the stage panel, with the toolbar, the figures card and the fitness graph laid over
+ * its corners. At 1× the cities are laid out in a `free` box, which is clear of the three overlays, so that none of them covers
+ * a city or a number: the tall box (between the graph and the card) for a map that is about as tall as it is wide, the wide
+ * one (above the graph, left of the card) for a long thin one; `freeBoxFor` picks the one that gives the larger map. Zoomed
+ * in, the picture fills the whole area and the overlays (a little transparent) lie over it.
+ */
+export const focusMap = {
+  picture: { width: 1840, height: 734 },
+  frees: [
+    { left: 470, top: 72, width: 1016, height: 650 },
+    { left: 12, top: 72, width: 1474, height: 446 },
+  ],
+  overlays: {
+    toolbar: { left: 12, top: 8, width: 1300, height: 56 },
+    card: { left: 1840 - 12 - 330, top: 8, width: 330, height: 440 },
+    graph: { left: 12, top: 734 - 12 - 196, width: 440, height: 196 },
+  },
+} as const satisfies { picture: Size; frees: readonly Box[]; overlays: Record<string, Box> };
+
+/** The scale (picture units per unit of the instance's places) that `places` get in a box with the margin of the layout. */
+const scaleIn = (places: readonly (readonly [number, number])[], box: Size): number => {
+  const xs = places.map((p) => p[0]);
+  const ys = places.map((p) => p[1]);
+  const spanX = Math.max(...xs) - Math.min(...xs);
+  const spanY = Math.max(...ys) - Math.min(...ys);
+  const fits = [spanX > 0 ? (box.width - 48) / spanX : Infinity, spanY > 0 ? (box.height - 48) / spanY : Infinity];
+  return Math.min(...fits);
+};
+
+/** The free box of the focus view in which these places make the larger map (the first of equals). */
+export function freeBoxFor(places: readonly (readonly [number, number])[]): Box {
+  let best: Box = focusMap.frees[0];
+  let bestScale = -1;
+  for (const box of focusMap.frees) {
+    const scale = scaleIn(places, box);
+    if (scale > bestScale + 1e-12) {
+      best = box;
+      bestScale = scale;
+    }
+  }
+  return best;
+}
+
 /** Cities placed in a box: equal scale across and up, centred, `margin` clear on every side, north (a larger second coordinate) up. */
 export function layoutCities(places: readonly (readonly [number, number])[], size: Size, margin: number): { readonly points: readonly (readonly [number, number])[] } {
   const xs = places.map((p) => p[0]);
@@ -74,6 +123,8 @@ export interface MapTourRow {
 export interface RouteMapInput {
   readonly info: TourInfo;
   readonly size: Size;
+  /** Where the cities are laid out, when that is a part of the picture (the focus view keeps them clear of its overlays); the whole picture by default. */
+  readonly free?: Box;
   /** The population as the table shows it, in the table's order. */
   readonly tours: readonly { readonly id: number; readonly tour: readonly number[]; readonly fitness: number }[];
   readonly selectedId?: number;
@@ -123,7 +174,9 @@ const edge = (pair: readonly [number, number], layer: Layer, extra: Partial<MapE
 export function routeMapModel(input: RouteMapInput): RouteMapModel {
   const { info, size, tours } = input;
   const n = info.cities;
-  const { points } = layoutCities(info.places, size, margin);
+  const free = input.free ?? { left: 0, top: 0, width: size.width, height: size.height };
+  const placed = layoutCities(info.places, { width: free.width, height: free.height }, margin).points;
+  const points = placed.map((p): [number, number] => [free.left + p[0], free.top + p[1]]);
   const total = tours.length;
 
   // the best of the generation (the first of equals) and the selected individual

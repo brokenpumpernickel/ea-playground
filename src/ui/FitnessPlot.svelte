@@ -1,6 +1,6 @@
 <script lang="ts">
   import { num } from './format';
-  import { fitnessPlotBox, referenceLabels, type PlotModel, type PlotPoint } from './plot-models';
+  import { fitnessPlotBox, fitnessSummary, referenceLabels, type PlotModel, type PlotPoint } from './plot-models';
 
   let { model }: { model: PlotModel } = $props();
 
@@ -37,13 +37,7 @@
   const feasibleKnown = (points: readonly PlotPoint[]) => points.filter((p) => p.feasibleBestSoFar !== undefined && p.feasibleBestSoFar !== null);
   const feasibleValue = (p: PlotPoint) => p.feasibleBestSoFar as number;
 
-  const summary = $derived.by(() => {
-    const at = model.points[Math.min(model.now, model.points.length - 1)]!;
-    const feasible = model.feasibleLine ? `, best feasible so far ${at.feasibleBestSoFar === null || at.feasibleBestSoFar === undefined ? 'none yet' : num(at.feasibleBestSoFar)}` : '';
-    const zeros = model.attractor !== undefined ? ` All zeros scores ${num(model.attractor)}.` : '';
-    const lines = model.nearest !== undefined ? ` Optimum ${fmt(model.optimum!)}, nearest neighbour ${fmt(model.nearest)}.` : '';
-    return `Fitness by generation, scale ${fmt(model.yMin)} to ${fmt(model.yMax)}. Generation ${at.generation}: average ${fmt(at.average)}, best of generation ${fmt(at.best)}, best so far ${fmt(at.bestSoFar)}${feasible}.${zeros}${lines}`;
-  });
+  const summary = $derived(fitnessSummary(model));
 </script>
 
 <svg viewBox="0 0 {W} {H}" width="100%" role="img" aria-label={summary} data-plot="fitness" data-now={model.now}>

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { crossover, initialize, mutate, pair, parseTour, tspInstance, tspProblem, type Individual, type Rng, type TspOptions } from '../engine';
-import { layoutCities, routeMapModel, type RouteMapInput } from './route-map-model';
+import { crossover, initialize, mutate, pair, parseTour, tspInstance, tspPlaces, tspProblem, type Individual, type Rng, type TspOptions } from '../engine';
+import { focusMap, freeBoxFor, layoutCities, routeMapModel, type RouteMapInput } from './route-map-model';
 import { tourInfoOf } from './tour-cells';
 
 const scripted = (...draws: number[]): Rng => {
@@ -287,5 +287,68 @@ describe('the figures beside the map and the text alternative', () => {
     expect(selected.route).toBe('1 3 2 4 5 6 7 8 9');
     expect(selected.length).toBe(info.lengthText(info.lengthOf(T('1 3 2 4 5 6 7 8 9'))));
     expect(selected.id).toBe(12);
+  });
+});
+
+describe('the cities in the area the overlays leave free', () => {
+  test('given a free box, every city lies inside it, 24 px from its edges at the tightest, and the layout is the same inside it as it would be alone', () => {
+    const free = { left: 470, top: 72, width: 1016, height: 650 };
+    const m = routeMapModel(base([A], { size: { width: 1840, height: 734 }, free }));
+    for (const n of m.nodes) {
+      expect(n.x).toBeGreaterThanOrEqual(free.left + 24 - 1e-9);
+      expect(n.x).toBeLessThanOrEqual(free.left + free.width - 24 + 1e-9);
+      expect(n.y).toBeGreaterThanOrEqual(free.top + 24 - 1e-9);
+      expect(n.y).toBeLessThanOrEqual(free.top + free.height - 24 + 1e-9);
+    }
+    const alone = routeMapModel(base([A], { size: { width: free.width, height: free.height } }));
+    alone.nodes.forEach((n, k) => {
+      expect(m.nodes[k]!.x).toBeCloseTo(n.x + free.left, 9);
+      expect(m.nodes[k]!.y).toBeCloseTo(n.y + free.top, 9);
+    });
+    expect(m.size).toEqual({ width: 1840, height: 734 });
+  });
+
+  test('without a free box the whole picture is used, as before', () => {
+    const a = routeMapModel(base([A]));
+    const b = routeMapModel(base([A], { free: { left: 0, top: 0, width: size.width, height: size.height } }));
+    expect(b.nodes).toEqual(a.nodes);
+  });
+
+  test('both free boxes of the focus view are clear of the toolbar, the figures card and the fitness graph, whatever the map', () => {
+    const { picture, frees, overlays } = focusMap;
+    const apart = (a: { left: number; top: number; width: number; height: number }, b: { left: number; top: number; width: number; height: number }) =>
+      a.left + a.width <= b.left || b.left + b.width <= a.left || a.top + a.height <= b.top || b.top + b.height <= a.top;
+    for (const free of frees) {
+      for (const [name, box] of Object.entries(overlays)) expect(apart(free, box), `a free box ${JSON.stringify(free)} and the ${name}`).toBe(true);
+      expect(free.left + free.width).toBeLessThanOrEqual(picture.width);
+      expect(free.top + free.height).toBeLessThanOrEqual(picture.height);
+    }
+    for (const [name, box] of Object.entries(overlays)) {
+      expect(box.left, name).toBeGreaterThanOrEqual(0);
+      expect(box.top, name).toBeGreaterThanOrEqual(0);
+      expect(box.left + box.width, name).toBeLessThanOrEqual(picture.width);
+      expect(box.top + box.height, name).toBeLessThanOrEqual(picture.height);
+    }
+    // the tall box is most of the picture's height, so a map about as tall as wide is large
+    expect(Math.max(...frees.map((f) => f.height))).toBeGreaterThan(picture.height * 0.85);
+  });
+
+  test('the box chosen is the one that makes the larger map: the tall one for a round map, the wide one for a long thin one', () => {
+    const round = tspInstance({ instance: 'circle', n: 9, seed: 1 });
+    expect(freeBoxFor(tspPlaces(round))).toBe(focusMap.frees[0]);
+    const thin: [number, number][] = [[0, 0], [100, 5], [60, 3]];
+    expect(freeBoxFor(thin)).toBe(focusMap.frees[1]);
+    const tall: [number, number][] = [[0, 0], [5, 100]];
+    expect(freeBoxFor(tall)).toBe(focusMap.frees[0]);
+    // cities all at one place or on one line: a box is still chosen, nothing is NaN
+    expect(focusMap.frees).toContain(freeBoxFor([[1, 1], [1, 1]]));
+    expect(focusMap.frees).toContain(freeBoxFor([[0, 5], [3, 5]]));
+    // and the chosen box never gives a smaller map than the other
+    for (const places of [thin, tall, tspPlaces(tspInstance({ instance: 'berlin52', n: 10, seed: 1 })), tspPlaces(tspInstance({ instance: 'ulysses16', n: 10, seed: 1 }))]) {
+      const free = freeBoxFor(places);
+      const width = (box: typeof free) => layoutCities(places, { width: box.width, height: box.height }, 24).points;
+      const extent = (pts: readonly (readonly [number, number])[]) => Math.max(Math.max(...pts.map((p) => p[0])) - Math.min(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1])) - Math.min(...pts.map((p) => p[1])));
+      for (const other of focusMap.frees) expect(extent(width(free))).toBeGreaterThanOrEqual(extent(width(other)) - 1e-9);
+    }
   });
 });

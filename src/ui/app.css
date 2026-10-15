@@ -1060,3 +1060,27 @@ svg[data-plot="fitness"] text.refl { paint-order:stroke; stroke:var(--surface); 
 .canvas.focused .panel:not([data-testid="stage-panel"]), .canvas.focused #legend { display:none; }
 .lbar .expand { margin-left:auto; }
 .lbar .tog kbd { font-size:12px; font-family:inherit; border:1px solid var(--axis); border-radius:5px; padding:0 4px; margin-left:4px; color:var(--ink2); font-weight:600; }
+
+/* the focus view's route map: the picture is the whole body, the toolbar, the figures card and the fitness graph lie over its corners */
+.rmfocus { position:relative; display:block; height:100%; }
+.rmfocus .rmframe { position:absolute; left:0; top:0; }
+.rmfocus .rmmap { border:0; border-radius:14px; }
+.rmo { position:absolute; background:color-mix(in srgb, var(--surface) 92%, transparent); border:1.5px solid var(--axis); border-radius:12px; box-shadow:var(--elev); }
+.rmo-bar { left:12px; top:8px; max-width:1300px; padding:6px 10px; }
+.rmo-bar .lbar { flex-wrap:nowrap; gap:12px; }
+.rmo-bar .tog { white-space:nowrap; }
+.rmo-bar select { max-width:230px; }
+.rmo-bar .rl { white-space:nowrap; }
+.rmo-bar .lbar .expand { order:-1; margin-left:0; }
+.rmo-card { right:12px; top:8px; width:330px; padding:8px 12px; }
+.rmo-card .rmstats { width:100%; }
+.rmo-card .rmkey, .rmo-card .rmgap, .rmo-card .rmmark { margin:6px 0 0; font-size:13px; line-height:1.25; }
+.rmo-graph { left:12px; bottom:12px; width:440px; padding:6px 10px 4px; }
+.mini .mh { display:flex; align-items:baseline; gap:10px; font-size:16px; }
+.mini .mh .ml { font-size:13px; color:var(--ink2); }
+.mini .mh .tog { margin-left:auto; font-size:13px; padding:0 8px; min-width:0; }
+.mini svg { display:block; width:100%; height:auto; }
+.mini svg text.mt { font-size:14px; fill:var(--ink2); paint-order:stroke; stroke:var(--surface); stroke-width:3px; stroke-linejoin:round; }
+.mini svg text.mt.ink { fill:var(--ink); font-weight:700; }
+.projector .rmo-card .rmkey, .projector .rmo-card .rmgap, .projector .rmo-card .rmmark { font-size:14px; }
+.projector .mini .mh .ml { font-size:14px; }

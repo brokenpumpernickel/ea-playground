@@ -74,6 +74,7 @@
   let showPopulationEdges = $state(true);
   let showOptimalTour = $state(false);
   let showCityNumbers = $state(true);
+  let showFocusGraph = $state(true);
   /** The map's zoom and pan: kept across steps, tabs and restarts of the same instance, started over by another one. */
   let mapZoom = $state<MapView | undefined>(undefined);
   const instanceKey = $derived(tour ? `${tour.instance.name}|${tour.cities}|${tour.places.map((p) => p.join(',')).join(';')}` : '');
@@ -94,6 +95,7 @@
         showPopulationEdges = true;
         showOptimalTour = false;
         showCityNumbers = true;
+        showFocusGraph = true;
       }
     }
   });
@@ -158,7 +160,7 @@
   {/if}
   <div id="stagebody" style={focused ? 'top:12px;bottom:84px' : blocks || land || tour ? `top:90px${schemaOpen ? ';bottom:16px' : ''}` : 'top:56px'}>
     {#if mapOpen}
-      <RouteMapView {session} bind:showPopulation={showPopulationEdges} bind:showOptimal={showOptimalTour} bind:showNumbers={showCityNumbers} bind:zoom={mapZoom} />
+      <RouteMapView {session} bind:showPopulation={showPopulationEdges} bind:showOptimal={showOptimalTour} bind:showNumbers={showCityNumbers} bind:showGraph={showFocusGraph} bind:zoom={mapZoom} />
     {:else if landscapeOpen}
       <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} bind:trail />
     {:else if schemaOpen && blocks}

@@ -1,5 +1,6 @@
 import { metricsOfProblem, type GaEvent, type GaParams, type GaSetup, type RunState } from '../engine';
 import type { Run } from '../run';
+import { num } from './format';
 
 /**
  * The data the plots draw: one point per recorded generation, read from the engine's metrics, plus the axes.
@@ -68,6 +69,16 @@ export interface TourPlotExtras {
 export function fitnessPlotBox(model: Pick<PlotModel, 'wideAxis' | 'yTicks' | 'format'>): { left: number; right: number; top: number; dataTop: number; bottom: number } {
   const widest = model.wideAxis && model.format && model.yTicks ? Math.max(...model.yTicks.map((v) => model.format!(v).length)) : 0;
   return { left: model.wideAxis ? Math.max(66, 20 + widest * 11.5) : 66, right: 780, top: 28, dataTop: model.wideAxis ? 46 : 28, bottom: 138 };
+}
+
+/** The sentence that says what the fitness plot shows at its cursor, for the screen reader and for the simplified graph of the focus view. */
+export function fitnessSummary(model: PlotModel): string {
+  const fmt = (value: number) => (model.format ? model.format(value) : num(value));
+  const at = model.points[Math.min(model.now, model.points.length - 1)]!;
+  const feasible = model.feasibleLine ? `, best feasible so far ${at.feasibleBestSoFar === null || at.feasibleBestSoFar === undefined ? 'none yet' : num(at.feasibleBestSoFar)}` : '';
+  const zeros = model.attractor !== undefined ? ` All zeros scores ${num(model.attractor)}.` : '';
+  const lines = model.nearest !== undefined ? ` Optimum ${fmt(model.optimum!)}, nearest neighbour ${fmt(model.nearest)}.` : '';
+  return `Fitness by generation, scale ${fmt(model.yMin)} to ${fmt(model.yMax)}. Generation ${at.generation}: average ${fmt(at.average)}, best of generation ${fmt(at.best)}, best so far ${fmt(at.bestSoFar)}${feasible}.${zeros}${lines}`;
 }
 
 /**
