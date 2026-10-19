@@ -1,4 +1,6 @@
+import type { Individual } from './initialize';
 import type { Problem } from './problem';
+import type { SharingEvent } from './selection';
 
 /**
  * Niching: keeping the population spread over several good places instead of letting it all gather on one. Two methods,
@@ -36,4 +38,40 @@ export function validateNiching(niching: NichingConfig, problem: Pick<Problem, '
     problems.push(`${methodNames[niching.method]} needs a distance between individuals, and this problem has none.`);
   }
   return problems;
+}
+
+/** Goldberg\'s triangular sharing function: 1 at no distance, falling to 0 at the radius (in a straight line for α = 1), 0 beyond it. */
+export const sharingKernel = (distance: number, sigma: number, alpha: number): number => (distance >= sigma ? 0 : 1 - (distance / sigma) ** alpha);
+
+/** Each individual\'s niche count: the sum of the kernel over all individuals, itself included (it counts 1), so the count is at least 1. */
+export function nicheCounts<T>(individuals: readonly T[], distance: (a: T, b: T) => number, sigma: number, alpha: number): number[] {
+  return individuals.map((a) => individuals.reduce((sum, b) => sum + sharingKernel(distance(a, b), sigma, alpha), 0));
+}
+
+/**
+ * The sharing step: the weights that were going to be used, divided by the niche counts, and the event that says so.
+ * `before` are positive weights (the roulette chain\'s output, or fitness made positive for a tournament); `shifted` says whether
+ * fitness had to be shifted to make them so.
+ */
+export function shareWeights(
+  population: readonly Individual[],
+  before: readonly number[],
+  niching: NichingConfig,
+  distance: NonNullable<Problem['distance']>,
+  method: SharingEvent['method'],
+  shifted: boolean,
+): SharingEvent {
+  const counts = nicheCounts(population, distance, niching.sigma, niching.alpha);
+  return {
+    stage: 'selection',
+    kind: 'sharing',
+    method,
+    sigma: niching.sigma,
+    alpha: niching.alpha,
+    individualIds: population.map((i) => i.id),
+    before: [...before],
+    counts,
+    shared: before.map((w, k) => w / counts[k]!),
+    shifted,
+  };
 }

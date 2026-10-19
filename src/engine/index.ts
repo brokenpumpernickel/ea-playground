@@ -4,7 +4,7 @@ export { describeAlphabet, initialize, type Individual, type Initialization, typ
 export { fitnessColumn, isPermutationProblem, isRealProblem, type Bounds, type Landscape, type Problem, type ProblemColumn, type Scores } from './problem';
 export { createRng, type Rng, type SeededRng } from '../run/rng';
 export { matingPoolSize, pair, type Pair, type PairingEvent } from './pairing';
-export { rouletteSelect, type SelectionEntry, type SelectionEvent, type SelectionResult } from './selection';
+export { rouletteSelect, type SelectionEntry, type SelectionEvent, type SelectionResult, type SharingEvent } from './selection';
 export {
   transformWeights,
   weightSteps,
@@ -150,4 +150,4 @@ export {
   type TspProblem,
 } from './tsp';
 
-export { nichingDefaults, nichingMethods, validateNiching, type NichingConfig, type NichingMethod } from './niching';
+export { nicheCounts, nichingDefaults, nichingMethods, shareWeights, sharingKernel, validateNiching, type NichingConfig, type NichingMethod } from './niching';

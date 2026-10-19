@@ -2,7 +2,7 @@ import type { Chromosome } from './chromosome';
 import { crossover, type CrossoverConfig, type CrossoverEvent } from './crossover';
 import { evaluated, initialize, type Individual, type Initialization, type SetupEvent } from './initialize';
 import { mutate, type MutationConfig, type MutationEvent } from './mutation';
-import type { NichingConfig } from './niching';
+import { shareWeights, validateNiching, type NichingConfig } from './niching';
 import { matingPoolSize, pair, type PairingEvent } from './pairing';
 import type { Problem } from './problem';
 import type { Rng } from '../run/rng';
@@ -252,6 +252,12 @@ export function runGeneration(
   rng: Rng,
 ): { state: RunState; events: GenerationEvent[]; stops: StopReason[] } {
   stopReasons(state, config.stop, config.problem.knownOptimumFitness); // refuses a nonsense stop configuration before anything is drawn
+  const niching = config.niching && config.niching.method !== 'none' ? config.niching : undefined;
+  if (niching) {
+    const bad = validateNiching(niching, config.problem);
+    if (bad.length > 0) throw new Error(bad[0]);
+    if (niching.method === 'crowding') throw new Error('Deterministic crowding is not built yet.');
+  }
   const replacement =
     config.replacement ??
     generationalReplacement(config.elites, config.truncation?.enabled ? { lambda: config.truncation.lambda } : {});
@@ -263,13 +269,34 @@ export function runGeneration(
   const poolSize = matingPoolSize(offspringCount);
   let selected: SelectionResult;
   if (config.selection.method === 'tournament') {
-    selected = tournamentSelect(state.population, config.selection.size, poolSize, rng);
+    let shared: readonly number[] | undefined;
+    if (niching) {
+      // a tournament compares shared weights, which must be positive: fitness as it is when it is never zero or negative, otherwise shifted (fitness − lowest + 1)
+      const fitness = state.population.map((i) => i.fitness);
+      const needsShift = fitness.some((f) => !(f > 0));
+      let before: readonly number[] = fitness;
+      if (needsShift) {
+        const shifted = transformWeights(fitness, [{ step: 'shift' }]);
+        if (!shifted.ok) throw new Error(shifted.problem);
+        before = shifted.weights;
+      }
+      const event = shareWeights(state.population, before, niching, config.problem.distance!, 'tournament', needsShift);
+      events.push(event);
+      shared = event.shared;
+    }
+    selected = tournamentSelect(state.population, config.selection.size, poolSize, rng, shared);
     events.push(...selected.events);
   } else {
     const weights = transformWeights(state.population.map((i) => i.fitness), config.selection.chain);
     if (!weights.ok) throw new Error(weights.problem);
     events.push(weights.event);
-    selected = rouletteSelect(state.population, weights.weights, poolSize, rng);
+    let spinWeights: readonly number[] = weights.weights;
+    if (niching) {
+      const event = shareWeights(state.population, weights.weights, niching, config.problem.distance!, 'roulette', false);
+      events.push(event);
+      spinWeights = event.shared;
+    }
+    selected = rouletteSelect(state.population, spinWeights, poolSize, rng);
     events.push(...selected.events);
   }
 

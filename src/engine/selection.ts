@@ -12,7 +12,28 @@ export interface SelectionEntry {
   readonly hi: number;
 }
 
+/**
+ * Fitness sharing (see niching.ts): the weights the selection was going to use, how crowded each individual\'s neighbourhood is,
+ * and the weights it uses instead (the first divided by the second). Said once, before the wheel or the tournaments.
+ */
+export interface SharingEvent {
+  readonly stage: 'selection';
+  readonly kind: 'sharing';
+  /** Which selection uses the shared weights: the wheel spins on them, the tournaments compare them. */
+  readonly method: 'roulette' | 'tournament';
+  readonly sigma: number;
+  readonly alpha: number;
+  /** The individuals, in population order; the arrays below are in the same order. */
+  readonly individualIds: readonly number[];
+  readonly before: readonly number[];
+  readonly counts: readonly number[];
+  readonly shared: readonly number[];
+  /** Tournament only: the fitness could be zero or negative, so it was shifted to positive (fitness − lowest + 1) before the division. */
+  readonly shifted: boolean;
+}
+
 export type SelectionEvent =
+  | SharingEvent
   | { readonly stage: 'selection'; readonly kind: 'probabilities'; readonly entries: readonly SelectionEntry[] }
   /** One spin: the random number r and the individual whose interval contained it. Spins are numbered from 1. */
   | { readonly stage: 'selection'; readonly kind: 'spin'; readonly spin: number; readonly r: number; readonly individualId: number }

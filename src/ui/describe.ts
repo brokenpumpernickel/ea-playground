@@ -82,14 +82,19 @@ function describeWith(event: GaEvent, display: Display): string {
           const cause = event.autoSwitch.reason.replace(/\s*Switched to Shift.*$/, '');
           return `${base}. Switched to Shift automatically: ${cause}`;
         }
+        case 'sharing': {
+          const spun = event.method === 'roulette' ? 'the wheel spins on' : 'the tournaments compare';
+          const shifted = event.shifted ? ' (fitness shifted to positive first)' : '';
+          return `Fitness sharing, niche radius σ = ${num(event.sigma)}: each weight is divided by its niche count${shifted}, and ${spun} the shared weights`;
+        }
         case 'probabilities':
           return `Probabilities: ${event.entries.map((e) => `individual ${e.individualId} = ${num(e.probability)}`).join(', ')}`;
         case 'spin':
           return `Spin ${event.spin}: r = ${num(event.r)} → individual ${event.individualId}`;
         case 'tournament-setup':
-          return `Tournaments of ${event.size} compare fitness directly; the weight chain is not used`;
+          return event.comparesShared ? `Tournaments of ${event.size} compare the shared weights (weight ÷ niche count); the weight chain is not used` : `Tournaments of ${event.size} compare fitness directly; the weight chain is not used`;
         case 'tournament': {
-          const contestants = event.contestants.map((c) => `individual ${c.individualId} (fitness ${num(c.fitness)})`).join(' vs ');
+          const contestants = event.contestants.map((c) => `individual ${c.individualId} (${c.shared !== undefined ? `shared ${num(c.shared)}` : `fitness ${num(c.fitness)}`})`).join(' vs ');
           const tie = event.tieBreak ? ' (tie: the lower position wins)' : '';
           return `Tournament ${event.tournament}: ${contestants} → individual ${event.winnerId} wins${tie}`;
         }
