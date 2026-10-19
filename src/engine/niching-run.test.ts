@@ -10,6 +10,7 @@ const two: LandscapeOptions = { function: 'two-peaks', representation: 'real', b
 const methods: [string, NichingConfig, GaParams['selection']][] = [
   ['fitness sharing with roulette', { method: 'sharing', sigma: 2, alpha: 1 }, { method: 'roulette', chain: [{ step: 'identity' }] }],
   ['fitness sharing with tournaments', { method: 'sharing', sigma: 2, alpha: 1 }, { method: 'tournament', size: 2 }],
+  ['deterministic crowding', { method: 'crowding', sigma: 2, alpha: 1 }, { method: 'tournament', size: 2 }],
 ];
 const params = (niching: NichingConfig, selection: GaParams['selection']): GaParams => ({
   selection,
@@ -73,5 +74,20 @@ describe.each(methods)('a seeded run with %s is the same run however it is advan
     };
     expect(final(7)).toEqual(final(7));
     expect(final(7)).not.toEqual(final(8));
+  });
+});
+
+describe('deterministic crowding with an odd population', () => {
+  test('the events replay to the population, the size is kept, and every place is as good as before', () => {
+    const crowding: NichingConfig = { method: 'crowding', sigma: 2, alpha: 1 };
+    const run = make(crowding, { method: 'tournament', size: 2 }, { seed: 12, size: 13 });
+    run.runUntil((state) => state.cycle === 8);
+    for (let c = 1; c <= 8; c++) {
+      const before = run.snapshot(c - 1).state.population;
+      const after = run.snapshot(c).state.population;
+      expect(populationFromEvents(before, run.events(c))).toEqual(after);
+      expect(after).toHaveLength(13);
+      after.forEach((i, k) => expect(i.fitness).toBeGreaterThanOrEqual(before[k]!.fitness));
+    }
   });
 });

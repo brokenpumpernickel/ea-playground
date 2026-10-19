@@ -38,6 +38,7 @@ export const gaAlgorithm: Algorithm<GaSetup, GaParams, RunState, GaEvent> = {
         // one micro-step per spin or tournament; the weight table, probabilities and tournament preamble belong to the whole stage
         if (event.kind === 'spin') return event.spin;
         if (event.kind === 'tournament') return event.tournament;
+        if (event.kind === 'draw') return event.draw;
         return null;
       case 'pairing':
       case 'crossover':

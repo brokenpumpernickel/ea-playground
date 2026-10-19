@@ -87,6 +87,10 @@ function describeWith(event: GaEvent, display: Display): string {
           const shifted = event.shifted ? ' (fitness shifted to positive first)' : '';
           return `Fitness sharing, niche radius σ = ${num(event.sigma)}: each weight is divided by its niche count${shifted}, and ${spun} the shared weights`;
         }
+        case 'crowding-setup':
+          return `Deterministic crowding: every one of the ${event.size} individuals is a parent exactly once, in random order${event.extra ? ' (an odd population: one extra parent is drawn to complete the last pair)' : ''}; there is no selection pressure`;
+        case 'draw':
+          return event.extra ? `Extra parent: r = ${num(event.r)} → individual ${event.individualId}` : `Draw ${event.draw}: r = ${num(event.r)} → individual ${event.individualId} is parent number ${event.draw}`;
         case 'probabilities':
           return `Probabilities: ${event.entries.map((e) => `individual ${e.individualId} = ${num(e.probability)}`).join(', ')}`;
         case 'spin':

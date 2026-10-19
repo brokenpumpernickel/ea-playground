@@ -151,3 +151,4 @@ export {
 } from './tsp';
 
 export { nicheCounts, nichingDefaults, nichingMethods, shareWeights, sharingKernel, validateNiching, type NichingConfig, type NichingMethod } from './niching';
+export { crowdingReplacement, crowdingSelect, type CrowdingDrawEvent, type CrowdingDuel, type CrowdingPair, type CrowdingSetupEvent } from './crowding';

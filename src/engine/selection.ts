@@ -1,5 +1,6 @@
 import type { Individual } from './initialize';
 import type { Rng } from '../run/rng';
+import type { CrowdingDrawEvent, CrowdingSetupEvent } from './crowding';
 import type { TournamentEvent, TournamentSetupEvent } from './tournament';
 
 /** One row of the roulette wheel: the individual's weight, and the slice of [0, 1) a spin must land in to pick it. */
@@ -34,6 +35,8 @@ export interface SharingEvent {
 
 export type SelectionEvent =
   | SharingEvent
+  | CrowdingSetupEvent
+  | CrowdingDrawEvent
   | { readonly stage: 'selection'; readonly kind: 'probabilities'; readonly entries: readonly SelectionEntry[] }
   /** One spin: the random number r and the individual whose interval contained it. Spins are numbered from 1. */
   | { readonly stage: 'selection'; readonly kind: 'spin'; readonly spin: number; readonly r: number; readonly individualId: number }

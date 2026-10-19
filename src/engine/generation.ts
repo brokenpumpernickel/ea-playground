@@ -2,6 +2,7 @@ import type { Chromosome } from './chromosome';
 import { crossover, type CrossoverConfig, type CrossoverEvent } from './crossover';
 import { evaluated, initialize, type Individual, type Initialization, type SetupEvent } from './initialize';
 import { mutate, type MutationConfig, type MutationEvent } from './mutation';
+import { crowdingReplacement, crowdingSelect, type CrowdingPair } from './crowding';
 import { shareWeights, validateNiching, type NichingConfig } from './niching';
 import { matingPoolSize, pair, type PairingEvent } from './pairing';
 import type { Problem } from './problem';
@@ -106,7 +107,7 @@ export interface ReplacementStrategy {
   replace(
     population: readonly Individual[],
     offspring: readonly Individual[],
-  ): { population: Individual[]; elites: readonly number[]; ranking?: readonly RankedOffspring[] };
+  ): { population: Individual[]; elites: readonly number[]; ranking?: readonly RankedOffspring[]; duels?: readonly CrowdingPair[] };
 }
 
 /** One offspring's place in a ranking by fitness (1 = best); ties keep the order the offspring were made in. */
@@ -192,6 +193,8 @@ export interface ReplacementEvent {
   readonly population: readonly number[];
   /** With offspring truncation: every offspring in rank order, and whether it was kept. */
   readonly ranking?: readonly RankedOffspring[];
+  /** With deterministic crowding: each pair, which child faced which parent, and who won. */
+  readonly duels?: readonly CrowdingPair[];
 }
 
 export type GenerationEvent =
@@ -256,11 +259,14 @@ export function runGeneration(
   if (niching) {
     const bad = validateNiching(niching, config.problem);
     if (bad.length > 0) throw new Error(bad[0]);
-    if (niching.method === 'crowding') throw new Error('Deterministic crowding is not built yet.');
   }
+  const crowding = niching?.method === 'crowding';
+  // deterministic crowding is its own replacement (the children take their parents' places), so elitism and truncation do not apply
   const replacement =
     config.replacement ??
-    generationalReplacement(config.elites, config.truncation?.enabled ? { lambda: config.truncation.lambda } : {});
+    (crowding
+      ? crowdingReplacement(config.problem.distance!)
+      : generationalReplacement(config.elites, config.truncation?.enabled ? { lambda: config.truncation.lambda } : {}));
   const offspringCount = replacement.offspringCount(state.population.length);
   const events: GenerationEvent[] = [];
   const generation = state.generation + 1;
@@ -268,7 +274,10 @@ export function runGeneration(
   // 1. selection: roulette (the weight chain, then spins) or tournaments, filling the mating pool
   const poolSize = matingPoolSize(offspringCount);
   let selected: SelectionResult;
-  if (config.selection.method === 'tournament') {
+  if (crowding) {
+    selected = crowdingSelect(state.population, poolSize, rng);
+    events.push(...selected.events);
+  } else if (config.selection.method === 'tournament') {
     let shared: readonly number[] | undefined;
     if (niching) {
       // a tournament compares shared weights, which must be positive: fitness as it is when it is never zero or negative, otherwise shifted (fitness − lowest + 1)
@@ -330,13 +339,14 @@ export function runGeneration(
   });
 
   // 6. replacement
-  const { population, elites, ranking } = replacement.replace(state.population, offspring);
+  const { population, elites, ranking, duels } = replacement.replace(state.population, offspring);
   events.push({
     stage: 'replacement',
     kind: 'summary',
     elites,
     population: population.map((i) => i.id),
     ...(ranking ? { ranking } : {}),
+    ...(duels ? { duels } : {}),
   });
 
   const best = Math.max(...offspring.map((i) => i.fitness), state.bestFitnessSoFar);
