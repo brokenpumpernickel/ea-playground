@@ -8,6 +8,7 @@
   import FitnessPlot from './FitnessPlot.svelte';
   import FunctionPlot from './FunctionPlot.svelte';
   import { landscapeModel } from './landscape-model';
+  import { occupancy, occupancySentence, peakRadius } from './peak-occupancy';
   import MatchRateStrip from './MatchRateStrip.svelte';
   import { matchRates } from './match-rate-model';
   import { targetOf } from './problems';
@@ -31,6 +32,7 @@
   const tour = $derived(session.tour);
   const stats = $derived(spread ? statsLines(m) : undefined);
   const tourStats = $derived(edges && tour ? tourStatsLines(tour, m) : undefined);
+  const peakRows = $derived(session.landscape?.peaks ? occupancy(session.landscape.peaks, session.table.rows.flatMap((r) => (r.values ? [{ x: r.values[0]!, y: r.values[1]! }] : []))) : undefined);
   const landscape = $derived(session.problem.landscape);
   const curve = $derived(landscape ? landscapeModel(landscape, session.table.rows) : undefined);
 </script>
@@ -68,12 +70,24 @@
     <span class="r legend" data-testid="distinct">{m.distinct} of {size} distinct{edges ? ' routes' : ''}</span>
   </div>
   {#if rates}<MatchRateStrip {rates} />{:else if chosen}<ChosenStrip shares={chosen} />{:else if blockStates}<BlockStatesStrip model={blockStates} />{:else if spread}<SpreadPanel panel={spread} />{:else if edges}<EdgeStrip shares={edges.agreement} route={edges.bestRoute} {size} />{:else}<AlleleStrip shares={m.alleleFrequencies} />{/if}
-  <p class="summary" class:landscape={stats !== undefined} class:tourstats={tourStats !== undefined} data-testid="summary">
-    {#if tourStats}{tourStats[0]}<br />{tourStats[1]}{:else if stats}{stats[0]}<br />{stats[1]}{:else}
+  <p class="summary" class:landscape={stats !== undefined} class:tourstats={tourStats !== undefined} class:withpeaks={peakRows !== undefined && stats !== undefined} data-testid="summary">
+    {#if tourStats}{tourStats[0]}<br />{tourStats[1]}{:else if stats}{stats[0]}<br />{stats[1]}{#if peakRows}<br /><span class="peakline" data-testid="peak-readout" aria-hidden="true" title="Individuals within {peakRadius} of each peak">near: {#each peakRows as r, k (r.name)}{k > 0 ? ' · ' : ''}{r.name} <b>{r.count}</b>{/each}</span>{/if}{:else}
     generation {m.generation} · best now {m.best} · best so far {m.bestSoFar}<br />
     average {num(Math.round(m.average * 10) / 10)} · worst {m.worst} · evaluations {m.evaluations}{#if m.feasible}{' · '}feasible {m.feasible.count} of {size}{/if}{/if}
   </p>
 </section>
+{/if}
+
+{#if peakRows}
+  <p class="sr-only" data-testid="peak-sentence">{occupancySentence(peakRows, size)}</p>
+  <table class="sr-only" aria-label="Individuals near each peak" data-testid="peaks-table">
+    <thead><tr><th scope="col">Peak</th><th scope="col">x</th><th scope="col">y</th><th scope="col">Individuals within {peakRadius}</th></tr></thead>
+    <tbody>
+      {#each peakRows as r (r.name)}
+        <tr data-peak={r.name}><th scope="row">{r.name}</th><td>{num(r.x)}</td><td>{num(r.y)}</td><td>{r.count}</td></tr>
+      {/each}
+    </tbody>
+  </table>
 {/if}
 
 <!-- the same numbers as the plots, for anyone who cannot read a chart -->

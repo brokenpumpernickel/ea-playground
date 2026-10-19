@@ -1148,3 +1148,8 @@ svg.ringlayer .nicheLabel { font-size:13px; font-weight:700; fill:#fff; stroke:r
 .sharetable .num { text-align:right; font-variant-numeric:tabular-nums; }
 .rgrid.duelgrid { grid-template-columns:minmax(0,2fr) minmax(0,1fr); }
 .duelcol h4 { margin:0 0 2px; }
+
+/* the peak-occupancy line under the fitness figures: one line at any size, a little smaller than its neighbours */
+.plot .summary .peakline { display:inline-block; white-space:nowrap; font-size:15px; line-height:1.2; }
+.projector .plot .summary .peakline { font-size:16px; }
+.plot .summary.withpeaks { margin-top:2px; line-height:1.2; }

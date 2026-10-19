@@ -1,4 +1,4 @@
-import { landscapeFitnessRange, type Bounds, type LandscapeFunction, type LandscapeProblem, type LandscapeRepresentation, type Point } from '../engine';
+import { landscapeFitnessRange, type Bounds, type LandscapeFunction, type LandscapeProblem, type LandscapeRepresentation, type Peak, type Point } from '../engine';
 
 /**
  * Where a view finds the landscape it is drawing chromosomes for: how a chromosome is written (a pair of numbers, or bits
@@ -23,6 +23,8 @@ export interface LandscapeInfo {
   /** The fitness at any point of the plane (what the heatmap and surface draw), the optimum point(s) and the fitness range of the function. */
   fitnessAt(x: number, y: number): number;
   readonly optima: readonly Point[];
+  /** The hills worth telling apart; absent where there are too many to name. */
+  readonly peaks?: readonly Peak[] | undefined;
   readonly fitnessRange: { readonly min: number; readonly max: number };
 }
 
@@ -39,5 +41,6 @@ export const landscapeInfoOf = (problem: LandscapeProblem): LandscapeInfo => ({
   pointOf: problem.pointOf.bind(problem),
   fitnessAt: problem.fitnessAt,
   optima: problem.info.optima,
+  peaks: problem.info.peaks,
   fitnessRange: landscapeFitnessRange(problem),
 });

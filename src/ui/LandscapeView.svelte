@@ -8,6 +8,7 @@
   import type { Offset } from './overlay-drag';
   import { canvasSize } from './landscape-canvas';
   import { maxZoom, minZoom, wholeView, zoomBy, type MapView } from './map-zoom';
+  import { occupancy, peakRadius } from './peak-occupancy';
   import { statsLines } from './spread-model';
   import Surface from './Surface.svelte';
   import { defaultView, rotate, surfaceZoom, surfaceZoomLimits, type Rotation, type SurfaceView } from './surface-projection';
@@ -80,6 +81,7 @@
   const sharingSigma = $derived(cursorParams.niching?.method === 'sharing' ? cursorParams.niching.sigma : undefined);
   const selectedPoint = $derived(session.selectedId === undefined ? undefined : session.table.rows.find((r) => r.id === session.selectedId)?.values);
   const ring = $derived(sharingSigma !== undefined && selectedPoint && session.selectedId !== undefined ? { x: selectedPoint[0]!, y: selectedPoint[1]!, sigma: sharingSigma, id: session.selectedId } : undefined);
+  const peakRows = $derived(info?.peaks ? occupancy(info.peaks, points) : undefined);
   const m = $derived(session.metrics);
   const lines = $derived(statsLines(m));
   const goal = $derived(info?.minimised ? 'f is minimised, so fitness = −f and higher is always better' : 'f is maximised, higher is better');
@@ -139,6 +141,7 @@
             <div class="lcard-head"><MoveHandle label="Move the information box" testid="move-card" bind:offset={cardPos} /><button class="tog" type="button" aria-label="Hide the information box" data-testid="hide-card" onclick={() => (showCard = false)}><span aria-hidden="true">×</span> hide</button></div>
             <p class="lcard-line">{lines[0]}</p>
             <p class="lcard-line">{lines[1]}</p>
+            {#if peakRows}<p class="lcard-line" data-testid="focus-peaks">within {peakRadius} of a peak: {#each peakRows as r, k (r.name)}{k > 0 ? ' · ' : ''}{r.name} <b>{r.count}</b>{/each}</p>{/if}
             <p class="lcard-fn"><b>{info!.name}</b> · {goal}</p>
             {@render keyLine()}
           </div>
