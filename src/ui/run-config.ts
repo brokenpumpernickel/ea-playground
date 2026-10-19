@@ -101,7 +101,7 @@ function checkChain(chain: unknown, problems: string[]): void {
 }
 
 function checkParams(params: unknown, problems: string[]): void {
-  if (!exactKeys(params, 'params', ['selection', 'crossover', 'mutation', 'elites', 'stop'], ['truncation'], problems)) return;
+  if (!exactKeys(params, 'params', ['selection', 'crossover', 'mutation', 'elites', 'stop'], ['truncation', 'niching'], problems)) return;
   const selection = params.selection;
   if (isObject(selection) && selection.method === 'roulette') {
     exactKeys(selection, 'params.selection', ['method', 'chain'], [], problems);
@@ -134,6 +134,13 @@ function checkParams(params: unknown, problems: string[]): void {
     if (exactKeys(truncation, 'params.truncation', ['enabled', 'lambda'], [], problems)) {
       if ('enabled' in truncation && typeof truncation.enabled !== 'boolean') problems.push('"params.truncation.enabled" must be true or false.');
       if ('lambda' in truncation && !isNumber(truncation.lambda)) problems.push('"params.truncation.lambda" must be a number.');
+    }
+  }
+  if ('niching' in params) {
+    const niching = params.niching;
+    if (exactKeys(niching, 'params.niching', ['method', 'sigma', 'alpha'], [], problems)) {
+      if ('method' in niching && !['none', 'sharing', 'crowding'].includes(niching.method as string)) problems.push('"params.niching.method" must be "none", "sharing" or "crowding".');
+      for (const key of ['sigma', 'alpha']) if (key in niching && !isNumber(niching[key])) problems.push(`"params.niching.${key}" must be a number.`);
     }
   }
   const stop = params.stop;

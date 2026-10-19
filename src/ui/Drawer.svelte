@@ -3,6 +3,7 @@
   import { gaAlgorithm, itemName, knapsackLimits, landscapeFunctionInfo, landscapeFunctions, landscapeLimits, linkages, trapLimits, tspCatalogue, tspInstance, tspLimits, validateTsp } from '../engine';
   import ChainEditor from './ChainEditor.svelte';
   import DrawerRow from './DrawerRow.svelte';
+  import { nichingDefaults, type NichingMethod } from '../engine';
   import { changes, chromosomePieces, draftOf, followedTargetFitness, optionsOf, problemOf, resetParams, toParams, toSetup, validate, withInstance, withRepresentation, type Draft, type Field } from './drawer-model';
   import PopulationEditor from './PopulationEditor.svelte';
   import ShareLink from './ShareLink.svelte';
@@ -43,7 +44,7 @@
   const errors = $derived(validation.errors);
 
   /** Operator edits are checked against the run as it is, not against setup edits that have not been applied yet. */
-  const operatorFields: Field[] = ['tournamentSize', 'chain', 'crossover.operator', 'crossover.probability', 'crossover.alpha', 'mutation.probability', 'mutation.mode', 'mutation.operator', 'mutation.sigma', 'elites', 'truncation.lambda', 'stop.generationLimit', 'stop.target', 'stop.epsilon', 'stop.stagnation'];
+  const operatorFields: Field[] = ['tournamentSize', 'chain', 'crossover.operator', 'crossover.probability', 'crossover.alpha', 'mutation.probability', 'mutation.mode', 'mutation.operator', 'mutation.sigma', 'elites', 'truncation.lambda', 'niching', 'niching.sigma', 'niching.alpha', 'stop.generationLimit', 'stop.target', 'stop.epsilon', 'stop.stagnation'];
   const commit = () => {
     const now = fresh();
     // while the form holds another representation (and so its operators), nothing is applied to the running one: the restart applies it all
@@ -101,6 +102,14 @@
   };
 
   const followed = $derived(followedTargetFitness(draft, runProblem));
+
+  // niching: what each method does, and what it switches off
+  const crowdingOn = $derived(draft.niching?.method === 'crowding');
+  const nichingHelp: Record<NichingMethod, string> = {
+    none: 'The population gathers wherever selection finds the best fitness, which on a landscape with a broad low hill and a narrow tall one is usually the broad hill.',
+    sharing: 'Fitness sharing: each individual\'s selection weight is divided by its niche count, how many individuals crowd round it (each counts less the farther away it is, none beyond σ). A crowded hill loses weight, so a lone individual on another hill can win.',
+    crowding: 'Deterministic crowding: every individual is a parent once, in random order (no selection pressure), and each child duels the nearer of its two parents and replaces it only if strictly better. A hill keeps its best individual however crowded the others are.',
+  };
 
   // the landscape: what the function is, which operators the representation offers
   const fnInfo = $derived(draft.landscape ? landscapeFunctionInfo[draft.landscape.function] : undefined);
@@ -356,6 +365,9 @@
 
   <div class="sec" data-section="selection">
     <h3>Selection</h3>
+    {#if crowdingOn}
+      <p class="help" data-testid="selection-crowding-note">Not used: deterministic crowding takes every individual as a parent exactly once, in random order, so there is no selection method to choose.</p>
+    {:else}
     <DrawerRow label="Method" id="method" pending={tag('Selection')}>
       <select id="method" value={draft.method} onchange={(e) => { draft.method = e.currentTarget.value as Draft['method']; commit(); }}>
         <option value="roulette">Roulette wheel</option>
@@ -372,6 +384,7 @@
         <p class="help">raw fitness → weight → probability. Steps can be added, removed and reordered. Tournament ignores the chain.</p>
         <ChainEditor chain={draft.chain} error={errors.chain} badStep={blamed} ontouch={commit} />
       </div>
+    {/if}
     {/if}
   </div>
 
@@ -452,6 +465,9 @@
 
   <div class="sec" data-section="replacement">
     <h3>Replacement</h3>
+    {#if crowdingOn}
+      <p class="help" data-testid="replacement-crowding-note">Not used: under deterministic crowding each child takes the place of the parent it duels, and the population never loses a niche's best, so elites and offspring truncation do not apply.</p>
+    {:else}
     <DrawerRow label="Elites e" id="elites" error={errors.elites} pending={pendingFor('Elites', applied.elites, draft.elites)} help={`The e best individuals of a generation are copied unchanged into the next one (${elitePercent || '—'}).`}>
       <input id="elites" type="text" inputmode="numeric" bind:value={draft.elites} onchange={commit} aria-invalid={errors.elites ? 'true' : undefined} />
     </DrawerRow>
@@ -463,7 +479,30 @@
         <input id="truncation-lambda" type="text" inputmode="numeric" bind:value={draft.truncation.lambda} onchange={commit} aria-invalid={errors['truncation.lambda'] ? 'true' : undefined} />
       </DrawerRow>
     {/if}
+    {/if}
   </div>
+
+  {#if draft.niching}
+    <div class="sec" data-section="niching">
+      <h3>Niching <span class="note">keep the population spread over several good places</span></h3>
+      <DrawerRow label="Niching" id="niching-method" error={errors.niching} pending={tag('Niching')} help={nichingHelp[draft.niching.method]}>
+        <select id="niching-method" value={draft.niching.method} onchange={(e) => { draft.niching!.method = e.currentTarget.value as NichingMethod; commit(); }} aria-describedby="niching-method-help">
+          <option value="none">None</option>
+          <option value="sharing">Fitness sharing</option>
+          <option value="crowding">Deterministic crowding</option>
+        </select>
+      </DrawerRow>
+      {#if draft.niching.method === 'sharing'}
+        <DrawerRow label="Niche radius σ" id="niching-sigma" error={errors['niching.sigma']} pending={pendingFor('Sharing σ', applied.niching?.sigma ?? String(nichingDefaults.sigma), draft.niching.sigma)} help="In x, y units. Individuals closer together than σ share: the farther apart two are, the less they count against each other. Default 2.">
+          <input id="niching-sigma" type="text" inputmode="decimal" bind:value={draft.niching.sigma} onchange={commit} aria-invalid={errors['niching.sigma'] ? 'true' : undefined} aria-describedby={errors['niching.sigma'] ? 'niching-sigma-error' : 'niching-sigma-help'} />
+        </DrawerRow>
+        <DrawerRow label="Shape α" id="niching-alpha" error={errors['niching.alpha']} pending={pendingFor('Sharing α', applied.niching?.alpha ?? String(nichingDefaults.alpha), draft.niching.alpha)} help="How a neighbour's share falls with distance: 1 is a straight slope from 1 at no distance to 0 at σ; above 1 neighbours count more, below 1 less. Default 1.">
+          <input id="niching-alpha" type="text" inputmode="decimal" bind:value={draft.niching.alpha} onchange={commit} aria-invalid={errors['niching.alpha'] ? 'true' : undefined} aria-describedby={errors['niching.alpha'] ? 'niching-alpha-error' : 'niching-alpha-help'} />
+        </DrawerRow>
+        <p class="help" data-testid="niching-tip">Sharing works best with roulette-wheel selection and a population of 30 or more; tournaments of 2 barely change what it does.</p>
+      {/if}
+    </div>
+  {/if}
 
   <div class="sec" data-section="stop">
     <h3>Stop <span class="note">reported, never forced: stepping continues past them</span></h3>

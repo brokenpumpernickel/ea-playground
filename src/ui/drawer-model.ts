@@ -1,5 +1,5 @@
 import { isKnapsackOptions, isLandscapeOptions, isStringOptions, isTrapOptions, isTspOptions, defaultsOf, type ProblemEntry, type ProblemOptions } from './problems';
-import { checkReal, checkTour, formatTour, parseTour, permutationMutationOperators, permutationOperators, tspDefaultEpsilon, tspProblem, validateTsp, type TspOptions, defaultAlpha, defaultSigma, describeAlphabet, formatReal, isRealProblem, landscapeDefaultEpsilon, landscapeDefaults, landscapeProblem, minimumGenes, operatorName, optimalBag, parseGenes, parseReal, realOnlyOperators, validateKnapsack, validateLandscape, validateTrap, type Handling, type KnapsackOptions, type LandscapeFunction, type LandscapeOptions, type LandscapeRepresentation, type Linkage, type MutationOperator, type TrapOptions, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
+import { nichingDefaults, nichingMethods, validateNiching, type NichingMethod, checkReal, checkTour, formatTour, parseTour, permutationMutationOperators, permutationOperators, tspDefaultEpsilon, tspProblem, validateTsp, type TspOptions, defaultAlpha, defaultSigma, describeAlphabet, formatReal, isRealProblem, landscapeDefaultEpsilon, landscapeDefaults, landscapeProblem, minimumGenes, operatorName, optimalBag, parseGenes, parseReal, realOnlyOperators, validateKnapsack, validateLandscape, validateTrap, type Handling, type KnapsackOptions, type LandscapeFunction, type LandscapeOptions, type LandscapeRepresentation, type Linkage, type MutationOperator, type TrapOptions, transformWeights, weightSteps, type GaParams, type GaSetup, type Problem, type StepName, type StepSpec } from '../engine';
 
 /**
  * What the parameter drawer edits. Numbers are kept as the text the user typed, so a half-typed or wrong entry can be
@@ -38,6 +38,8 @@ export interface Draft {
   mutation: { enabled: boolean; mode: GaParams['mutation']['mode']; probability: string; operator?: MutationOperator; sigma?: string };
   elites: string;
   truncation: { enabled: boolean; lambda: string };
+  /** Fitness sharing or deterministic crowding: for the landscape, or when a link gave one; the radius and the shape are kept as typed while another method is chosen. */
+  niching?: { method: NichingMethod; sigma: string; alpha: string };
   stop: {
     generationLimit: string;
     target: { enabled: boolean; value: string };
@@ -78,6 +80,9 @@ export type Field =
   | 'mutation.sigma'
   | 'elites'
   | 'truncation.lambda'
+  | 'niching'
+  | 'niching.sigma'
+  | 'niching.alpha'
   | 'stop.generationLimit'
   | 'stop.target'
   | 'stop.epsilon'
@@ -143,6 +148,9 @@ export function draftOf(params: GaParams, setup: GaSetup, seed: number, options?
     },
     elites: String(params.elites),
     truncation: { enabled: params.truncation?.enabled ?? false, lambda: textOf(params.truncation?.lambda, setup.init.kind === 'random' ? setup.init.size : setup.init.chromosomes.length) },
+    ...(params.niching !== undefined || (options && isLandscapeOptions(options))
+      ? { niching: { method: params.niching?.method ?? 'none', sigma: textOf(params.niching?.sigma, nichingDefaults.sigma), alpha: textOf(params.niching?.alpha, nichingDefaults.alpha) } }
+      : {}),
     stop: {
       generationLimit: String(params.stop.generationLimit),
       target: { enabled: params.stop.targetFitness !== undefined, value: textOf(params.stop.targetFitness, 0) },
@@ -376,12 +384,29 @@ export function validate(draft: Draft, problem: Problem, sampleFitness: readonly
   const pm = numberOf(draft.mutation.probability);
   if (pm === undefined || pm < 0 || pm > 1) errors['mutation.probability'] = 'The mutation probability must be a number from 0 to 1.';
 
-  // replacement
+  // niching
+  const niching = draft.niching;
+  const crowding = niching?.method === 'crowding';
+  if (niching) {
+    if (!nichingMethods.includes(niching.method)) errors.niching = `Niching must be one of ${nichingMethods.join(', ')}.`;
+    else if (niching.method !== 'none') {
+      const refusal = validateNiching({ method: niching.method, sigma: 1, alpha: 1 }, problem);
+      if (refusal.length > 0) errors.niching = refusal.join(' ');
+    }
+    if (niching.method === 'sharing') {
+      const sigma = numberOf(niching.sigma);
+      if (sigma === undefined || !(sigma > 0)) errors['niching.sigma'] = 'σ (the niche radius) must be a number greater than 0.';
+      const alpha = numberOf(niching.alpha);
+      if (alpha === undefined || !(alpha > 0)) errors['niching.alpha'] = 'α (the shape of the sharing kernel) must be a number greater than 0.';
+    }
+  }
+
+  // replacement (deterministic crowding is its own replacement, so elites and truncation are ignored and not checked)
   const elites = numberOf(draft.elites);
-  if (!isWhole(elites, 0) || (size !== undefined && elites > size)) {
+  if (!crowding && (!isWhole(elites, 0) || (size !== undefined && elites > size))) {
     errors.elites = size === undefined ? 'The number of elites must be a whole number, 0 or more.' : `The number of elites must be a whole number from 0 to the population size (${size}).`;
   }
-  if (draft.truncation.enabled) {
+  if (draft.truncation.enabled && !crowding) {
     const lambda = numberOf(draft.truncation.lambda);
     if (!isWhole(lambda, 1)) errors['truncation.lambda'] = 'λ must be a whole number.';
     else if (size !== undefined && isWhole(elites, 0) && lambda < size - elites) {
@@ -441,6 +466,7 @@ export function toParams(draft: Draft): GaParams {
     },
     elites: Number(draft.elites),
     truncation: { enabled: draft.truncation.enabled, lambda: Number(draft.truncation.lambda) },
+    ...nichingOf(draft),
     stop: {
       generationLimit: Number(draft.stop.generationLimit),
       ...(draft.stop.target.enabled ? { targetFitness: Number(draft.stop.target.value) } : {}),
@@ -448,6 +474,16 @@ export function toParams(draft: Draft): GaParams {
       ...(draft.stop.stagnation.enabled ? { stagnationWindow: Number(draft.stop.stagnation.window) } : {}),
     },
   };
+}
+
+/** The niching setting as the engine takes it: absent for none with the default radius and shape (the run is then what it always was), otherwise whole. */
+function nichingOf(draft: Draft): Pick<GaParams, 'niching'> {
+  const n = draft.niching;
+  if (!n) return {};
+  const sigma = numberOf(n.sigma) ?? nichingDefaults.sigma;
+  const alpha = numberOf(n.alpha) ?? nichingDefaults.alpha;
+  if (n.method === 'none' && sigma === nichingDefaults.sigma && alpha === nichingDefaults.alpha) return {};
+  return { niching: { method: n.method, sigma, alpha } };
 }
 
 export function toSetup(draft: Draft, problem: Problem): GaSetup {
@@ -492,6 +528,15 @@ export function changes(draft: Draft, current: { params: GaParams; setup: GaSetu
   if (next.truncation?.enabled !== (p.truncation?.enabled ?? false)) operator.push('Offspring truncation on/off');
   // λ only matters while truncation is on
   else if (next.truncation?.enabled && next.truncation.lambda !== p.truncation?.lambda) operator.push('Offspring λ');
+  const noNiching = { method: 'none', sigma: nichingDefaults.sigma, alpha: nichingDefaults.alpha } as const;
+  const nextNiching = next.niching ?? noNiching;
+  const wasNiching = p.niching ?? noNiching;
+  if (nextNiching.method !== wasNiching.method) operator.push('Niching');
+  else if (nextNiching.method === 'sharing') {
+    // the radius and the shape matter only while sharing is the method
+    if (nextNiching.sigma !== wasNiching.sigma) operator.push('Sharing σ');
+    if (nextNiching.alpha !== wasNiching.alpha) operator.push('Sharing α');
+  }
   if (!same(next.stop, p.stop)) operator.push('Stop criteria');
 
   const reset: string[] = [];
