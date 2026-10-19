@@ -237,7 +237,7 @@ _Avoid_: Skip, no-op
 ### Replacement
 
 **Replacement**:
-The stage that forms the next population, currently always generational: offspring replace the population, with elites carried over.
+The stage that forms the next population: generational by default (offspring replace the population, with elites carried over), or, under deterministic crowding, each child against the parent it most resembles.
 _Avoid_: Survivor selection
 
 **Offspring truncation**:
@@ -247,3 +247,30 @@ _Avoid_: Overproduction, offspring culling
 **Elite**:
 An individual copied unchanged into the next population by elitism.
 _Avoid_: Survivor, champion
+
+### Niching (landscape only)
+
+**Niche**:
+The neighbourhood of an individual within the niche radius σ of it: the individuals that compete with it for the same hill. Niching keeps several hills occupied at once instead of letting the highest crowd out the rest.
+_Avoid_: Species (a niche here is only a distance, nothing is classified)
+
+**Fitness sharing**:
+A selection-time niching method: each individual's selection weight is divided by its niche count, so a crowded hill pays for its crowd and a lonely one keeps its share. Elites are still chosen by raw fitness. Needs a distance between individuals (the landscape's decoded points).
+_Avoid_: Fitness scaling, penalty
+
+**Niche count**:
+The sum, over every individual in the population including itself, of the sharing kernel 1 − (d/σ)^α for distances d below σ (0 beyond). An individual alone in its niche has count 1.
+_Avoid_: Crowding count
+
+**Shared weight**:
+An individual's selection weight divided by its niche count; what roulette spins on and what tournaments compare when sharing is on.
+
+**Deterministic crowding**:
+A replacement-time niching method (Mahfoud): every individual is a parent exactly once, in random order; each child duels the parent it most resembles and takes that parent's place only if strictly fitter. There is no selection pressure in selection and the population size is constant, so a niche's best is never lost to another niche. Elites and offspring truncation do not apply.
+_Avoid_: Generalised crowding, restricted tournament
+
+**Duel**:
+One child against its nearer parent under deterministic crowding. The pair's two children are matched to its two parents by the matching with the smaller total distance (a tie keeps the straight matching); the child wins only if strictly fitter, so a tie keeps the parent.
+
+**Peak occupancy**:
+How many individuals lie within 1.5 of each known peak of the landscape (the broad hill and the narrow hill of Two peaks, the four places of Himmelblau), read from the decoded points of the population on show.

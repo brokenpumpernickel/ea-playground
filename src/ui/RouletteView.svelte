@@ -61,7 +61,7 @@
   const description = $derived(`Roulette wheel: ${model.rows.map((r) => `individual ${r.id} ${(r.probability * 100).toFixed(1)}%`).join(', ')}`);
 </script>
 
-<div class="roulette" class:shared={model.sharing !== undefined}>
+<div class="roulette" class:shared={model.sharing !== undefined} class:many={model.spins.length > 16}>
   <figure class="wheelbox">
     <svg role="img" aria-label={description} viewBox="0 0 340 340" width="350" height="350" data-animated={animate ? 'true' : 'false'}>
       {#each slices as slice (slice.id)}

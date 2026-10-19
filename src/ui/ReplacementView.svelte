@@ -50,7 +50,7 @@
             </tr>
             {#each pair.duels as d (d.childId)}
               <tr data-pair={pair.pair} data-child={d.childId} data-winner={d.winner}>
-                <td>O{d.offspring} (#{d.childId})</td>
+                <th scope="row">O{d.offspring} (#{d.childId})</th>
                 <td>#{d.parentId}</td>
                 <td class="num">{num(d.distance)}</td>
                 <td class="num">{num(d.childFitness)} vs {num(d.parentFitness)}</td>

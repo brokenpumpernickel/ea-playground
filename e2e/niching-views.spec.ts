@@ -72,9 +72,9 @@ test('tournaments with fitness sharing: a table of every individual\'s fitness, 
   await expect(rows).toHaveCount(12);
   for (const [k, id] of e.individualIds.entries()) {
     const cells = rows.nth(k).locator('td');
-    expect(Number(await cells.nth(0).innerText())).toBe(id);
-    expect(read(await cells.nth(2).innerText())).toBeCloseTo(e.counts[k]!, 2);
-    expect(read(await cells.nth(3).innerText())).toBeCloseTo(e.shared[k]!, 2);
+    expect(Number(await rows.nth(k).locator('th[scope="row"]').innerText())).toBe(id);
+    expect(read(await cells.nth(1).innerText())).toBeCloseTo(e.counts[k]!, 2);
+    expect(read(await cells.nth(2).innerText())).toBeCloseTo(e.shared[k]!, 2);
   }
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('[data-tournament="1"] .contestants')).toContainText('shared');
@@ -121,7 +121,7 @@ test('deterministic crowding\'s replacement: the duels of every pair as the engi
       const row = page.locator(`[data-testid="duels"] tr[data-child="${d.childId}"]`);
       await expect(row).toHaveAttribute('data-pair', String(pair.pair));
       await expect(row).toHaveAttribute('data-winner', d.winner);
-      await expect(row.locator('td').nth(d.childId === pair.duels[0]!.childId && pair.duels.length > 0 ? 0 : 0)).toBeVisible();
+      await expect(row.locator('th[scope="row"]')).toContainText(`(#${d.childId})`);
       await expect(row).toContainText(`#${d.parentId}`);
       await expect(row).toContainText(d.winner === 'child' ? 'child wins' : 'stays');
     }
@@ -247,4 +247,29 @@ for (const projector of [false, true]) {
       });
     }
   }
+}
+
+for (const [width, height, projector] of [[1920, 1080, false], [1920, 1080, true], [1366, 768, false], [1366, 768, true]] as const) {
+  test(`roulette with sharing and 40 individuals at ${width}×${height}${projector ? ' in projector mode' : ''}: the weights table keeps room for its own rows, with the niche columns, and the page does not scroll`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await open(page, sharing, roulette, 40, projector);
+    await page.keyboard.press('ArrowRight');
+    const weights = page.locator('.weights');
+    const box = await weights.boundingBox();
+    // the header and at least the first two rows are on show (the rest scrolls inside the table's own region)
+    expect(box!.height).toBeGreaterThanOrEqual(90);
+    const shown = await page.evaluate(() => {
+      const region = document.querySelector('.weights')!.getBoundingClientRect();
+      return [...document.querySelectorAll('.weights tbody tr')].filter((r) => r.getBoundingClientRect().bottom <= region.bottom + 1).length;
+    });
+    expect(shown).toBeGreaterThanOrEqual(2);
+    await expect(page.locator('.weights th[data-col="niche count"]')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    // the same for the plain roulette: the rule is not special to sharing
+    await page.goto('about:blank');
+    await page.goto(url + encodeConfig(configOf({ problem: entry.create(options), init: { kind: 'random', size: 40 } }, { ...defaultsOf(entry, options).params, selection: roulette }, 7, 'landscape', options)));
+    if (projector) await page.getByRole('button', { name: 'Projector mode' }).click();
+    await page.keyboard.press('ArrowRight');
+    expect((await page.locator('.weights').boundingBox())!.height).toBeGreaterThanOrEqual(90);
+  });
 }

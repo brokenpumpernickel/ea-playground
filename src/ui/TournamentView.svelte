@@ -19,7 +19,7 @@
       </thead>
       <tbody>
         {#each model.sharing.rows as row (row.id)}
-          <tr data-row={row.id}><td>{row.id}</td><td class="num">{num(row.fitness)}</td>{#if model.sharing.shifted}<td class="num">{num(row.weight)}</td>{/if}<td class="num">{num(row.count)}</td><td class="num">{num(row.shared)}</td></tr>
+          <tr data-row={row.id}><th scope="row">{row.id}</th><td class="num">{num(row.fitness)}</td>{#if model.sharing.shifted}<td class="num">{num(row.weight)}</td>{/if}<td class="num">{num(row.count)}</td><td class="num">{num(row.shared)}</td></tr>
         {/each}
       </tbody>
     </table>

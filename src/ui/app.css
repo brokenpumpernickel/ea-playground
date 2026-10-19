@@ -1153,3 +1153,11 @@ svg.ringlayer .nicheLabel { font-size:13px; font-weight:700; fill:#fff; stroke:r
 .plot .summary .peakline { display:inline-block; white-space:nowrap; font-size:15px; line-height:1.2; }
 .projector .plot .summary .peakline { font-size:16px; }
 .plot .summary.withpeaks { margin-top:2px; line-height:1.2; }
+
+/* a large population: the spin chips and the mating pool are made small so the weights table keeps room for a few rows of its own (it scrolls inside) */
+.roulette.many .weights { min-height:132px; }
+.roulette.many .chips, .roulette.many .poolstrip { gap:4px; }
+.roulette.many .chips .chip, .projector .roulette.many .chips .chip { padding:0 8px; font-size:14px; line-height:1.35; }
+.roulette.many .poolstrip li { min-width:46px; padding:0 6px; font-size:16px; line-height:1.2; border-radius:8px; }
+.roulette.many .poolstrip .slotno { font-size:11px; }
+.roulette.many .poollabel { font-size:16px; }

@@ -66,7 +66,15 @@ Vitest, test-first: the distance and the peaks; the niche counts and shared weig
 
 ## To decide during implementation (record the choice here when made)
 
-- The "near a peak" radius (proposed 1.5 for every peak) and the peak names ("broad hill", "narrow hill"; Himmelblau's four by their numbers).
-- The tolerance of "strictly better" for floating-point ties (proposed: exact comparison, as elitism's).
+- The "near a peak" radius (proposed 1.5 for every peak) and the peak names ("broad hill", "narrow hill"; Himmelblau's four by their numbers). **Decided as proposed:** 1.5 for every peak; "the peak" for the single peak, "place 1" to "place 4" for Himmelblau; Rastrigin has none.
+- The tolerance of "strictly better" for floating-point ties (proposed: exact comparison, as elitism's). **Decided as proposed.**
+
+## As built (recorded at the end of the milestone)
+
+- **Presets.** σ = 3 for the sharing preset (measured over seeds 1 to 100 with population 40 and roulette: 24 runs find the narrow hill at σ = 1.5, 40 at σ = 2, 51 at σ = 3, 48 at σ = 4, 19 without sharing); the drawer's default stays σ = 2. Crowding runs 200 generations (at 100 only 24 runs reach ε, at 200 48, at 300 58, with both hills occupied in 90 of 100 runs at every length, against 34 without crowding at 200). Both use seed 23, where the plain runs end on the broad hill. The texts and the numbers are asserted in `presets-niching.test.ts`.
+- **The readout** is the line "near: broad hill 6 · narrow hill 13" under the fitness figures (one line at every size, a smaller font; the label is short because the Spread panel has no room left, and its tooltip, the sentence and the table give the radius), and a full-words line in the focus view's information box.
+- **Large populations.** The roulette view's weights table used to shrink to nothing beside 40 spin chips and a 40-slot mating pool (also without niching); chips and pool are now compact above 16 spins and the table keeps room for a header and a few rows, scrolling inside. The sharing and tournament tables and the duel table have row headers.
+- **Known limits, said in the texts or here.** Sharing with tournaments of 2 does not help (7 runs against 9 without); crowding is slow (it keeps both hills but needs 100 to 300 generations to bring the narrow one within ε); crowding at population 12 keeps both hills in 48 of 100 runs only. At 40 individuals the stage body scrolls in the roulette and crowding selection views (their chips and pool run below the narration).
+- **Evidence.** Criteria 1 to 7 by the unit tests of tickets 01 to 07; criterion 8 by `niching-a11y.spec.ts`, the geometry loops of `niching-views.spec.ts`, `classroom-m9.spec.ts` (with `screenshots/`) and the published-site check (`published.spec.ts`).
 
 ## Comments

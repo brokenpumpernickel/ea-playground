@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { formatGenes, formatTour, gaAlgorithm, landscapeDefaults, metricsOfProblem, trapProblem, tspDefaults, tspProblem, type GaParams, type KnapsackOptions, type LandscapeOptions, type TrapOptions, type TspOptions } from '../src/engine';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { formatGenes, formatTour, gaAlgorithm, landscapeDefaults, landscapeFunctionInfo, landscapeProblem, metricsOfProblem, trapProblem, tspDefaults, tspProblem, type GaParams, type KnapsackOptions, type LandscapeOptions, type TrapOptions, type TspOptions } from '../src/engine';
 import { createRun } from '../src/run';
 import { entryOf } from '../src/ui/problems';
 import { configOf, encodeConfig } from '../src/ui/run-config';
@@ -171,3 +173,31 @@ test('the published site gives the landscape the whole centre and zooms the heat
   await page.getByTestId('reset-view').click();
   await expect(page.getByTestId('heatmap')).toHaveAttribute('data-region', '-5,5,-5,5');
 });
+
+for (const [name, method] of [['sa-landscape-two-peaks-sharing', 'sharing'], ['sb-landscape-two-peaks-crowding', 'crowding']] as const) {
+  test(`the published site opens the ${method} preset's link as the same run, with the peak counts and the niching views of the engine`, async ({ page }) => {
+    const file = JSON.parse(readFileSync(resolve('src/ui/presets', `${name}.json`), 'utf8')) as { seed: number; options: LandscapeOptions; setup: { init: { kind: 'random'; size: number } }; params: GaParams };
+    const setup = { problem: landscape.create(file.options), init: file.setup.init };
+    await page.goto(published! + encodeConfig(configOf(setup, file.params, file.seed, 'landscape', file.options)));
+    await expect(page.getByTestId('link-notice')).toHaveCount(0);
+    await expect(page.getByTestId('seed')).toHaveText(String(file.seed));
+    const run = createRun(gaAlgorithm, { setup, params: file.params, seed: file.seed });
+    const numbers = /-?\d+(\.\d+)?(e-?\d+)?/g;
+    const peaks = (g: number) => {
+      const pts = run.snapshot(g).state.population.map((i) => (setup.problem as ReturnType<typeof landscapeProblem>).pointOf(i.chromosome));
+      return landscapeFunctionInfo['two-peaks'].peaks!.map((p) => `${p.name} ${pts.filter((q) => Math.hypot(q.x - p.x, q.y - p.y) <= 1.5).length}`).join(' · ');
+    };
+    await expect(page.getByTestId('peak-readout')).toHaveText(`near: ${peaks(0)}`);
+    for (let g = 1; g <= 5; g++) {
+      await page.keyboard.press('g');
+      run.forwardCycle();
+    }
+    await expect(page.locator('#pop-heading')).toHaveText('Population · generation 5');
+    const want = statsLines(metricsOfProblem(run.snapshot(5).state, setup.problem))[0];
+    const got = (await page.getByTestId('summary').innerText()).split('\n')[0]!.trim();
+    expect(got.replace(numbers, '#')).toBe(want.replace(numbers, '#'));
+    await expect(page.getByTestId('peak-readout')).toHaveText(`near: ${peaks(5)}`);
+    await page.getByRole('button', { name: /Parameters/ }).click();
+    await expect(page.locator('#niching-method')).toHaveValue(method);
+  });
+}
