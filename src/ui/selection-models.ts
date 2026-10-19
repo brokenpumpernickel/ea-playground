@@ -13,7 +13,7 @@ const bitsById = (view: GaView, display: Display) => new Map(view.before!.popula
 
 /** The mating pool as far as it is known: one slot per parent, filled in the order selection chose them, null until then. */
 function poolSlots(events: ReturnType<typeof selectionEvents>, slots: number): (number | null)[] {
-  const chosen = events.flatMap((e) => (e.kind === 'spin' ? [e.individualId] : e.kind === 'tournament' ? [e.winnerId] : []));
+  const chosen = events.flatMap((e) => (e.kind === 'spin' || e.kind === 'draw' ? [e.individualId] : e.kind === 'tournament' ? [e.winnerId] : []));
   return Array.from({ length: slots }, (_, k) => chosen[k] ?? null);
 }
 
@@ -37,6 +37,9 @@ export interface WeightRow {
   readonly hi: number;
   /** The row the current spin landed on. */
   readonly highlighted: boolean;
+  /** Fitness sharing only: how crowded the individual's neighbourhood is, and the weight divided by that. */
+  readonly count?: number;
+  readonly shared?: number;
 }
 
 export interface SpinState {
@@ -52,6 +55,8 @@ export interface RouletteModel {
   readonly rows: readonly WeightRow[];
   /** Why the default chain was replaced, when it was. */
   readonly autoSwitch?: string;
+  /** Fitness sharing: its radius and shape. The wheel spins on the shared weights. */
+  readonly sharing?: { readonly sigma: number; readonly alpha: number };
   readonly spins: readonly SpinState[];
   readonly pool: readonly (number | null)[];
   /** The number of the spin revealed last. */
@@ -64,6 +69,7 @@ export function selectionModel(view: GaView): RouletteModel {
   const table = events.find((e) => e.kind === 'probabilities');
   if (chain?.kind !== 'weight-chain' || table?.kind !== 'probabilities') throw new Error('The selection stage has no weight table to show');
 
+  const sharing = events.find((e) => e.kind === 'sharing');
   const revealed = events.flatMap((e) => (e.kind === 'spin' ? [e] : []));
   const last = revealed.at(-1);
   const total = view.micros;
@@ -84,8 +90,10 @@ export function selectionModel(view: GaView): RouletteModel {
       lo: entry.lo,
       hi: entry.hi,
       highlighted: last?.individualId === entry.individualId,
+      ...(sharing?.kind === 'sharing' ? { count: sharing.counts[k]!, shared: sharing.shared[k]! } : {}),
     })),
     ...(chain.autoSwitch ? { autoSwitch: chain.autoSwitch.reason.replace(/\s*Switched to Shift.*$/, '') } : {}),
+    ...(sharing?.kind === 'sharing' ? { sharing: { sigma: sharing.sigma, alpha: sharing.alpha } } : {}),
     spins: Array.from({ length: total }, (_, k): SpinState => {
       const spin = revealed[k];
       return spin
@@ -103,6 +111,8 @@ export interface Contestant {
   readonly id: number;
   readonly bits: string;
   readonly fitness: number;
+  /** Fitness sharing only: the shared weight the tournament compared. */
+  readonly shared?: number;
   readonly r: number;
   /** Several contestants can be marked when the same individual was drawn more than once. */
   readonly winner: boolean;
@@ -118,8 +128,20 @@ export interface TournamentCard {
   readonly tieBreak: boolean;
 }
 
+/** Fitness sharing in a tournament: what each individual was worth to the comparison, since the tournaments compare shared weights. */
+export interface SharingTable {
+  readonly sigma: number;
+  readonly alpha: number;
+  /** Fitness was zero or negative somewhere, so it was shifted to positive before the division. */
+  readonly shifted: boolean;
+  readonly rows: readonly { readonly id: number; readonly fitness: number; /** The weight before the division: fitness, or fitness shifted to positive. */ readonly weight: number; readonly count: number; readonly shared: number }[];
+}
+
 export interface TournamentModel {
   readonly size: number;
+  /** The tournaments compare shared weights, not fitness. */
+  readonly comparesShared: boolean;
+  readonly sharing?: SharingTable;
   readonly cards: readonly TournamentCard[];
   readonly pool: readonly (number | null)[];
 }
@@ -131,9 +153,21 @@ export function tournamentModel(view: GaView, display: Display = goldbergDisplay
   const revealed = events.flatMap((e) => (e.kind === 'tournament' ? [e] : []));
   const lookup = bitsById(view, display);
   const total = view.micros;
+  const shared = events.find((e) => e.kind === 'sharing');
 
   return {
     size: setup.size,
+    comparesShared: setup.comparesShared === true,
+    ...(shared?.kind === 'sharing'
+      ? {
+          sharing: {
+            sigma: shared.sigma,
+            alpha: shared.alpha,
+            shifted: shared.shifted,
+            rows: shared.individualIds.map((id, k) => ({ id, fitness: lookup.get(id)!.fitness, weight: shared.before[k]!, count: shared.counts[k]!, shared: shared.shared[k]! })),
+          },
+        }
+      : {}),
     cards: Array.from({ length: total }, (_, k): TournamentCard => {
       const t = revealed[k];
       if (!t) return { tournament: k + 1, revealed: false, current: false, contestants: [], tieBreak: false };
@@ -145,6 +179,7 @@ export function tournamentModel(view: GaView, display: Display = goldbergDisplay
           id: c.individualId,
           bits: lookup.get(c.individualId)?.bits ?? '',
           fitness: c.fitness,
+          ...(c.shared !== undefined ? { shared: c.shared } : {}),
           r: c.r,
           winner: c.individualId === t.winnerId,
         })),
@@ -153,6 +188,59 @@ export function tournamentModel(view: GaView, display: Display = goldbergDisplay
       };
     }),
     pool: poolSlots(events, total),
+  };
+}
+
+/* ---------------------------------------------------------- deterministic crowding */
+
+export interface DrawState {
+  readonly draw: number;
+  readonly revealed: boolean;
+  readonly current: boolean;
+  readonly r?: number;
+  readonly individualId?: number;
+  readonly bits?: string;
+  /** How many individuals were still waiting to be taken when this draw was made (everyone, for the extra parent). */
+  readonly waiting?: number;
+  readonly extra?: boolean;
+}
+
+export interface CrowdingSelectionModel {
+  readonly size: number;
+  /** An odd population: one extra parent, drawn from everyone, completes the last pair. */
+  readonly extra: boolean;
+  readonly draws: readonly DrawState[];
+  readonly pool: readonly (number | null)[];
+  /** The number of the draw revealed last. */
+  readonly current?: number;
+}
+
+export function crowdingSelectionModel(view: GaView, display: Display = goldbergDisplay): CrowdingSelectionModel {
+  const events = selectionEvents(view);
+  const setup = events.find((e) => e.kind === 'crowding-setup');
+  if (setup?.kind !== 'crowding-setup') throw new Error('The selection stage is not deterministic crowding');
+  const revealed = events.flatMap((e) => (e.kind === 'draw' ? [e] : []));
+  const lookup = bitsById(view, display);
+  const total = view.micros;
+  return {
+    size: setup.size,
+    extra: setup.extra,
+    draws: Array.from({ length: total }, (_, k): DrawState => {
+      const d = revealed[k];
+      if (!d) return { draw: k + 1, revealed: false, current: false };
+      return {
+        draw: d.draw,
+        revealed: true,
+        current: k === revealed.length - 1,
+        r: d.r,
+        individualId: d.individualId,
+        bits: lookup.get(d.individualId)?.bits ?? '',
+        waiting: d.extra ? setup.size : setup.size - k,
+        ...(d.extra ? { extra: true } : {}),
+      };
+    }),
+    pool: poolSlots(events, total),
+    ...(revealed.length > 0 ? { current: revealed.at(-1)!.draw } : {}),
   };
 }
 
@@ -184,7 +272,8 @@ export interface PairingModel {
 
 export function pairingModel(view: GaView, display: Display = goldbergDisplay): PairingModel {
   const selection = selectionEvents(view);
-  const pool = selection.flatMap((e) => (e.kind === 'spin' ? [e.individualId] : e.kind === 'tournament' ? [e.winnerId] : []));
+  const pool = selection.flatMap((e) => (e.kind === 'spin' || e.kind === 'draw' ? [e.individualId] : e.kind === 'tournament' ? [e.winnerId] : []));
+  const crowdingSetup = selection.find((e) => e.kind === 'crowding-setup');
   const lookup = bitsById(view, display);
   const parent = (id: number): Parent => ({ id, bits: lookup.get(id)?.bits ?? '', x: lookup.get(id)?.x ?? 0 });
   const revealed = view.events.flatMap((e) => (e.stage === 'pairing' ? [e] : []));
@@ -206,6 +295,11 @@ export function pairingModel(view: GaView, display: Display = goldbergDisplay): 
   });
 
   const notes: string[] = [];
+  if (crowdingSetup?.kind === 'crowding-setup') {
+    notes.push('Deterministic crowding: every individual is a parent exactly once, in random order, so none is picked twice or left out.');
+    if (crowdingSetup.extra) notes.push('Odd population: one extra parent was drawn from everyone, and the second child of the last pair will be dropped.');
+    return { pool, pairs, notes };
+  }
   const counts = new Map<number, number>();
   for (const id of pool) counts.set(id, (counts.get(id) ?? 0) + 1);
   const named = (ids: readonly number[]) => (ids.length === 1 ? `Individual ${ids[0]}` : `Individuals ${ids.slice(0, -1).join(', ')} and ${ids[ids.length - 1]}`);

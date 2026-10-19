@@ -83,7 +83,7 @@ export interface ReplacementOld {
   readonly bits: string;
   readonly fitness: number;
   /** Known once the replacement step has run. */
-  readonly fate?: 'elite' | 'replaced';
+  readonly fate?: 'elite' | 'replaced' | 'kept';
 }
 
 export interface ReplacementOffspring {
@@ -104,12 +104,37 @@ export interface ReplacementNext {
   readonly id: number;
   readonly bits: string;
   readonly fitness: number;
-  readonly source: 'elite' | 'offspring';
+  /** `kept`: an old individual that kept its place in a duel (deterministic crowding). */
+  readonly source: 'elite' | 'offspring' | 'kept';
   /** Which offspring this individual is, when it came from one. */
   readonly offspring?: number;
 }
 
+/** One duel of deterministic crowding: a child against the individual holding its matched parent's place. */
+export interface DuelRow {
+  /** The child's number, as in the offspring column (O3). */
+  readonly offspring: number;
+  readonly childId: number;
+  readonly childFitness: number;
+  readonly parentId: number;
+  readonly parentFitness: number;
+  readonly distance: number;
+  /** The child wins only by being strictly fitter; on a tie the parent stays. */
+  readonly winner: 'child' | 'parent';
+}
+
+export interface DuelPair {
+  readonly pair: number;
+  readonly parentAId: number;
+  readonly parentBId: number;
+  readonly matching: 'straight' | 'crossed' | 'single';
+  readonly totals?: { readonly straight: number; readonly crossed: number };
+  readonly duels: readonly DuelRow[];
+}
+
 export interface ReplacementModel {
+  /** Deterministic crowding: every pair's duels, once the replacement has been decided. Absent otherwise. */
+  readonly duels?: readonly DuelPair[];
   readonly revealed: boolean;
   /** Whether the old population gets a column of its own (it does for bits; strings leave it to the table beside the stage). */
   readonly showOld: boolean;
@@ -144,11 +169,12 @@ export function replacementModel(view: GaView, params: GaParams, display: Displa
         })()
       : undefined;
 
+  const crowding = params.niching?.method === 'crowding';
   const old = before.map((i): ReplacementOld => ({
     id: i.id,
     bits: formatBits(i.chromosome),
     fitness: i.fitness,
-    ...(event ? { fate: event.elites.includes(i.id) ? ('elite' as const) : ('replaced' as const) } : {}),
+    ...(event ? { fate: event.elites.includes(i.id) ? ('elite' as const) : crowding && event.population.includes(i.id) ? ('kept' as const) : ('replaced' as const) } : {}),
   }));
 
   const offspring = scored.map((i): ReplacementOffspring => {
@@ -175,11 +201,24 @@ export function replacementModel(view: GaView, params: GaParams, display: Displa
       id,
       bits: formatBits(i.chromosome),
       fitness: i.fitness,
-      source: isElite ? 'elite' : 'offspring',
+      source: isElite ? 'elite' : crowding && i.origin.kind !== 'offspring' ? 'kept' : 'offspring',
       ...(i.origin.kind === 'offspring' ? { offspring: i.origin.offspring } : {}),
     };
   });
 
+  const offspringNumber = new Map(scored.map((i) => [i.id, i.origin.kind === 'offspring' ? i.origin.offspring : 0]));
+  const duels = crowding && event?.duels
+    ? event.duels.map((d): DuelPair => ({
+        pair: d.pair,
+        parentAId: d.parentAId,
+        parentBId: d.parentBId,
+        matching: d.matching,
+        ...(d.totals ? { totals: d.totals } : {}),
+        duels: d.duels.map((x): DuelRow => ({ offspring: offspringNumber.get(x.childId) ?? 0, childId: x.childId, childFitness: x.childFitness, parentId: x.parentId, parentFitness: x.parentFitness, distance: x.distance, winner: x.winner })),
+      }))
+    : undefined;
+  const wins = duels ? duels.flatMap((d) => d.duels).filter((d) => d.winner === 'child').length : 0;
+  const crowdingExplanation = `Deterministic crowding: each child duelled the nearer of its two parents and took its place only if strictly better (a tie keeps the parent). ${wins} of ${n} children won, so ${n - wins} old ${n - wins === 1 ? 'individual keeps' : 'individuals keep'} their place. Elites and offspring truncation do not apply.`;
   const elitism = elites === 0 ? 'No elitism: no old individual is carried over.' : `Elitism: ${elites} ${elites === 1 ? 'elite' : 'elites'}, the best old ${elites === 1 ? 'individual' : 'individuals'}, copied over unchanged.`;
   const fill = truncating
     ? `Offspring truncation: λ = ${lambda} offspring were made and scored; only the best N − e = ${room} survive.`
@@ -190,5 +229,9 @@ export function replacementModel(view: GaView, params: GaParams, display: Displa
   const showOld = display.alphabetSize >= 1 && display.alphabetSize <= 2 && display.chromosomeLength <= 8;
   const where = showOld ? '' : ' The old population is in the table on the right.';
   const kept = !showOld && event && event.elites.length > 0 ? ` Elite${event.elites.length === 1 ? '' : 's'}: ${event.elites.map((id) => `#${id}`).join(', ')}.` : '';
+  if (crowding) {
+    const note = event === undefined ? 'Deterministic crowding: each child will duel the nearer of its two parents and take its place only if strictly better. Elites and offspring truncation do not apply.' : crowdingExplanation;
+    return { revealed: event !== undefined, showOld, explanation: `${note}${where}`, ...(duels ? { duels } : {}), old, offspring, next };
+  }
   return { revealed: event !== undefined, showOld, explanation: `${elitism}${kept} ${fill}${where}`, ...(cutNote ? { cutNote } : {}), old, offspring, next };
 }

@@ -24,7 +24,8 @@
     onselect,
     view,
     onview,
-  }: { info: LandscapeInfo; region: Region; zoomed?: boolean; width?: number; height?: number; marks?: MarksModel | undefined; selectedId?: number | undefined; onselect?: (id: number | undefined) => void; view?: MapView | undefined; onview?: (view: MapView) => void } = $props();
+    ring,
+  }: { ring?: { x: number; y: number; sigma: number; id: number } | undefined; info: LandscapeInfo; region: Region; zoomed?: boolean; width?: number; height?: number; marks?: MarksModel | undefined; selectedId?: number | undefined; onselect?: (id: number | undefined) => void; view?: MapView | undefined; onview?: (view: MapView) => void } = $props();
 
   let canvas: HTMLCanvasElement | undefined = $state();
   const layout = $derived(heatLayout(width, height));
@@ -98,6 +99,15 @@
     onview(next);
   };
 
+  // fitness sharing: the niche radius round the selected individual, as an ellipse because the plot's two axes may have different scales
+  const ringShape = $derived.by(() => {
+    if (!ring) return undefined;
+    const at = pixelOf(layout, region, ring.x, ring.y);
+    const pw = Math.round(layout.R - layout.L);
+    const ph = Math.round(layout.B - layout.T);
+    return { cx: at.px, cy: at.py, rx: (ring.sigma * (pw - 1)) / (region.x1 - region.x0), ry: (ring.sigma * (ph - 1)) / (region.y1 - region.y0) };
+  });
+
   $effect(() => {
     if (!canvas) return;
     // reading these makes the effect rerun when the function or the region changes
@@ -123,5 +133,14 @@
     data-region={`${region.x0},${region.x1},${region.y0},${region.y1}`}
     data-plot={`${layout.L},${layout.T},${layout.R},${layout.B}`}
   ></canvas>
+  {#if ring && ringShape}
+    <svg class="marks ringlayer" {width} {height} viewBox="0 0 {width} {height}" aria-hidden="true" data-testid="niche-layer">
+      <defs><clipPath id="ring-clip"><rect x={layout.L} y={layout.T} width={layout.R - layout.L} height={layout.B - layout.T} /></clipPath></defs>
+      <g clip-path="url(#ring-clip)">
+        <ellipse class="nicheRing" cx={ringShape.cx} cy={ringShape.cy} rx={ringShape.rx} ry={ringShape.ry} data-testid="niche-ring" data-id={ring.id} data-sigma={ring.sigma} data-cx={ringShape.cx} data-cy={ringShape.cy} data-rx={ringShape.rx} data-ry={ringShape.ry} />
+        <text class="nicheLabel" x={ringShape.cx} y={ringShape.cy - ringShape.ry - 5} text-anchor="middle" data-testid="niche-label">σ = {ring.sigma}</text>
+      </g>
+    </svg>
+  {/if}
   {#if marks}<MarkerLayer {drawn} {width} {height} {selectedId} {onselect} keyboard keyLabel="Individuals on the heatmap. Left and right arrows select the previous or next individual, Escape clears the selection." testid="heat-marks" />{/if}
 </div>

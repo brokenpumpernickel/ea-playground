@@ -1111,3 +1111,40 @@ svg[data-plot="fitness"] text.refl { paint-order:stroke; stroke:var(--surface); 
 .mini .mh .move { font-size:15px; }
 .lcanvas > .heatwrap { display:block; }
 .lcanvas { width:fit-content; }
+
+/* fitness sharing: the niche radius round the selected individual (a dashed ring with its radius written beside it) */
+svg.ringlayer { pointer-events:none; }
+svg.ringlayer .nicheRing { fill:rgba(255,255,255,.12); stroke:#111; stroke-width:2.2; stroke-dasharray:7 5; }
+svg.ringlayer .nicheLabel { font-size:13px; font-weight:700; fill:#fff; stroke:rgba(0,0,0,.8); stroke-width:3; paint-order:stroke; }
+.duels { margin-top:10px; }
+.duelcol h4 { margin:0 0 2px; font-size:17px; }
+.duelcol h4 .muted { font-weight:400; font-size:14px; }
+.duelt { border-collapse:collapse; width:100%; table-layout:fixed; }
+.duelt th, .duelt td, .projector .duelt th, .projector .duelt td { padding:2px 6px; font-size:15px; height:auto; border:0; border-bottom:1px solid var(--hair); text-align:left; vertical-align:top; text-transform:none; letter-spacing:0; font-weight:500; color:var(--ink); white-space:normal; }
+.duelt thead th, .projector .duelt thead th { font-size:13px; color:var(--ink2); text-transform:uppercase; letter-spacing:.04em; }
+.duelt tr.pairhead th, .projector .duelt tr.pairhead th { background:var(--acc-tint); font-weight:700; }
+.duelt .num { text-align:right; font-variant-numeric:tabular-nums; }
+.duelt th:nth-child(1), .duelt td:nth-child(1) { width:19%; }
+.duelt th:nth-child(2), .duelt td:nth-child(2) { width:11%; }
+.duelt th:nth-child(3), .duelt td:nth-child(3) { width:13%; }
+.duelt th:nth-child(4), .duelt td:nth-child(4) { width:21%; }
+.duelt tr.pairhead th { width:auto; }
+.duelt .res b { font-weight:700; }
+.duelt tr[data-winner="parent"] .res { color:var(--ink2); }
+.duelt tr.pairhead small { display:block; font-weight:400; color:var(--ink2); font-size:13px; }
+.projector .duelt th, .projector .duelt td { font-size:17px; }
+.roulette.shared .wheelbox { width:260px; }
+.roulette.shared .wheelbox svg { width:260px; height:260px; }
+.roulette.shared .weights table { font-size:16px; }
+.roulette.shared .weights th, .roulette.shared .weights td { padding-left:6px; padding-right:6px; }
+.roulette.shared .weights th small { font-size:13px; }
+.projector .roulette.shared .weights table { font-size:17px; }
+.crowdsel .draws { list-style:none; margin:6px 0; padding:0; display:flex; flex-wrap:wrap; gap:6px; }
+.crowdsel .drawcard { display:flex; gap:8px; align-items:center; padding:4px 10px; border:2px solid var(--hair); border-radius:10px; font-size:16px; }
+.crowdsel .drawcard.current { border-color:var(--acc); background:var(--acc-tint); }
+.crowdsel .drawcard.pending { color:var(--ink2); border-style:dashed; }
+.sharetable { border-collapse:collapse; font-size:15px; margin:4px 0 8px; }
+.sharetable th, .sharetable td { padding:2px 10px; border-bottom:1px solid var(--hair); text-align:left; }
+.sharetable .num { text-align:right; font-variant-numeric:tabular-nums; }
+.rgrid.duelgrid { grid-template-columns:minmax(0,2fr) minmax(0,1fr); }
+.duelcol h4 { margin:0 0 2px; }

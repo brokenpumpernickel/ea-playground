@@ -20,7 +20,7 @@
   <p class="expl">{model.explanation}</p>
   <!-- a scrolling region must be reachable from the keyboard -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <div class="rgrid" class:two={!model.showOld} tabindex="0" role="region" aria-label={model.showOld ? 'Replacement flow: old population, offspring, next population' : 'Replacement flow: offspring, next population'}>
+  <div class="rgrid" class:two={!model.showOld} class:duelgrid={model.duels !== undefined} tabindex="0" role="region" aria-label={model.showOld ? 'Replacement flow: old population, offspring, next population' : 'Replacement flow: offspring, next population'}>
     {#if model.showOld}
     <section class="rcol" aria-label="Old population">
       <div class="chead">Old population</div>
@@ -31,12 +31,37 @@
           <Bits chromosome={row.bits} small form="brief" blockNotes={notes(row.bits)} />
           <span class="fit">{num(row.fitness)}</span>
           {#if row.fate === 'elite'}<span class="badge ok" title="elite: carried over unchanged" aria-label="elite, carried over unchanged">★</span>
+          {:else if row.fate === 'kept'}<span class="badge ok" title="kept its place in its duel" aria-label="kept its place">✓ kept</span>
           {:else if row.fate === 'replaced'}<span class="badge x" title="replaced" aria-label="replaced">✕</span>{/if}
         </div>
       {/each}
     </section>
     {/if}
 
+    {#if model.duels}
+    <section class="rcol duelcol" aria-label="Duels of deterministic crowding" data-testid="duels">
+      <h4>Duels <span class="muted">each child against the nearer of its parents; it takes the place only if strictly better</span></h4>
+      <table aria-label="Duels, by pair" class="duelt">
+        <thead><tr><th scope="col">Child</th><th scope="col">against</th><th scope="col" class="num">distance</th><th scope="col" class="num">fitness</th><th scope="col">result</th></tr></thead>
+        {#each model.duels as pair (pair.pair)}
+          <tbody data-pair={pair.pair}>
+            <tr class="pairhead">
+              <th scope="colgroup" colspan="5" data-testid="matching-{pair.pair}">Pair {pair.pair}: parents {pair.parentAId} and {pair.parentBId} · {pair.matching === 'straight' ? 'child 1 ↔ A, child 2 ↔ B' : pair.matching === 'crossed' ? 'child 1 ↔ B, child 2 ↔ A' : 'the one child ↔ the nearer parent'}{#if pair.totals}<small>total distance {num(pair.totals.straight)} straight, {num(pair.totals.crossed)} crossed: the smaller is chosen</small>{/if}</th>
+            </tr>
+            {#each pair.duels as d (d.childId)}
+              <tr data-pair={pair.pair} data-child={d.childId} data-winner={d.winner}>
+                <td>O{d.offspring} (#{d.childId})</td>
+                <td>#{d.parentId}</td>
+                <td class="num">{num(d.distance)}</td>
+                <td class="num">{num(d.childFitness)} vs {num(d.parentFitness)}</td>
+                <td class="res">{#if d.winner === 'child'}<b>child wins</b> <span aria-hidden="true">✓</span> · #{d.parentId} <span aria-hidden="true">✕</span>{:else}<b>#{d.parentId} stays</b> <span aria-hidden="true">✓</span> · O{d.offspring} <span aria-hidden="true">✕</span>{/if}</td>
+              </tr>
+            {/each}
+          </tbody>
+        {/each}
+      </table>
+    </section>
+    {:else}
     <section class="rcol" aria-label="Offspring">
       <div class="chead">Offspring</div>
       {#if model.cutNote}<p class="cutnote">{model.cutNote}</p>{/if}
@@ -53,6 +78,7 @@
         </div>
       {/each}
     </section>
+    {/if}
 
     <section class="rcol" aria-label="Next population">
       <div class="chead">Next population</div>
@@ -65,7 +91,9 @@
           <span class="who">{k + 1}.</span>
           <Bits chromosome={row.bits} small form="brief" blockNotes={notes(row.bits)} />
           <span class="fit">{num(row.fitness)}</span>
-          {#if row.source === 'elite'}<span class="badge ok" title="elite carried over from the old population">★ #{row.id}</span>{:else}<span class="badge" title="offspring {row.offspring}">◇ O{row.offspring}</span>{/if}
+          {#if row.source === 'elite'}<span class="badge ok" title="elite carried over from the old population">★ #{row.id}</span>
+          {:else if row.source === 'kept'}<span class="badge" title="the old individual kept its place in its duel">kept #{row.id}</span>
+          {:else}<span class="badge" title="offspring {row.offspring}">◇ O{row.offspring}</span>{/if}
         </div>
       {/each}
     </section>

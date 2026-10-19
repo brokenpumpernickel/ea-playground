@@ -6,6 +6,7 @@
   import SchemaTracker from './SchemaTracker.svelte';
   import { defaultView, type SurfaceView } from './surface-projection';
   import CrossoverView from './CrossoverView.svelte';
+  import CrowdingSelectionView from './CrowdingSelectionView.svelte';
   import EvaluationView from './EvaluationView.svelte';
   import LandscapeView from './LandscapeView.svelte';
   import MutationView from './MutationView.svelte';
@@ -16,7 +17,7 @@
   import type { Offset } from './overlay-drag';
   import ReplacementView from './ReplacementView.svelte';
   import RouletteView from './RouletteView.svelte';
-  import { pairingModel, selectionModel, tournamentModel } from './selection-models';
+  import { crowdingSelectionModel, pairingModel, selectionModel, tournamentModel } from './selection-models';
   import type { Session } from './session.svelte';
   import TournamentView from './TournamentView.svelte';
   import { crossoverModel, mutationModel } from './variation-models';
@@ -132,8 +133,9 @@
   // the parameters this generation was made with, so the views can explain pc, pm, the operator and the mode
   const params = $derived(session.run.snapshot(view.position.cycle).params);
   const tournament = $derived(view.events.some((e) => e.stage === 'selection' && e.kind === 'tournament-setup'));
+  const crowdingSelection = $derived(view.events.some((e) => e.stage === 'selection' && e.kind === 'crowding-setup'));
   const explanation = $derived(
-    stage === 'selection' && !tournament
+    stage === 'selection' && !tournament && !crowdingSelection
       ? 'Each spin draws r in [0, 1) and picks the individual whose interval contains r, with replacement.'
       : stage === 'pairing'
         ? 'Neighbours in the mating pool become pairs. The pool is already random, so pairing needs no draws.'
@@ -178,6 +180,8 @@
       <LandscapeView {session} bind:zoom={zoomToPopulation} bind:surface={surfaceView} bind:trail bind:heatView bind:showGraph={showFocusGraph} bind:showCard={showFocusCard} bind:graphPos={landGraphPos} bind:cardPos={landCardPos} />
     {:else if schemaOpen && blocks}
       <SchemaTracker info={blocks} text={schemaText} oninput={(t) => (typedSchema = t)} history={schemaPoints} now={view.position.cycle} />
+    {:else if stage === 'selection' && crowdingSelection}
+      <CrowdingSelectionView model={crowdingSelectionModel(view, display)} />
     {:else if stage === 'selection' && tournament}
       <TournamentView model={tournamentModel(view, display)} />
     {:else if stage === 'selection'}

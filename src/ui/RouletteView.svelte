@@ -56,12 +56,12 @@
     return () => cancelAnimationFrame(frame);
   });
 
-  const total = $derived(model.rows.reduce((sum, r) => sum + r.weight, 0));
+  const total = $derived(model.rows.reduce((sum, r) => sum + (r.shared ?? r.weight), 0));
   const labels = $derived(model.columns.map((c) => c.label).join(' → '));
   const description = $derived(`Roulette wheel: ${model.rows.map((r) => `individual ${r.id} ${(r.probability * 100).toFixed(1)}%`).join(', ')}`);
 </script>
 
-<div class="roulette">
+<div class="roulette" class:shared={model.sharing !== undefined}>
   <figure class="wheelbox">
     <svg role="img" aria-label={description} viewBox="0 0 340 340" width="350" height="350" data-animated={animate ? 'true' : 'false'}>
       {#each slices as slice (slice.id)}
@@ -97,7 +97,11 @@
     {#if model.autoSwitch}
       <div class="notice" data-testid="auto-switch"><b>Switched to Shift automatically.</b> {model.autoSwitch}</div>
     {/if}
-    <div class="formula">raw fitness → <b>{labels}</b> → weight → probability (weight ÷ {num(total)})</div>
+    {#if model.sharing}
+      <div class="formula" data-testid="sharing-formula">raw fitness → <b>{labels}</b> → weight → <b>÷ niche count</b> (fitness sharing, σ = {num(model.sharing.sigma)}, α = {num(model.sharing.alpha)}) → shared weight → probability (shared weight ÷ {num(total)})</div>
+    {:else}
+      <div class="formula">raw fitness → <b>{labels}</b> → weight → probability (weight ÷ {num(total)})</div>
+    {/if}
     <div class="weights">
       <table aria-label="Selection weights and probabilities">
         <thead>
@@ -107,6 +111,10 @@
             {#each model.columns as column (column.label)}
               <th scope="col" class="num">{column.label}{#if column.params}<small>{column.params}</small>{/if}</th>
             {/each}
+            {#if model.sharing}
+              <th scope="col" class="num" data-col="niche count">Niche count</th>
+              <th scope="col" class="num" data-col="shared">Shared</th>
+            {/if}
             <th scope="col" class="num">Prob.</th>
             <th scope="col">Interval of r</th>
           </tr>
@@ -117,6 +125,10 @@
               <td>{row.id}</td>
               <td class="num">{num(row.fitness)}</td>
               {#each row.steps as step, k (k)}<td class="num">{num(step)}</td>{/each}
+              {#if model.sharing}
+                <td class="num" data-col="niche count">{num(row.count!)}</td>
+                <td class="num" data-col="shared">{num(row.shared!)}</td>
+              {/if}
               <td class="num">{row.probability.toFixed(3)}</td>
               <td>[{row.lo.toFixed(3)}, {row.hi.toFixed(3)})</td>
             </tr>

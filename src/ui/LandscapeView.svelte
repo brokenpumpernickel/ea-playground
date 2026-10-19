@@ -75,6 +75,11 @@
     heatView = undefined;
     surface = { ...defaultView };
   };
+  // fitness sharing: the selected individual's niche, a ring of radius σ on the heatmap
+  const cursorParams = $derived(session.run.snapshot(session.view.position.cycle).params);
+  const sharingSigma = $derived(cursorParams.niching?.method === 'sharing' ? cursorParams.niching.sigma : undefined);
+  const selectedPoint = $derived(session.selectedId === undefined ? undefined : session.table.rows.find((r) => r.id === session.selectedId)?.values);
+  const ring = $derived(sharingSigma !== undefined && selectedPoint && session.selectedId !== undefined ? { x: selectedPoint[0]!, y: selectedPoint[1]!, sigma: sharingSigma, id: session.selectedId } : undefined);
   const m = $derived(session.metrics);
   const lines = $derived(statsLines(m));
   const goal = $derived(info?.minimised ? 'f is minimised, so fitness = −f and higher is always better' : 'f is maximised, higher is better');
@@ -121,7 +126,7 @@
     <figure>
       <figcaption>Heatmap <i>fitness{info!.minimised ? ' = −f' : ' = f'}, higher is better</i></figcaption>
       <div class="lcanvas">
-        <Heatmap info={info!} region={region!} zoomed={zoomedIn} width={figure.width} height={figure.height} {marks} selectedId={session.selectedId} onselect={select} view={heatView} onview={setHeat} />
+        <Heatmap info={info!} region={region!} zoomed={zoomedIn} width={figure.width} height={figure.height} {marks} selectedId={session.selectedId} onselect={select} view={heatView} onview={setHeat} {ring} />
         {#if focused && showGraph}<div class="rmo rmo-graph lover lover-graph" data-testid="focus-graph" style="transform:translate({graphPos.x}px,{graphPos.y}px)"><MiniFitness model={session.plots} onhide={() => (showGraph = false)} bind:offset={graphPos} /></div>{/if}
       </div>
     </figure>
@@ -148,7 +153,7 @@
 {/snippet}
 
 {#snippet sentences()}
-  <p class="lsent"><span data-testid="landscape-sentence">{sentence}</span>{#if marks}{' '}<span data-testid="population-sentence">{marks.sentence}</span>{/if}</p>
+  <p class="lsent"><span data-testid="landscape-sentence">{sentence}</span>{#if marks}{' '}<span data-testid="population-sentence">{marks.sentence}</span>{/if}{#if ring}{' '}<span data-testid="ring-sentence">The dashed ring round individual {ring.id} has the radius of the niche, σ = {ring.sigma}: individuals inside it share their fitness, each counting less the farther from {ring.id} it is.</span>{/if}</p>
 {/snippet}
 
 {#snippet positions()}

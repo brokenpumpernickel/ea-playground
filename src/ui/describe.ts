@@ -187,7 +187,9 @@ function describeWith(event: GaEvent, display: Display): string {
       const tail = lost.length > 0 ? `. Discarded: ${discarded}` : '';
       // a long population would not fit the one-line narration either: its first ten, and how many there are in all
       const listed = ids.length > 12 ? `${ids.slice(0, 10).join(', ')}, … (${ids.length} in all)` : ids.join(', ');
-      return `Next population: individuals ${listed}${tail}`;
+      const duelled = event.duels ? event.duels.flatMap((d) => d.duels) : [];
+      const duels = duelled.length > 0 ? `. Duels: ${duelled.filter((d) => d.winner === 'child').length} of ${duelled.length} children took the place of the parent they duelled` : '';
+      return `Next population: individuals ${listed}${tail}${duels}`;
     }
   }
 }
