@@ -62,7 +62,7 @@ describe('round trip and run equality', () => {
     expect(presets.filter((p) => p.problem === 'goldberg')).toHaveLength(4);
     expect(presets.filter((p) => p.problem === 'target-string')).toHaveLength(3);
     expect(presets.filter((p) => p.problem === 'knapsack')).toHaveLength(5);
-    expect(presets.filter((p) => p.problem === 'landscape')).toHaveLength(10);
+    expect(presets.filter((p) => p.problem === 'landscape')).toHaveLength(12);
     for (const preset of presets) {
       const config = configOf(preset.setup, preset.params, preset.seed, preset.problem, preset.options);
       expect(config.problem).toBe(preset.problem);

@@ -47,6 +47,16 @@ describe('the preset files', () => {
     expect(() => presetFromData('9-bad', null)).toThrow('must hold one JSON object');
   });
 
+  test('a niching setting in a preset is checked: its shape, and that the problem has a distance', () => {
+    const land = presets.find((x) => x.problem === 'landscape' && x.id.endsWith('two-peaks-sharing'))!;
+    const file = JSON.parse(JSON.stringify({ v: 1, problem: 'landscape', name: 'x', lesson: 'y', lookFor: 'z', seed: 1, options: land.options, setup: { init: { kind: 'random', size: 4 } }, params: land.params }));
+    expect(() => presetFromData('9-ok', file)).not.toThrow();
+    expect(() => presetFromData('9-bad', { ...file, params: { ...file.params, niching: { method: 'sharing', sigma: 3 } } })).toThrow('"params.niching" must hold a "method"');
+    expect(() => presetFromData('9-bad', { ...file, params: { ...file.params, niching: { method: 'sharing', sigma: 0, alpha: 1 } } })).toThrow('σ (the niche radius) must be a number greater than 0');
+    const gold = JSON.parse(JSON.stringify({ v: 1, problem: 'goldberg', name: 'x', lesson: 'y', lookFor: 'z', seed: 1, setup: { init: { kind: 'random', size: 4 } }, params: { ...byId('textbook').params, niching: { method: 'crowding', sigma: 2, alpha: 1 } } }));
+    expect(() => presetFromData('9-bad', gold)).toThrow('needs a distance between individuals');
+  });
+
   test('a preset of a problem with options must carry valid ones, and one of a problem without must not', () => {
     const word = JSON.parse(JSON.stringify({ v: 1, problem: 'target-string', name: 'x', lesson: 'y', lookFor: 'z', seed: 1, options: { alphabet: 'AB', target: 'AB' }, setup: { init: { kind: 'random', size: 4 } }, params: wordPreset('evolve-a-word').params }));
     expect(() => presetFromData('9-ok', word)).not.toThrow();

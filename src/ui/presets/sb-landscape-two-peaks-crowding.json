@@ -1,0 +1,48 @@
+{
+  "v": 1,
+  "problem": "landscape",
+  "name": "Two peaks: deterministic crowding",
+  "lesson": "In deterministic crowding every child duels the parent it most resembles, so the few individuals on the narrow hill are not pushed out by the crowd on the broad one.",
+  "lookFor": "Population 40 and seed 23; selection takes every individual once, so nothing here depends on the selection method. The run without crowding (Niching: None, tournaments of 2) has all 40 individuals on the broad hill by generation 20 and never leaves it. With crowding there are 36 individuals near the broad hill and 4 near the narrow one in generation 20, and 35 and 5 in generation 100: both hills stay occupied while the narrow one slowly improves (best 0.95 in generation 100) until a child comes within ε of the top in generation 139, where Run until stop pauses. It is slow and it is not a cure for everything: with seeds 1 to 100 and 200 generations both hills are still occupied in 90 runs against 34 without crowding, but only 48 runs get within ε of the narrow hill's top (17 without it); with a population of 12 both hills are kept in 48 runs, with 60 in 99.",
+  "seed": 23,
+  "options": {
+    "function": "two-peaks",
+    "representation": "real",
+    "bitsPerVariable": 10
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 40
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "tournament",
+      "size": 2
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "blx-alpha",
+      "probability": 0.9,
+      "alpha": 0.5
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-gene",
+      "probability": 0.1,
+      "sigma": 0.05
+    },
+    "elites": 1,
+    "stop": {
+      "generationLimit": 200,
+      "targetEpsilon": 0.0010003112095324164,
+      "stagnationWindow": 50
+    },
+    "niching": {
+      "method": "crowding",
+      "sigma": 2,
+      "alpha": 1
+    }
+  }
+}

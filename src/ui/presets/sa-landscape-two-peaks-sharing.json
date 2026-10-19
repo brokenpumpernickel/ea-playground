@@ -1,0 +1,52 @@
+{
+  "v": 1,
+  "problem": "landscape",
+  "name": "Two peaks: fitness sharing",
+  "lesson": "Fitness sharing divides each individual's weight by how many neighbours it has, so a crowded hill pays for its crowd and the narrow hill keeps its share of the spins.",
+  "lookFor": "Population 40, seed 23, roulette-wheel selection and a niche radius σ = 3. Without sharing (set Niching to None in the drawer and restart) this run puts 39 of the 40 individuals on the broad hill by generation 100 and never gets within ε of the narrow one; with sharing it finds the narrow hill in generation 24, where Run until stop pauses, with 6 individuals near the broad hill and 13 near the narrow one, and in generation 100 there are still 4 and 11 (the rest lie in between). Click an individual to see its niche as a ring of radius σ on the heatmap. Sharing helps but is no cure: with seeds 1 to 100 it finds the narrow hill in 51 runs against 19 for the same run without it, so 49 still miss it. A radius of σ = 2 finds it in 40 runs, and with tournaments of 2 in place of the roulette wheel sharing does not help (7 runs against 9 without it).",
+  "seed": 23,
+  "options": {
+    "function": "two-peaks",
+    "representation": "real",
+    "bitsPerVariable": 10
+  },
+  "setup": {
+    "init": {
+      "kind": "random",
+      "size": 40
+    }
+  },
+  "params": {
+    "selection": {
+      "method": "roulette",
+      "chain": [
+        {
+          "step": "identity"
+        }
+      ]
+    },
+    "crossover": {
+      "enabled": true,
+      "operator": "blx-alpha",
+      "probability": 0.9,
+      "alpha": 0.5
+    },
+    "mutation": {
+      "enabled": true,
+      "mode": "per-gene",
+      "probability": 0.1,
+      "sigma": 0.05
+    },
+    "elites": 1,
+    "stop": {
+      "generationLimit": 100,
+      "targetEpsilon": 0.0010003112095324164,
+      "stagnationWindow": 50
+    },
+    "niching": {
+      "method": "sharing",
+      "sigma": 3,
+      "alpha": 1
+    }
+  }
+}

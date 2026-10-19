@@ -79,7 +79,10 @@ for (const representation of ['real', 'gray'] as const) {
       }
       // the stats lines
       const want = statsLines(metrics[g]!);
-      const got = (await page.getByTestId('summary').innerText()).split('\n').map((s) => s.trim());
+      const lines = (await page.getByTestId('summary').innerText()).split('\n').map((s) => s.trim());
+      // the two fitness lines are the engine's; the third is the peak readout (its numbers are tested in peak-occupancy.spec.ts)
+      expect(lines[2]).toMatch(/^near: place 1 \d+ · place 2 \d+ · place 3 \d+ · place 4 \d+$/);
+      const got = lines.slice(0, 2);
       expect(got.map((s) => s.replace(/-?\d+(\.\d+)?/g, '#'))).toEqual(want.map((s) => s.replace(/-?\d+(\.\d+)?/g, '#')));
       got.forEach((line, k) => numbers(line).forEach((v, n) => expect(v).toBeCloseTo(numbers(want[k]!)[n]!, 2)));
       // the axis: the model's ticks, with the floor below zero for a minimised function
@@ -164,7 +167,9 @@ for (const [width, height] of [
             const spread = panel.querySelector('.spread');
             if (spread && spread.scrollHeight > spread.clientHeight + 1) out.push(`the spread panel is taller than its box (${spread.scrollHeight}>${spread.clientHeight})`);
             const summary = panel.querySelector('.summary') as HTMLElement | null;
-            if (summary && summary.getBoundingClientRect().height > (parseFloat(getComputedStyle(summary).lineHeight) || 24) * 2 + 4) out.push('the summary wraps');
+            const peakline = summary?.querySelector('.peakline');
+            // two lines of figures, and the peak readout as a third line of its own, none wrapped
+            if (summary && summary.getBoundingClientRect().height > (parseFloat(getComputedStyle(summary).lineHeight) || 24) * 2 + (peakline ? peakline.getBoundingClientRect().height : 0) + 4) out.push('the summary wraps');
             const legend = panel.querySelector('.ph .legend') as HTMLElement | null;
             const head = panel.querySelector('.ph') as HTMLElement | null;
             if (legend && head && legend.getBoundingClientRect().right > head.getBoundingClientRect().right + 1) out.push('the legend leaves the header');

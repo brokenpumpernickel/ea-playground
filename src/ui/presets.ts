@@ -1,4 +1,4 @@
-import type { GaParams, GaSetup } from '../engine';
+import { validateNiching, type GaParams, type GaSetup, type NichingConfig } from '../engine';
 import { entryOf, type ProblemOptions } from './problems';
 import { problemIds } from './run-config';
 
@@ -54,6 +54,15 @@ export function presetFromData(id: string, data: unknown): Preset {
     if (typeof params?.[key] !== 'object' || params[key] === null) fail(id, `"params.${key}" is missing.`);
   }
   if (typeof params?.elites !== 'number') fail(id, '"params.elites" must be a number.');
+  const setupProblem = entry.create(entry.hasOptions ? (d.options as ProblemOptions) : undefined);
+  if (params!.niching !== undefined) {
+    const niching = params!.niching as unknown as Record<string, unknown>;
+    if (typeof niching !== 'object' || niching === null || !['none', 'sharing', 'crowding'].includes(niching.method as string) || typeof niching.sigma !== 'number' || typeof niching.alpha !== 'number') {
+      fail(id, '"params.niching" must hold a "method" ("none", "sharing" or "crowding"), a number "sigma" and a number "alpha".');
+    }
+    const found = validateNiching(niching as unknown as NichingConfig, setupProblem);
+    if (found.length > 0) fail(id, `"params.niching" is not valid: ${found[0]}`);
+  }
   return {
     id,
     problem: d.problem as string,
@@ -62,7 +71,7 @@ export function presetFromData(id: string, data: unknown): Preset {
     lookFor: d.lookFor as string,
     seed: d.seed as number,
     ...(entry.hasOptions ? { options: d.options as ProblemOptions } : {}),
-    setup: { problem: entry.create(entry.hasOptions ? (d.options as ProblemOptions) : undefined), init: init as GaSetup['init'] },
+    setup: { problem: setupProblem, init: init as GaSetup['init'] },
     params: params as GaParams,
   };
 }

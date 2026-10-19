@@ -39,18 +39,18 @@ const expectSummary = async (page: Page, expected: string) => {
 };
 const engineSummary = (p: Loaded, run: ReturnType<typeof engineRun>, g: number) => statsLines(metricsOfProblem(run.snapshot(g).state, landscapeProblem(p.options)))[0];
 const stopOf = (run: ReturnType<typeof engineRun>): number => {
-  for (let g = 1; g <= 100; g++) {
+  for (let g = 1; g <= 300; g++) {
     run.forwardCycle();
     if (run.snapshot(g).stops.length > 0) return g;
   }
   throw new Error('no stop');
 };
 
-test('the menu lists the ten landscape presets with their lesson and what to look for, and none of the other problems’', async ({ page }) => {
+test('the menu lists the twelve landscape presets with their lesson and what to look for, and none of the other problems’', async ({ page }) => {
   await openLandscape(page);
   await page.getByRole('button', { name: /Parameters/ }).click();
   await expect(page.locator('#preset option')).toHaveText(presets.map((p) => p.name));
-  expect(presets).toHaveLength(10);
+  expect(presets).toHaveLength(12);
   for (const p of presets) {
     await page.locator('#preset').selectOption({ label: p.name });
     await expect(page.getByTestId('preset-lesson')).toHaveText(p.lesson);
@@ -90,7 +90,7 @@ for (const p of presets) {
   });
 }
 
-test('Run until stop pauses where each preset’s text says: generation 10 and 8 at the target, 56 and 79 and 75 for stagnation, 100 at the limit', async ({ page }) => {
+test('Run until stop pauses where each preset’s text says: generation 10 and 8 at the target, 56 and 79 and 75 for stagnation, 24 and 139 for the niching presets, 100 at the limit', async ({ page }) => {
   await openLandscape(page);
   for (const p of presets) {
     const expected = stopOf(engineRun(p));
@@ -98,11 +98,34 @@ test('Run until stop pauses where each preset’s text says: generation 10 and 8
     await page.getByRole('button', { name: 'Run until stop' }).click();
     await expect(page.locator('#pop-heading'), p.name).toContainText(`generation ${expected}`);
   }
-  expect(presets.map((p) => stopOf(engineRun(p)))).toEqual([10, 100, 100, 8, 100, 56, 79, 6, 75, 39]);
+  expect(presets.map((p) => stopOf(engineRun(p)))).toEqual([10, 100, 100, 8, 100, 56, 79, 6, 75, 39, 24, 139]);
 });
 
 test('the other problems’ presets are unchanged, and each keeps to its own problem', async ({ page }) => {
   await page.goto(url);
   await page.getByRole('button', { name: /Parameters/ }).click();
   await expect(page.locator('#preset option')).toHaveText(['Textbook population', 'No crossover', 'No mutation', 'High mutation']);
+});
+
+test('the niching presets set the drawer’s Niching section, and their long texts are whole inside the drawer at both sizes and in projector mode', async ({ page }) => {
+  await openLandscape(page);
+  for (const [name, method, sigma] of [['Two peaks: fitness sharing', 'sharing', '3'], ['Two peaks: deterministic crowding', 'crowding', '']] as const) {
+    for (const [w, h, projector] of [[1920, 1080, false], [1366, 768, false], [1366, 768, true]] as const) {
+      await page.setViewportSize({ width: w, height: h });
+      if (projector !== (await page.locator('body.projector, .projector').count() > 0)) await page.getByRole('button', { name: 'Projector mode' }).click();
+      await load(page, name);
+      await page.getByRole('button', { name: /Parameters/ }).click();
+      await expect(page.locator('#niching-method')).toHaveValue(method);
+      if (method === 'sharing') await expect(page.locator('#niching-sigma')).toHaveValue(sigma);
+      else await expect(page.locator('#niching-sigma')).toHaveCount(0);
+      await page.locator('#preset').selectOption({ label: name });
+      const look = page.getByTestId('preset-lookfor');
+      await look.scrollIntoViewIfNeeded();
+      const box = await look.boundingBox();
+      const drawer = await page.getByTestId('drawer').boundingBox();
+      expect(box!.x + box!.width, `${name} ${w}×${h}`).toBeLessThanOrEqual(drawer!.x + drawer!.width + 1);
+      expect(await look.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(1);
+      await page.keyboard.press('Escape');
+    }
+  }
 });

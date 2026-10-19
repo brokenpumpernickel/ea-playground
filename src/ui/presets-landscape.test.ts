@@ -59,7 +59,7 @@ const near = (p: { x: number; y: number }, x: number, y: number, within: number)
 describe('the landscape preset files', () => {
   const all = presets.filter((p) => p.problem === 'landscape');
 
-  test('there are ten, in the order of their file names, for the landscape only, each with a one-sentence lesson and a text that says what to look for', () => {
+  test('there are twelve, in the order of their file names, for the landscape only, each with a one-sentence lesson and a text that says what to look for', () => {
     expect(all.map((p) => p.name)).toEqual([
       'Single peak',
       'Two peaks: the broad hill',
@@ -71,12 +71,14 @@ describe('the landscape preset files', () => {
       'BLX-α with α = 0.5',
       'Plain binary, low mutation',
       'Gray code, low mutation',
+      'Two peaks: fitness sharing',
+      'Two peaks: deterministic crowding',
     ]);
     for (const p of all) {
       expect(p.lesson.endsWith('.')).toBe(true);
       expect(p.lesson.slice(0, -1)).not.toMatch(/[.!?]\s/);
       expect(p.lookFor.length).toBeGreaterThan(120);
-      expect(p.setup.init).toEqual({ kind: 'random', size: 12 });
+      expect(p.setup.init).toEqual({ kind: 'random', size: p.id.includes('two-peaks-') ? 40 : 12 });
     }
   });
 
@@ -92,9 +94,11 @@ describe('the landscape preset files', () => {
       'blx-half': (p) => ({ ...p, mutation: { ...p.mutation, enabled: false } }),
       'plain': (p) => ({ ...p, mutation: { ...p.mutation, probability: 0.02 } }),
       'gray': (p) => ({ ...p, mutation: { ...p.mutation, probability: 0.02 } }),
+      'two-peaks-sharing': (p) => ({ ...p, selection: { method: 'roulette', chain: [{ step: 'identity' }] }, niching: { method: 'sharing', sigma: 3, alpha: 1 } }),
+      'two-peaks-crowding': (p) => ({ ...p, niching: { method: 'crowding', sigma: 2, alpha: 1 }, stop: { ...p.stop, generationLimit: 200 } }),
     };
     for (const p of all) {
-      const key = p.id.replace(/^[a-z]-landscape-/, '');
+      const key = p.id.replace(/^[a-z]+-landscape-/, '');
       expect(changed[key], p.id).toBeDefined();
       expect(p.params, p.id).toEqual(changed[key]!(landscapeDefaults(optionsOf(p)).params));
       expect(p.params.stop.targetEpsilon, p.id).toBe(epsilonOf(landscapeProblem(optionsOf(p))));
@@ -113,8 +117,10 @@ describe('the landscape preset files', () => {
       'blx-half': ['generation 6', '66 runs', '37 with'],
       'plain': ['generation 75', '0.881', '(2.00, 0.00)', '20 single-bit', '33 plain-binary'],
       'gray': ['generation 39', '(2, −1)', 'all 100', '33 plain-binary'],
+      'two-peaks-sharing': ['39 of the 40', 'generation 24', '51 runs against 19', '49 still miss'],
+      'two-peaks-crowding': ['generation 139', '90 runs against 34', 'only 48 runs', '99'],
     };
-    for (const p of all) for (const figure of stated[p.id.replace(/^[a-z]-landscape-/, '')]!) expect(p.lookFor, p.id).toContain(figure);
+    for (const p of all) for (const figure of stated[p.id.replace(/^[a-z]+-landscape-/, '')]!) expect(p.lookFor, p.id).toContain(figure);
   });
 
   test('the functions and representations are the ones the lessons name', () => {
@@ -129,6 +135,8 @@ describe('the landscape preset files', () => {
       ['himmelblau', 'real'],
       ['single-peak', 'plain'],
       ['single-peak', 'gray'],
+      ['two-peaks', 'real'],
+      ['two-peaks', 'real'],
     ]);
     expect(all.filter((p) => optionsOf(p).representation !== 'real').every((p) => optionsOf(p).bitsPerVariable === 10)).toBe(true);
   });

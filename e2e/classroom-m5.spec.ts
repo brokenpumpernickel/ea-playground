@@ -103,7 +103,7 @@ test('the fifth classroom scenario: share a configured landscape run, open it in
 
   // 4. a preset of this problem, with its description: Himmelblau, four optima, seed 42 (real-valued again)
   await fresh.getByRole('button', { name: /Parameters/ }).click();
-  await expect(fresh.locator('#preset option')).toHaveCount(10);
+  await expect(fresh.locator('#preset option')).toHaveCount(12);
   await fresh.locator('#preset').selectOption({ label: 'Himmelblau: four optima' });
   await expect(fresh.getByTestId('preset-lesson')).toContainText('four equally good minima');
   await fresh.getByTestId('load-preset').click();

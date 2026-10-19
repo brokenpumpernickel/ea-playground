@@ -23,8 +23,8 @@ const readPreset = (file: string) => {
 const rows = (page: Page) => page.getByRole('table', { name: /^(Population|Parents) · generation \d+$/ }).locator('tbody tr [data-bits]').evaluateAll((els) => els.map((el) => el.getAttribute('data-bits')!));
 const b64url = (value: unknown) => `#v1.${Buffer.from(JSON.stringify(value)).toString('base64url')}`;
 
-test('the preset files are all here: four for Goldberg, three for the target string, five for the knapsack, six for the trap, ten for the landscape and nine for the TSP', () => {
-  expect(presetFiles.map((f) => readPreset(f).problem)).toEqual([...Array(4).fill('goldberg'), ...Array(3).fill('target-string'), ...Array(5).fill('knapsack'), ...Array(6).fill('trap'), ...Array(10).fill('landscape'), ...Array(9).fill('tsp')]);
+test('the preset files are all here: four for Goldberg, three for the target string, five for the knapsack, six for the trap, twelve for the landscape and nine for the TSP', () => {
+  expect(presetFiles.map((f) => readPreset(f).problem)).toEqual([...Array(4).fill('goldberg'), ...Array(3).fill('target-string'), ...Array(5).fill('knapsack'), ...Array(6).fill('trap'), ...Array(12).fill('landscape'), ...Array(9).fill('tsp')]);
 });
 
 for (const file of presetFiles) {
