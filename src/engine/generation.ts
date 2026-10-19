@@ -2,6 +2,7 @@ import type { Chromosome } from './chromosome';
 import { crossover, type CrossoverConfig, type CrossoverEvent } from './crossover';
 import { evaluated, initialize, type Individual, type Initialization, type SetupEvent } from './initialize';
 import { mutate, type MutationConfig, type MutationEvent } from './mutation';
+import type { NichingConfig } from './niching';
 import { matingPoolSize, pair, type PairingEvent } from './pairing';
 import type { Problem } from './problem';
 import type { Rng } from '../run/rng';
@@ -167,6 +168,8 @@ export interface GenerationConfig {
   readonly truncation?: { readonly enabled: boolean; readonly lambda: number };
   /** Replaces generational-with-elites. */
   readonly replacement?: ReplacementStrategy;
+  /** Fitness sharing or deterministic crowding (see niching.ts). Absent means none: the run is exactly what it was before niching existed. */
+  readonly niching?: NichingConfig;
   readonly stop: StopConfig;
 }
 

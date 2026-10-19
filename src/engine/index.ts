@@ -125,6 +125,7 @@ export {
   type LandscapeProblem,
   type LandscapeRepresentation,
   type Point,
+  type Peak,
 } from './landscape';
 export {
   heldKarp,
@@ -148,3 +149,5 @@ export {
   type TspOptions,
   type TspProblem,
 } from './tsp';
+
+export { nichingDefaults, nichingMethods, validateNiching, type NichingConfig, type NichingMethod } from './niching';

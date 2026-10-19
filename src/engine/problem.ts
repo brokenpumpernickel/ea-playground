@@ -107,5 +107,10 @@ export interface Problem {
   readonly knownOptimumFitness?: number;
   /** Present when the decoded solution is a single whole number, so its fitness can be drawn as a curve. */
   readonly landscape?: Landscape;
+  /**
+   * Present when two individuals can be told apart by how far apart their solutions are (the landscape: the distance between
+   * their decoded points), which niching needs (see niching.ts). Absent for the other problems.
+   */
+  readonly distance?: (a: Pick<Scores, 'values'>, b: Pick<Scores, 'values'>) => number;
   evaluate(chromosome: Chromosome): Scores;
 }

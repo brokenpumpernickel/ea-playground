@@ -32,6 +32,15 @@ export interface Point {
   readonly y: number;
 }
 
+/** A place where the fitness has a local top: the points to count the population near. */
+export interface Peak {
+  readonly name: string;
+  readonly x: number;
+  readonly y: number;
+  /** The fitness at the top (for a minimised function, minus its value there). */
+  readonly height: number;
+}
+
 export interface LandscapeFunctionInfo {
   readonly id: LandscapeFunction;
   readonly name: string;
@@ -44,6 +53,8 @@ export interface LandscapeFunctionInfo {
   readonly optima: readonly Point[];
   /** f(x, y), the function as written in `formula`. */
   readonly objective: (x: number, y: number) => number;
+  /** The hills worth telling apart, best first where they differ in height; absent where there are too many local tops to name (Rastrigin). */
+  readonly peaks?: readonly Peak[];
 }
 
 const twoPeaks = (x: number, y: number): number => 0.6 * Math.exp(-((x + 2.5) ** 2 + (y + 2.5) ** 2) / 8) + Math.exp(-((x - 3) ** 2 + (y - 3) ** 2) / 0.5);
@@ -57,6 +68,7 @@ export const landscapeFunctionInfo: Record<LandscapeFunction, LandscapeFunctionI
     bounds: { lo: -5, hi: 5 },
     optima: [{ x: 2, y: -1 }],
     objective: (x, y) => Math.exp(-((x - 2) ** 2 + (y + 1) ** 2) / 8),
+    peaks: [{ name: 'the peak', x: 2, y: -1, height: 1 }],
   },
   'two-peaks': {
     id: 'two-peaks',
@@ -67,6 +79,11 @@ export const landscapeFunctionInfo: Record<LandscapeFunction, LandscapeFunctionI
     // The narrow hill's top, found numerically (the broad hill's tail shifts it a little from (3, 3)); a test checks it against a grid.
     optima: [{ x: 2.999892804, y: 2.999892804 }],
     objective: twoPeaks,
+    // the broad hill's top is at (−2.5, −2.5) to well under a millionth (the narrow hill's tail there is e⁻¹²¹); the narrow one is the optimum
+    peaks: [
+      { name: 'broad hill', x: -2.5, y: -2.5, height: 0.6 },
+      { name: 'narrow hill', x: 2.999892804, y: 2.999892804, height: 1.0003117907569556 },
+    ],
   },
   rastrigin: {
     id: 'rastrigin',
@@ -91,6 +108,12 @@ export const landscapeFunctionInfo: Record<LandscapeFunction, LandscapeFunctionI
       { x: 3.5844283403304917, y: -1.8481265269644036 },
     ],
     objective: (x, y) => (x * x + y - 11) ** 2 + (x + y * y - 7) ** 2,
+    peaks: [
+      { name: 'place 1', x: 3, y: 2, height: 0 },
+      { name: 'place 2', x: -2.805118086952745, y: 3.131312518250573, height: 0 },
+      { name: 'place 3', x: -3.779310253377747, y: -3.2831859912861696, height: 0 },
+      { name: 'place 4', x: 3.5844283403304917, y: -1.8481265269644036, height: 0 },
+    ],
   },
 };
 
@@ -198,6 +221,10 @@ export function landscapeProblem(options: LandscapeOptions): LandscapeProblem {
     pointOf,
     objectiveAt,
     fitnessAt,
+    distance: (a, b) => {
+      if (a.values === undefined || b.values === undefined) throw new Error('An individual with no decoded point has no distance: the landscape measures it between decoded points.');
+      return Math.hypot(a.values[0]! - b.values[0]!, a.values[1]! - b.values[1]!);
+    },
     evaluate(chromosome): Scores {
       const { x, y } = pointOf(chromosome);
       const objective = objectiveAt(x, y);
